@@ -1,0 +1,135 @@
+# ==================================================
+# JoshSecLogs Monorepo (.gitignore)
+# ==================================================
+
+# =====================================
+# Dependencies
+# =====================================
+node_modules/
+**/node_modules/
+
+# =====================================
+# Build Output
+# =====================================
+dist/
+build/
+out/
+.next/
+frontend/.next/
+frontend/out/
+backend/dist/
+
+# =====================================
+# Environment Variables
+# =====================================
+.env
+.env.*
+**/.env
+**/.env.*
+
+backend/.env
+backend/.env.*
+frontend/.env
+frontend/.env.local
+frontend/.env.development
+frontend/.env.production
+frontend/.env.*
+
+# =====================================
+# Coverage & Testing
+# =====================================
+coverage/
+.nyc_output/
+.temp/
+.tmp/
+.cache/
+
+# =====================================
+# Logs
+# =====================================
+logs/
+*.log
+npm-debug.log*
+pnpm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+lerna-debug.log*
+
+# =====================================
+# Runtime Data
+# =====================================
+pids/
+*.pid
+*.pid.lock
+*.seed
+
+# =====================================
+# Diagnostic Reports
+# =====================================
+report.*.*.*.*.json
+
+# =====================================
+# Prisma Generated Files
+# =====================================
+generated/prisma/
+
+# =====================================
+# Yarn / PNPM / PnP
+# =====================================
+.pnp
+.pnp.*
+.pnpm-store/
+.npm/
+.yarn/*
+!.yarn/patches
+!.yarn/plugins
+!.yarn/releases
+!.yarn/versions
+
+# =====================================
+# TypeScript
+# =====================================
+*.tsbuildinfo
+next-env.d.ts
+
+# =====================================
+# Vercel
+# =====================================
+.vercel/
+
+# =====================================
+# IDEs
+# =====================================
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+
+.idea/
+.project
+.classpath
+.c9/
+.settings/
+*.launch
+*.sublime-workspace
+*.swp
+*.swo
+
+# =====================================
+# Operating System
+# =====================================
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# =====================================
+# Certificates / Keys
+# =====================================
+*.pem
+
+# =====================================
+# Temporary Files
+# =====================================
+tmp/
+temp/
