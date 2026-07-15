@@ -1,0 +1,31 @@
+@import "tailwindcss";
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  scroll-behavior: smooth;
+}
+
+body {
+  background: #ffffff;
+  color: #111827;
+  transition:
+    background-color .35s ease,
+    color .35s ease;
+}
+
+html.dark body {
+  background: linear-gradient(
+    180deg,
+    #050816 0%,
+    #071221 40%,
+    #08111d 70%,
+    #050816 100%
+  );
+  color: #ffffff;
+}
+
+* {
+  box-sizing: border-box;
+}
