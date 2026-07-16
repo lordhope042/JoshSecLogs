@@ -22,22 +22,8 @@ import AdminStatCard from "@/components/admin/AdminStatCard";
 import SocialLogFilters from "@/components/admin/social-logs/SocialLogFilters";
 import SocialLogForm from "@/components/admin/social-logs/SocialLogForm";
 import SocialLogsTable from "@/components/admin/social-logs/SocialLogTable";
-
-import {
-  createSocialLog,
-  deleteSocialLog,
-  getSocialLogs,
-  markSoldSocialLog,
-  updateSocialLog,
-} from "@/services/socialLogs";
-
-import type {
-  CreateSocialLogDto,
-  SocialLog,
-  SocialLogFilters as FilterType,
-  UpdateSocialLogDto,
-} from "@/types/social-log";
-
+import { createSocialLog, deleteSocialLog, getSocialLogs, markSoldSocialLog, updateSocialLog } from "@/services/socialLogs";
+import type { CreateSocialLogDto, SocialLog, SocialLogFilters as FilterType, UpdateSocialLogDto } from "@/types/social-log";
 /* ───────────────────────────────────────────
    Helpers
    ─────────────────────────────────────────── */
