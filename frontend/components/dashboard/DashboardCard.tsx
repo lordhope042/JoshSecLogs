@@ -1,44 +1,51 @@
 import { LucideIcon } from "lucide-react";
 
-interface Props {
+interface DashboardCardProps {
   title: string;
-  value: string;
+  value: string | number;
   icon: LucideIcon;
+  loading?: boolean;
+  subtitle?: string;
 }
 
 export default function DashboardCard({
   title,
   value,
   icon: Icon,
-}: Props) {
+  loading = false,
+  subtitle,
+}: DashboardCardProps) {
   return (
-    <div className="rounded-3xl border border-zinc-800 bg-[#111827] p-6 transition hover:border-orange-500">
-
+    <div className="group rounded-3xl border border-zinc-800 bg-[#111827] p-6 transition-all duration-300 hover:border-orange-500 hover:shadow-lg hover:shadow-orange-500/10">
       <div className="flex items-center justify-between">
-
-        <div>
-
-          <p className="text-sm text-zinc-400">
+        <div className="flex-1">
+          <p className="text-sm font-medium text-zinc-400">
             {title}
           </p>
 
-          <h2 className="mt-3 text-3xl font-bold text-white">
-            {value}
+          <h2 className="mt-3 text-3xl font-bold tracking-tight text-white">
+            {loading ? (
+              <span className="inline-block h-9 w-24 animate-pulse rounded bg-zinc-700" />
+            ) : (
+              value
+            )}
           </h2>
 
+          {subtitle && (
+            <p className="mt-2 text-xs text-zinc-500">
+              {subtitle}
+            </p>
+          )}
         </div>
 
-        <div className="rounded-2xl bg-orange-500/15 p-4">
-
+        <div className="rounded-2xl bg-orange-500/10 p-4 transition-colors duration-300 group-hover:bg-orange-500/20">
           <Icon
-            size={26}
+            size={28}
             className="text-orange-500"
+            strokeWidth={2}
           />
-
         </div>
-
       </div>
-
     </div>
   );
 }
