@@ -2,21 +2,16 @@
 
 import { useEffect, useState } from "react";
 
-import { AdminAPI } from "../services/admin";
+import { getAdminDashboard, AdminDashboardStats } from "../services/admin";
 
 export function useAdminDashboard() {
-  const [stats, setStats] = useState<any>();
-
-  const [loading, setLoading] =
-    useState(true);
+  const [stats, setStats] = useState<AdminDashboardStats>();
+  const [loading, setLoading] = useState(true);
 
   async function load() {
     try {
       setLoading(true);
-
-      const { data } =
-        await AdminAPI.dashboard();
-
+      const data = await getAdminDashboard();
       setStats(data);
     } finally {
       setLoading(false);
