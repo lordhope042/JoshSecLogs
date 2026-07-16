@@ -6,87 +6,54 @@ datasource db {
   provider = "postgresql"
 }
 
-/**
- * ============================================================
- * USER
- * ============================================================
- */
-
 model User {
-  id String @id @default(uuid())
-
-  name         String
-  email        String @unique
-  passwordHash String
-
-  role UserRole @default(USER)
-
-  emailVerified Boolean @default(false)
-  isActive      Boolean @default(true)
-
-  referralCode String? @unique
-  referredBy   String?
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  wallet              Wallet?
-  transactions        WalletTransaction[]
+  id                  String              @id @default(uuid())
+  email               String              @unique
+  passwordHash        String
+  role                UserRole            @default(USER)
+  createdAt           DateTime            @default(now())
+  updatedAt           DateTime            @updatedAt
+  emailVerified       Boolean             @default(false)
+  isActive            Boolean             @default(true)
+  name                String
+  referralCode        String?             @unique
+  referredBy          String?
+  apiKeys             ApiKey[]
   orders              Order[]
   payments            Payment[]
-  apiKeys             ApiKey[]
   purchasedSocialLogs SocialLog[]         @relation("PurchasedSocialLogs")
+  wallet              Wallet?
+  transactions        WalletTransaction[]
 
   @@index([email])
 }
 
-/**
- * ============================================================
- * WALLET
- * ============================================================
- */
-
 model Wallet {
-  id String @id @default(uuid())
-
-  userId String @unique
-
-  balance Decimal @default(0) @db.Decimal(18, 2)
-
+  id        String   @id @default(uuid())
+  userId    String   @unique
+  balance   Decimal  @default(0) @db.Decimal(18, 2)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
-/**
- * ============================================================
- * WALLET TRANSACTIONS
- * ============================================================
- */
+/// *
+///  * ============================================================
+///  * WALLET TRANSACTIONS
+///  * ============================================================
 model WalletTransaction {
-  id String @id @default(uuid())
-
-  userId String
-
-  type TransactionType
-
-  status TransactionStatus @default(PENDING)
-
-  amount Decimal @db.Decimal(18, 2)
-
-  balanceBefore Decimal? @db.Decimal(18, 2)
-  balanceAfter  Decimal? @db.Decimal(18, 2)
-
-  description String
-
-  reference String @unique
-
-  metadata Json?
-
-  createdAt DateTime @default(now())
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id            String            @id @default(uuid())
+  userId        String
+  type          TransactionType
+  amount        Decimal           @db.Decimal(18, 2)
+  description   String
+  reference     String            @unique
+  createdAt     DateTime          @default(now())
+  balanceAfter  Decimal?          @db.Decimal(18, 2)
+  balanceBefore Decimal?          @db.Decimal(18, 2)
+  metadata      Json?
+  status        TransactionStatus @default(PENDING)
+  user          User              @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
   @@index([reference])
@@ -94,74 +61,38 @@ model WalletTransaction {
   @@index([createdAt])
 }
 
-/**
- * ============================================================
- * SocialLog
- * ============================================================
- */
-
 model SocialLog {
-  id String @id @default(cuid())
-
-  platform SocialPlatform
-
-  // Which of the 10 sellable listing types this log belongs to.
-  // Drives which of the fields below are actually meaningful for
-  // this row — see the per-category notes next to each field.
-  category SocialLogCategory
-
-  // Only meaningful for FACEBOOK_COUNTRY and TIKTOK_COUNTRY.
-  // Nullable now since flat categories (VPN, TELEGRAM, MAIL,
-  // TEXTPLUS_NEXTPLUS) and follower-tier categories don't need one.
-  country String?
-
-  // Only meaningful for FACEBOOK_PAGE — which page variant this is.
-  pageType SocialLogPageType?
-
-  // Only meaningful for TWITTER_FOLLOWERS, INSTAGRAM_FOLLOWERS,
-  // TIKTOK_FOLLOWERS. Store the tier threshold as a plain number
-  // (100, 200, 500, 1000, or 0 for Instagram's "empty" tier) — the
-  // "+" display formatting happens at the API/frontend layer.
-  followers Int?
-
-  username String
-  age      Int
-
-  price Decimal @db.Decimal(10, 2)
-
-  emailAttached Boolean @default(false)
-  phoneAttached Boolean @default(false)
-  twoFactor     Boolean @default(false)
-  ogEmail       Boolean @default(false)
-  verified      Boolean @default(false)
-
-  description String?
-  image       String?
-
-  /*
-  PRIVATE LOGIN DETAILS
-  */
-
+  id              String             @id @default(cuid())
+  platform        SocialPlatform
+  country         String?
+  username        String
+  age             Int
+  followers       Int?
+  price           Decimal            @db.Decimal(10, 2)
+  emailAttached   Boolean            @default(false)
+  phoneAttached   Boolean            @default(false)
+  twoFactor       Boolean            @default(false)
+  ogEmail         Boolean            @default(false)
+  verified        Boolean            @default(false)
+  description     String?
+  image           String?
+  status          SocialLogStatus    @default(AVAILABLE)
+  buyerId         String?
+  createdAt       DateTime           @default(now())
+  updatedAt       DateTime           @updatedAt
+  backupCodes     Json?
+  cookies         Json?
+  /// PRIVATE LOGIN DETAILS
   loginEmail      String?
   loginPhone      String?
+  notes           String?
   password        String?
-  twoFactorSecret String?
   recoveryEmail   String?
-
-  backupCodes Json?
-  cookies     Json?
-
-  notes String?
-
-  status SocialLogStatus @default(AVAILABLE)
-
-  buyerId String?
-  buyer   User?   @relation("PurchasedSocialLogs", fields: [buyerId], references: [id])
-
-  purchasedAt DateTime?
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  twoFactorSecret String?
+  purchasedAt     DateTime?
+  category        SocialLogCategory
+  pageType        SocialLogPageType?
+  buyer           User?              @relation("PurchasedSocialLogs", fields: [buyerId], references: [id])
 
   @@index([buyerId])
   @@index([status])
@@ -169,43 +100,23 @@ model SocialLog {
   @@index([category])
 }
 
-/**
- * ============================================================
- * ORDERS
- * ============================================================
- */
-
 model Order {
-  id String @id @default(uuid())
-
-  userId String
-
-  provider String @default("FIVESIM")
-
+  id              String       @id @default(uuid())
+  userId          String
   providerOrderId String?
-
-  country String
-
-  activationType String
-
-  operator String
-
-  service String
-
-  phoneNumber String?
-
-  providerCostUsd Decimal @db.Decimal(18, 4)
-
-  sellingPriceNgn Decimal @db.Decimal(18, 2)
-
-  status OrderStatus @default(PENDING)
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  smsMessages SmsMessage[]
+  country         String
+  operator        String
+  service         String
+  phoneNumber     String?
+  providerCostUsd Decimal      @db.Decimal(18, 4)
+  sellingPriceNgn Decimal      @db.Decimal(18, 2)
+  status          OrderStatus  @default(PENDING)
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+  activationType  String
+  provider        String       @default("FIVESIM")
+  user            User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  smsMessages     SmsMessage[]
 
   @@index([userId])
   @@index([providerOrderId])
@@ -215,118 +126,61 @@ model Order {
   @@index([activationType])
 }
 
-/**
- * ============================================================
- * SMS
- * ============================================================
- */
-
 model SmsMessage {
-  id String @id @default(uuid())
-
-  orderId String
-
-  code String?
-
-  fullText String
-
+  id         String   @id @default(uuid())
+  orderId    String
+  code       String?
   receivedAt DateTime @default(now())
-
-  createdAt DateTime @default(now())
-
-  order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  createdAt  DateTime @default(now())
+  fullText   String
+  order      Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
 
   @@index([orderId])
 }
 
-/**
- * ============================================================
- * PRICING RULES
- * ============================================================
- */
-
 model PricingRule {
-  id String @id @default(uuid())
-
-  country String
-
-  service String
-
-  markupPercent Float
-
-  fixedMarkupNgn Decimal @default(0) @db.Decimal(18, 2)
-
-  createdAt DateTime @default(now())
+  id             String   @id @default(uuid())
+  country        String
+  service        String
+  markupPercent  Float
+  createdAt      DateTime @default(now())
+  fixedMarkupNgn Decimal  @default(0) @db.Decimal(18, 2)
 
   @@index([country])
   @@index([service])
 }
 
-/**
- * ============================================================
- * PAYMENTS
- * ============================================================
- */
-
 model Payment {
-  id String @id @default(uuid())
-
-  userId String
-
-  reference String @unique
-
+  id               String        @id @default(uuid())
+  userId           String
+  reference        String        @unique
+  amount           Decimal       @db.Decimal(18, 2)
+  status           PaymentStatus @default(PENDING)
+  createdAt        DateTime      @default(now())
   gatewayReference String?
-
-  provider String @default("PAYSTACK")
-
-  amount Decimal @db.Decimal(18, 2)
-
-  currency String @default("NGN")
-
-  status PaymentStatus @default(PENDING)
-
   providerResponse Json?
-
-  paidAt     DateTime?
-  verifiedAt DateTime?
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  updatedAt        DateTime      @updatedAt
+  currency         String        @default("NGN")
+  paidAt           DateTime?
+  provider         String        @default("PAYSTACK")
+  verifiedAt       DateTime?
+  user             User          @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([reference])
   @@index([status])
   @@index([userId])
 }
 
-/**
- * ============================================================
- * API KEYS
- * ============================================================
- */
-
 model ApiKey {
-  id String @id @default(uuid())
-
-  userId String
-
-  key String @unique
-
-  active Boolean @default(true)
-
+  id        String   @id @default(uuid())
+  userId    String
+  key       String   @unique
+  active    Boolean  @default(true)
   createdAt DateTime @default(now())
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
 }
-
-/**
- * ============================================================
- * ENUMS
- * ============================================================
- */
 
 enum UserRole {
   USER
@@ -334,12 +188,12 @@ enum UserRole {
 }
 
 enum TransactionType {
+  CREDIT
+  DEBIT
   DEPOSIT
   PURCHASE
   REFUND
   TRANSFER
-  CREDIT
-  DEBIT
 }
 
 enum OrderStatus {
@@ -383,27 +237,23 @@ enum SocialPlatform {
   MAIL
 }
 
-// One value per sellable listing type from the current catalogue.
-// Each SocialLog belongs to exactly one of these — this is what
-// CategoryTabs / useSocialLogs filter on, not `platform` directly.
 enum SocialLogCategory {
-  FACEBOOK_PAGE // create page / created page / 2+ pages / page w/ followers — see pageType
-  FACEBOOK_COUNTRY // max 7 countries — enforced at the service layer, not DB level
-  TWITTER_FOLLOWERS // 100+ / 200+ / 500+ / 1k+ — see followers
-  INSTAGRAM_FOLLOWERS // empty / 500+ / 1k+ — see followers
+  FACEBOOK_PAGE
+  FACEBOOK_COUNTRY
+  TWITTER_FOLLOWERS
+  INSTAGRAM_FOLLOWERS
   VPN
   TEXTPLUS_NEXTPLUS
   TELEGRAM_ACCOUNT
   TIKTOK_COUNTRY
-  TIKTOK_FOLLOWERS // see followers
+  TIKTOK_FOLLOWERS
   MAIL
 }
 
-// Only used when category = FACEBOOK_PAGE
 enum SocialLogPageType {
   CREATE_PAGE
   CREATED_PAGE
-  MULTI_PAGE // "2+ pages"
+  MULTI_PAGE
   PAGE_WITH_FOLLOWERS
 }
 
