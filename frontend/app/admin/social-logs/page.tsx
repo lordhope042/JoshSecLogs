@@ -12,7 +12,6 @@ import {
   Users,
   CheckCircle,
   XCircle,
-  DollarSign,
   X,
   Loader2,
 } from "lucide-react";
@@ -122,6 +121,12 @@ export default function AdminSocialLogsPage() {
 
     if (filters.platform) {
       result = result.filter((log) => log.platform === filters.platform);
+    }
+
+    // Category filter — independent of platform, since Facebook alone
+    // spans two categories (FACEBOOK_PAGE / FACEBOOK_COUNTRY).
+    if (filters.category) {
+      result = result.filter((log) => log.category === filters.category);
     }
 
     if (filters.status) {
@@ -279,7 +284,9 @@ export default function AdminSocialLogsPage() {
   const editData = editing
     ? {
         platform: editing.platform,
-        country: editing.country,
+        category: editing.category,
+        pageType: editing.pageType ?? undefined,
+        country: editing.country ?? undefined,
         username: editing.username,
         age: editing.age,
         followers: editing.followers ?? undefined,
@@ -336,12 +343,12 @@ export default function AdminSocialLogsPage() {
           icon={<XCircle size={24} />}
           color="orange"
         />
-<AdminStatCard
-  title="Revenue"
-  value={formatCurrency(stats.revenue)}
-  icon={<span className="text-2xl font-bold">₦</span>}
-  color="purple"
-/>
+        <AdminStatCard
+          title="Revenue"
+          value={formatCurrency(stats.revenue)}
+          icon={<span className="text-2xl font-bold">₦</span>}
+          color="purple"
+        />
       </div>
 
       {/* Filters */}
@@ -370,7 +377,11 @@ export default function AdminSocialLogsPage() {
             No social logs found
           </p>
           <p className="text-sm text-zinc-500">
-            {filters.search || filters.platform || filters.status || filters.country
+            {filters.search ||
+            filters.platform ||
+            filters.category ||
+            filters.status ||
+            filters.country
               ? "Try adjusting your filters."
               : "Get started by adding a new social log."}
           </p>

@@ -16,7 +16,39 @@ export type SocialPlatform =
   | "LINKEDIN"
   | "YOUTUBE"
   | "GMAIL"
-  | "OUTLOOK";
+  | "OUTLOOK"
+  | "VPN"
+  | "TEXTPLUS"
+  | "NEXTPLUS"
+  | "MAIL";
+
+/*
+========================================================
+CATEGORY — the 10-item sellable listing catalogue.
+Each SocialLog belongs to exactly one of these; this is
+what CategoryTabs / useSocialLogs filter on now, not
+SocialPlatform directly (Facebook alone spans two).
+========================================================
+*/
+
+export type SocialLogCategoryValue =
+  | "FACEBOOK_PAGE"
+  | "FACEBOOK_COUNTRY"
+  | "TWITTER_FOLLOWERS"
+  | "INSTAGRAM_FOLLOWERS"
+  | "VPN"
+  | "TEXTPLUS_NEXTPLUS"
+  | "TELEGRAM_ACCOUNT"
+  | "TIKTOK_COUNTRY"
+  | "TIKTOK_FOLLOWERS"
+  | "MAIL";
+
+// Only meaningful when category = FACEBOOK_PAGE
+export type SocialLogPageType =
+  | "CREATE_PAGE"
+  | "CREATED_PAGE"
+  | "MULTI_PAGE"
+  | "PAGE_WITH_FOLLOWERS";
 
 /*
 ========================================================
@@ -60,17 +92,24 @@ PUBLIC SOCIAL ACCOUNT
 */
 
 export interface SocialLog {
-  category: any;
   id: string;
 
   platform: SocialPlatform;
 
-  country: string;
+  category: SocialLogCategoryValue;
+
+  // Only populated for FACEBOOK_COUNTRY / TIKTOK_COUNTRY
+  country: string | null;
+
+  // Only populated for FACEBOOK_PAGE
+  pageType: SocialLogPageType | null;
 
   username: string;
 
   age: number;
 
+  // Tier threshold — only populated for TWITTER_FOLLOWERS /
+  // INSTAGRAM_FOLLOWERS / TIKTOK_FOLLOWERS
   followers: number | null;
 
   price: number;
@@ -119,9 +158,15 @@ export interface PurchasedSocialLog {
 
   platform: SocialPlatform;
 
+  category: SocialLogCategoryValue;
+
+  pageType: SocialLogPageType | null;
+
+  followers: number | null;
+
   username: string;
 
-  country: string;
+  country: string | null;
 
   price: number;
 
@@ -155,7 +200,13 @@ CREATE
 export interface CreateSocialLogDto {
   platform: SocialPlatform;
 
-  country: string;
+  category: SocialLogCategoryValue;
+
+  // Only required for FACEBOOK_COUNTRY / TIKTOK_COUNTRY
+  country?: string;
+
+  // Only meaningful for FACEBOOK_PAGE
+  pageType?: SocialLogPageType;
 
   username: string;
 
@@ -211,13 +262,15 @@ export interface UpdateSocialLogDto
 
 /*
 ========================================================
-CATEGORY
+CATEGORY TAB SUMMARY
+GET /social-logs/categories — one entry per tab, grouped
+by the `category` field.
 ========================================================
 */
 
 export interface SocialLogCategory {
   count: number;
-  platform: SocialPlatform;
+  category: SocialLogCategoryValue;
 
   total: number;
 }
@@ -230,6 +283,8 @@ FILTERS
 
 export interface SocialLogFilters {
   platform?: SocialPlatform;
+
+  category?: SocialLogCategoryValue;
 
   country?: string;
 

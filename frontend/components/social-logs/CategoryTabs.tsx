@@ -7,7 +7,7 @@ import {
   FaShieldAlt,
 } from "react-icons/fa";
 
-import { FaSms, FaXTwitter } from "react-icons/fa6";
+import { FaCommentSms, FaXTwitter } from "react-icons/fa6";
 
 import { FaInstagram } from "react-icons/fa";
 import { MdOutlineMail } from "react-icons/md";
@@ -53,7 +53,7 @@ const icons: Record<
   TWITTER_FOLLOWERS: FaXTwitter,
   INSTAGRAM_FOLLOWERS: FaInstagram,
   VPN: FaShieldAlt,
-  TEXTPLUS_NEXTPLUS: FaSms,
+  TEXTPLUS_NEXTPLUS: FaCommentSms,
   TELEGRAM_ACCOUNT: FaTelegramPlane,
   TIKTOK_COUNTRY: FaTiktok,
   TIKTOK_FOLLOWERS: FaTiktok,
