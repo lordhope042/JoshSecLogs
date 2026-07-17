@@ -1,14 +1,73 @@
 "use client";
 
-import { useState } from "react";
-import { User, Lock, Bell, Shield, Save } from "lucide-react";
+import { useEffect, useState } from "react";
+import { User, Lock, Bell, Shield, Save, Loader2 } from "lucide-react";
+import { toast } from "sonner";
+import api from "@/lib/axios";
+
+/* ===============================
+   Types
+=============================== */
+
+interface UserProfile {
+  fullName: string;
+  email: string;
+  phone: string;
+}
+
+interface NotificationPrefs {
+  email: boolean;
+  sms: boolean;
+  orderUpdates: boolean;
+  promotions: boolean;
+}
+
+/* ===============================
+   Service calls
+   Adjust paths/payload shape to match your actual DTOs —
+   I only have /api/v1/auth/me (GET) confirmed from your route log.
+   PATCH endpoints below are my best-guess REST convention;
+   swap them for the real paths if they differ.
+=============================== */
+
+async function fetchMe(): Promise<UserProfile> {
+  const { data } = await api.get("/auth/me");
+  const user = data.data ?? data;
+  return {
+    fullName: user.fullName ?? user.name ?? "",
+    email: user.email ?? "",
+    phone: user.phone ?? "",
+  };
+}
+
+async function updateProfile(payload: UserProfile) {
+  const { data } = await api.patch("/auth/me", payload);
+  return data.data ?? data;
+}
+
+async function updatePassword(payload: { current: string; next: string }) {
+  const { data } = await api.patch("/auth/me/password", {
+    currentPassword: payload.current,
+    newPassword: payload.next,
+  });
+  return data.data ?? data;
+}
+
+async function updateNotifications(payload: NotificationPrefs) {
+  const { data } = await api.patch("/auth/me/notifications", payload);
+  return data.data ?? data;
+}
+
+/* ===============================
+   Page
+=============================== */
 
 export default function SettingsPage() {
   const [activeTab, setActiveTab] = useState<"profile" | "security" | "notifications">("profile");
+  const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [saved, setSaved] = useState(false);
 
-  const [profile, setProfile] = useState({
+  const [profile, setProfile] = useState<UserProfile>({
     fullName: "",
     email: "",
     phone: "",
@@ -20,20 +79,103 @@ export default function SettingsPage() {
     confirm: "",
   });
 
-  const [notifications, setNotifications] = useState({
+  const [notifications, setNotifications] = useState<NotificationPrefs>({
     email: true,
     sms: false,
     orderUpdates: true,
     promotions: false,
   });
 
-  const handleSave = async () => {
-    setSaving(true);
-    // TODO: wire to real API call
-    await new Promise((r) => setTimeout(r, 800));
-    setSaving(false);
-    setSaved(true);
-    setTimeout(() => setSaved(false), 2000);
+  /* ── Load current user on mount ── */
+  useEffect(() => {
+    let cancelled = false;
+
+    (async () => {
+      try {
+        setLoading(true);
+        const data = await fetchMe();
+        if (!cancelled) setProfile(data);
+      } catch (err: any) {
+        if (err?.response?.status === 401) return; // handled by interceptor
+        toast.error(err?.response?.data?.message ?? "Failed to load your profile.");
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  /* ── Save handlers, one per tab ── */
+
+  const handleSaveProfile = async () => {
+    if (!profile.fullName.trim()) {
+      toast.error("Full name is required.");
+      return;
+    }
+    if (!profile.email.trim()) {
+      toast.error("Email is required.");
+      return;
+    }
+
+    try {
+      setSaving(true);
+      await updateProfile(profile);
+      toast.success("Profile updated.");
+    } catch (err: any) {
+      if (err?.response?.status === 401) return;
+      toast.error(err?.response?.data?.message ?? "Failed to update profile.");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleSavePassword = async () => {
+    if (!password.current) {
+      toast.error("Enter your current password.");
+      return;
+    }
+    if (password.next.length < 8) {
+      toast.error("New password must be at least 8 characters.");
+      return;
+    }
+    if (password.next !== password.confirm) {
+      toast.error("New password and confirmation don't match.");
+      return;
+    }
+
+    try {
+      setSaving(true);
+      await updatePassword({ current: password.current, next: password.next });
+      toast.success("Password changed.");
+      setPassword({ current: "", next: "", confirm: "" });
+    } catch (err: any) {
+      if (err?.response?.status === 401) return;
+      toast.error(err?.response?.data?.message ?? "Failed to change password.");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleSaveNotifications = async () => {
+    try {
+      setSaving(true);
+      await updateNotifications(notifications);
+      toast.success("Notification preferences saved.");
+    } catch (err: any) {
+      if (err?.response?.status === 401) return;
+      toast.error(err?.response?.data?.message ?? "Failed to save preferences.");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleSave = () => {
+    if (activeTab === "profile") return handleSaveProfile();
+    if (activeTab === "security") return handleSavePassword();
+    return handleSaveNotifications();
   };
 
   const tabs = [
@@ -41,6 +183,14 @@ export default function SettingsPage() {
     { id: "security" as const, label: "Security", icon: Lock },
     { id: "notifications" as const, label: "Notifications", icon: Bell },
   ];
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-[#0f172a] flex items-center justify-center">
+        <Loader2 className="animate-spin text-orange-500" size={28} />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-[#0f172a] text-white p-6">
@@ -189,8 +339,8 @@ export default function SettingsPage() {
               disabled={saving}
               className="flex items-center gap-2 bg-orange-500 hover:bg-orange-600 disabled:opacity-60 text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors"
             >
-              <Save size={16} />
-              {saving ? "Saving..." : saved ? "Saved!" : "Save changes"}
+              {saving ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />}
+              {saving ? "Saving..." : "Save changes"}
             </button>
           </div>
         </div>
