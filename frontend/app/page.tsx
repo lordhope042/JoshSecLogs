@@ -42,7 +42,7 @@ import Navbar from "@/components/layout/Navbar";
 import Hero from "@/components/hero/Hero";
 
 /* ------------------------------------------------------------------ */
-/*  Stats                                                              */
+/*  Data                                                                */
 /* ------------------------------------------------------------------ */
 
 const statsData = [
@@ -52,34 +52,6 @@ const statsData = [
   { number: 48000, suffix: "+", title: "Happy Users" },
 ];
 
-function Stats() {
-  return (
-    <section className="relative bg-[#070b17] py-20">
-      <div className="mx-auto max-w-7xl px-6">
-        <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-4">
-          {statsData.map((item) => (
-            <div
-              key={item.title}
-              className="rounded-3xl border border-orange-500/10 bg-[#111827] p-10 transition duration-300 hover:-translate-y-2 hover:border-orange-500/40 hover:shadow-[0_0_40px_rgba(249,115,22,0.25)]"
-            >
-              <h2 className="text-5xl font-black text-orange-500">
-                <CountUp end={item.number} duration={3} separator="," />
-                {item.suffix}
-              </h2>
-
-              <p className="mt-4 text-lg text-zinc-300">{item.title}</p>
-            </div>
-          ))}
-        </div>
-      </div>
-    </section>
-  );
-}
-
-/* ------------------------------------------------------------------ */
-/*  TrustedBrands                                                      */
-/* ------------------------------------------------------------------ */
-
 const trustedBrands = [
   { name: "Google", icon: FaGoogle },
   { name: "Telegram", icon: FaTelegramClassic },
@@ -88,40 +60,6 @@ const trustedBrands = [
   { name: "TikTok", icon: SiTiktok },
   { name: "Discord", icon: FaDiscord },
 ];
-
-function TrustedBrands() {
-  return (
-    <section className="bg-[#050816] py-20">
-      <div className="mx-auto max-w-7xl px-6">
-        <h2 className="mb-12 text-center text-4xl font-bold text-white">
-          Trusted With
-          <span className="text-orange-500"> 500+ </span>
-          Online Services
-        </h2>
-
-        <div className="grid gap-6 md:grid-cols-3 lg:grid-cols-6">
-          {trustedBrands.map((brand) => {
-            const Icon = brand.icon;
-
-            return (
-              <div
-                key={brand.name}
-                className="flex flex-col items-center justify-center rounded-2xl border border-orange-500/10 bg-[#111827] p-8 transition hover:border-orange-500 hover:bg-[#1b2433]"
-              >
-                <Icon className="mb-4 text-5xl text-orange-500" />
-                <span className="font-semibold text-white">{brand.name}</span>
-              </div>
-            );
-          })}
-        </div>
-      </div>
-    </section>
-  );
-}
-
-/* ------------------------------------------------------------------ */
-/*  SupportedServices                                                  */
-/* ------------------------------------------------------------------ */
 
 const supportedServices = [
   "WhatsApp",
@@ -137,62 +75,6 @@ const supportedServices = [
   "Netflix",
   "Binance",
 ];
-
-function SupportedServices() {
-  return (
-    <section className="bg-[#08111d] py-28">
-      <div className="mx-auto max-w-7xl px-6">
-        <motion.div
-          initial={{ opacity: 0, y: 30 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          className="text-center"
-        >
-          <p className="uppercase tracking-[5px] font-semibold text-orange-500">
-            Supported Platforms
-          </p>
-
-          <h2 className="mt-4 text-5xl font-black text-white">
-            Receive SMS For
-            <span className="text-orange-500"> 1000+ Services</span>
-          </h2>
-
-          <p className="mx-auto mt-6 max-w-3xl text-lg text-zinc-400">
-            Instantly receive verification codes from the world&apos;s most
-            popular platforms.
-          </p>
-        </motion.div>
-
-        <div className="mt-20 grid gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
-          {supportedServices.map((service, index) => (
-            <motion.div
-              key={service}
-              initial={{ opacity: 0, y: 30 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              transition={{ delay: index * 0.05 }}
-              viewport={{ once: true }}
-              className="group rounded-2xl border border-orange-500/10 bg-[#111827] p-8 text-center transition-all duration-300 hover:-translate-y-2 hover:border-orange-500 hover:shadow-[0_0_35px_rgba(249,115,22,.35)]"
-            >
-              <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-orange-500 text-2xl font-bold text-white">
-                {service.charAt(0)}
-              </div>
-
-              <h3 className="mt-6 text-xl font-semibold text-white">
-                {service}
-              </h3>
-
-              <p className="mt-2 text-sm text-zinc-400">SMS Verification</p>
-            </motion.div>
-          ))}
-        </div>
-      </div>
-    </section>
-  );
-}
-
-/* ------------------------------------------------------------------ */
-/*  Features                                                           */
-/* ------------------------------------------------------------------ */
 
 const features = [
   {
@@ -233,58 +115,6 @@ const features = [
   },
 ];
 
-function Features() {
-  return (
-    <section className="bg-[#08111d] py-28">
-      <div className="mx-auto max-w-7xl px-6">
-        <div className="text-center">
-          <p className="font-semibold uppercase tracking-[5px] text-orange-500">
-            Why Choose JoshSecLogs
-          </p>
-
-          <h2 className="mt-4 text-5xl font-black text-white">
-            Everything You Need
-          </h2>
-
-          <p className="mx-auto mt-6 max-w-3xl text-lg text-zinc-400">
-            Designed for developers, businesses and individuals who need
-            reliable virtual numbers with fast SMS delivery.
-          </p>
-        </div>
-
-        <div className="mt-20 grid gap-8 md:grid-cols-2 lg:grid-cols-3">
-          {features.map((feature) => {
-            const Icon = feature.icon;
-
-            return (
-              <div
-                key={feature.title}
-                className="group rounded-3xl border border-orange-500/10 bg-[#111827] p-10 transition duration-300 hover:-translate-y-3 hover:border-orange-500 hover:shadow-[0_0_45px_rgba(249,115,22,0.30)]"
-              >
-                <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-orange-500 text-white transition group-hover:scale-110">
-                  <Icon size={30} />
-                </div>
-
-                <h3 className="mt-8 text-2xl font-bold text-white">
-                  {feature.title}
-                </h3>
-
-                <p className="mt-4 leading-8 text-zinc-400">
-                  {feature.description}
-                </p>
-              </div>
-            );
-          })}
-        </div>
-      </div>
-    </section>
-  );
-}
-
-/* ------------------------------------------------------------------ */
-/*  HowItWorks                                                         */
-/* ------------------------------------------------------------------ */
-
 const steps = [
   {
     number: "01",
@@ -305,55 +135,6 @@ const steps = [
     text: "Receive verification codes immediately and complete your registration.",
   },
 ];
-
-function HowItWorks() {
-  return (
-    <section className="bg-[#050816] py-28">
-      <div className="mx-auto max-w-7xl px-6">
-        <div className="text-center">
-          <p className="uppercase tracking-[4px] text-orange-500">
-            Quick Process
-          </p>
-
-          <h2 className="mt-4 text-5xl font-black text-white">
-            How It Works
-          </h2>
-        </div>
-
-        <div className="mt-20 grid gap-10 lg:grid-cols-3">
-          {steps.map((step) => {
-            const Icon = step.icon;
-
-            return (
-              <div
-                key={step.number}
-                className="relative rounded-3xl border border-orange-500/10 bg-[#111827] p-10 text-center hover:border-orange-500 transition"
-              >
-                <span className="absolute right-8 top-8 text-6xl font-black text-orange-500/20">
-                  {step.number}
-                </span>
-
-                <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-orange-500">
-                  <Icon size={35} className="text-white" />
-                </div>
-
-                <h3 className="mt-8 text-2xl font-bold text-white">
-                  {step.title}
-                </h3>
-
-                <p className="mt-4 text-zinc-400">{step.text}</p>
-              </div>
-            );
-          })}
-        </div>
-      </div>
-    </section>
-  );
-}
-
-/* ------------------------------------------------------------------ */
-/*  Testimonials                                                       */
-/* ------------------------------------------------------------------ */
 
 const testimonials = [
   {
@@ -379,6 +160,266 @@ const testimonials = [
   },
 ];
 
+const faqs = [
+  {
+    question: "What is a virtual phone number?",
+    answer:
+      "A virtual phone number allows you to receive SMS verification codes online without using your personal SIM card.",
+  },
+  {
+    question: "How quickly will I receive my SMS?",
+    answer:
+      "Most SMS messages arrive within a few seconds after the service sends the verification code.",
+  },
+  {
+    question: "Which countries are supported?",
+    answer:
+      "JoshSecLogs supports numbers from more than 180 countries with thousands of available services.",
+  },
+  {
+    question: "Which payment methods do you accept?",
+    answer:
+      "You can fund your wallet using Paystack, bank transfer, and other supported payment methods.",
+  },
+  {
+    question: "Do you provide API access?",
+    answer:
+      "Yes. Developers can integrate directly with our REST API to automate virtual number purchases and SMS retrieval.",
+  },
+  {
+    question: "Can I get a refund?",
+    answer:
+      "If an order fails before a number is successfully assigned, the amount is automatically returned to your wallet.",
+  },
+];
+
+/* ------------------------------------------------------------------ */
+/*  Unified Stats — single bar with dividers, not 4 separate cards     */
+/* ------------------------------------------------------------------ */
+
+function Stats() {
+  return (
+    <section className="bg-[#070b17] py-16">
+      <div className="mx-auto max-w-7xl px-6">
+        <div className="grid grid-cols-2 divide-y divide-orange-500/10 rounded-3xl border border-orange-500/10 bg-[#111827] md:grid-cols-4 md:divide-x md:divide-y-0">
+          {statsData.map((item) => (
+            <div key={item.title} className="p-8 text-center md:p-10">
+              <h2 className="text-4xl font-black text-orange-500 md:text-5xl">
+                <CountUp end={item.number} duration={3} separator="," />
+                {item.suffix}
+              </h2>
+              <p className="mt-3 text-sm text-zinc-400 md:text-base">
+                {item.title}
+              </p>
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/*  Trust Strip — slim logo row, replaces the old card-grid section    */
+/* ------------------------------------------------------------------ */
+
+function TrustStrip() {
+  return (
+    <section className="bg-[#050816] py-12">
+      <div className="mx-auto max-w-7xl px-6">
+        <p className="mb-8 text-center text-sm uppercase tracking-[4px] text-zinc-500">
+          Trusted With 500+ Online Services
+        </p>
+
+        <div className="flex flex-wrap items-center justify-center gap-x-12 gap-y-6">
+          {trustedBrands.map((brand) => {
+            const Icon = brand.icon;
+            return (
+              <div
+                key={brand.name}
+                className="group flex items-center gap-2 text-zinc-500 grayscale transition duration-300 hover:text-orange-500 hover:grayscale-0"
+              >
+                <Icon className="text-3xl" />
+                <span className="text-sm font-medium">{brand.name}</span>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/*  Supported Services — the one detailed grid (no longer duplicated)  */
+/* ------------------------------------------------------------------ */
+
+function SupportedServices() {
+  return (
+    <section className="bg-[#08111d] py-28">
+      <div className="mx-auto max-w-7xl px-6">
+        <motion.div
+          initial={{ opacity: 0, y: 30 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          className="text-center"
+        >
+          <p className="uppercase tracking-[5px] font-semibold text-orange-500">
+            Supported Platforms
+          </p>
+
+          <h2 className="mt-4 text-5xl font-black text-white">
+            Receive SMS For
+            <span className="text-orange-500"> 1000+ Services</span>
+          </h2>
+
+          <p className="mx-auto mt-6 max-w-3xl text-lg text-zinc-300">
+            Instantly receive verification codes from the world&apos;s most
+            popular platforms.
+          </p>
+        </motion.div>
+
+        <div className="mt-20 grid gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
+          {supportedServices.map((service, index) => (
+            <motion.div
+              key={service}
+              initial={{ opacity: 0, y: 30 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              transition={{ delay: index * 0.05 }}
+              viewport={{ once: true }}
+              className="group rounded-2xl border border-orange-500/10 bg-[#111827] p-8 text-center transition-all duration-300 hover:-translate-y-2 hover:border-orange-500 hover:shadow-[0_0_35px_rgba(249,115,22,.35)]"
+            >
+              <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-orange-500 text-2xl font-bold text-white">
+                {service.charAt(0)}
+              </div>
+
+              <h3 className="mt-6 text-xl font-semibold text-white">
+                {service}
+              </h3>
+
+              <p className="mt-2 text-sm text-zinc-400">SMS Verification</p>
+            </motion.div>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/*  Features                                                           */
+/* ------------------------------------------------------------------ */
+
+function Features() {
+  return (
+    <section className="bg-[#08111d] py-28">
+      <div className="mx-auto max-w-7xl px-6">
+        <div className="text-center">
+          <p className="font-semibold uppercase tracking-[5px] text-orange-500">
+            Why Choose JoshSecLogs
+          </p>
+
+          <h2 className="mt-4 text-5xl font-black text-white">
+            Everything You Need
+          </h2>
+
+          <p className="mx-auto mt-6 max-w-3xl text-lg text-zinc-300">
+            Designed for developers, businesses and individuals who need
+            reliable virtual numbers with fast SMS delivery.
+          </p>
+        </div>
+
+        <div className="mt-20 grid gap-8 md:grid-cols-2 lg:grid-cols-3">
+          {features.map((feature, index) => {
+            const Icon = feature.icon;
+
+            return (
+              <div
+                key={feature.title}
+                style={{ transitionDelay: `${(index % 3) * 40}ms` }}
+                className="group rounded-3xl border border-orange-500/10 bg-[#111827] p-10 transition duration-300 hover:-translate-y-3 hover:border-orange-500 hover:shadow-[0_0_45px_rgba(249,115,22,0.30)]"
+              >
+                <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-orange-500 text-white transition group-hover:scale-110">
+                  <Icon size={30} />
+                </div>
+
+                <h3 className="mt-8 text-2xl font-bold text-white">
+                  {feature.title}
+                </h3>
+
+                <p className="mt-4 leading-8 text-zinc-300">
+                  {feature.description}
+                </p>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/*  HowItWorks — connected sequence, since it genuinely is one         */
+/* ------------------------------------------------------------------ */
+
+function HowItWorks() {
+  return (
+    <section className="bg-[#050816] py-28">
+      <div className="mx-auto max-w-7xl px-6">
+        <div className="text-center">
+          <p className="uppercase tracking-[4px] text-orange-500">
+            Quick Process
+          </p>
+
+          <h2 className="mt-4 text-5xl font-black text-white">
+            How It Works
+          </h2>
+        </div>
+
+        <div className="relative mt-20 grid gap-10 lg:grid-cols-3">
+          {/* Connecting line — desktop only, sits behind the cards */}
+          <div className="pointer-events-none absolute left-[16.5%] right-[16.5%] top-[52px] hidden border-t-2 border-dashed border-orange-500/25 lg:block" />
+
+          {steps.map((step, index) => {
+            const Icon = step.icon;
+
+            return (
+              <div key={step.number} className="relative">
+                <div className="relative rounded-3xl border border-orange-500/10 bg-[#111827] p-10 text-center transition hover:border-orange-500">
+                  <span className="absolute right-8 top-8 text-6xl font-black text-orange-500/20">
+                    {step.number}
+                  </span>
+
+                  <div className="relative z-10 mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-orange-500 ring-8 ring-[#050816]">
+                    <Icon size={35} className="text-white" />
+                  </div>
+
+                  <h3 className="mt-8 text-2xl font-bold text-white">
+                    {step.title}
+                  </h3>
+
+                  <p className="mt-4 text-zinc-300">{step.text}</p>
+                </div>
+
+                {index < steps.length - 1 && (
+                  <div className="absolute -right-5 top-[52px] z-10 hidden h-10 w-10 items-center justify-center rounded-full bg-[#050816] text-orange-500 lg:flex">
+                    →
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/*  Testimonials                                                       */
+/* ------------------------------------------------------------------ */
+
 function Testimonials() {
   return (
     <section className="bg-[#08111d] py-28">
@@ -392,7 +433,7 @@ function Testimonials() {
             What Our Customers Say
           </h2>
 
-          <p className="mx-auto mt-6 max-w-2xl text-zinc-400">
+          <p className="mx-auto mt-6 max-w-2xl text-zinc-300">
             Thousands of customers trust JoshSecLogs every day.
           </p>
         </div>
@@ -447,39 +488,6 @@ function Testimonials() {
 /*  FAQ                                                                 */
 /* ------------------------------------------------------------------ */
 
-const faqs = [
-  {
-    question: "What is a virtual phone number?",
-    answer:
-      "A virtual phone number allows you to receive SMS verification codes online without using your personal SIM card.",
-  },
-  {
-    question: "How quickly will I receive my SMS?",
-    answer:
-      "Most SMS messages arrive within a few seconds after the service sends the verification code.",
-  },
-  {
-    question: "Which countries are supported?",
-    answer:
-      "JoshSecLogs supports numbers from more than 180 countries with thousands of available services.",
-  },
-  {
-    question: "Which payment methods do you accept?",
-    answer:
-      "You can fund your wallet using Paystack, bank transfer, and other supported payment methods.",
-  },
-  {
-    question: "Do you provide API access?",
-    answer:
-      "Yes. Developers can integrate directly with our REST API to automate virtual number purchases and SMS retrieval.",
-  },
-  {
-    question: "Can I get a refund?",
-    answer:
-      "If an order fails before a number is successfully assigned, the amount is automatically returned to your wallet.",
-  },
-];
-
 function FAQ() {
   return (
     <section className="bg-[#050816] py-28">
@@ -498,7 +506,7 @@ function FAQ() {
             Have Questions?
           </h2>
 
-          <p className="mt-6 text-zinc-400">
+          <p className="mt-6 text-zinc-300">
             Everything you need to know before using JoshSecLogs.
           </p>
         </motion.div>
@@ -515,7 +523,7 @@ function FAQ() {
                   {faq.question}
                 </AccordionTrigger>
 
-                <AccordionContent className="text-zinc-400 leading-8">
+                <AccordionContent className="text-zinc-300 leading-8">
                   {faq.answer}
                 </AccordionContent>
               </AccordionItem>
@@ -533,8 +541,7 @@ function FAQ() {
 
 function CTA() {
   return (
-    <section className="relative overflow-hidden bg-gradient-to-r from-[#0B1220] via-[#111827] to-[#0B1220] py-28">
-      {/* Background Glow */}
+    <section className="relative overflow-hidden bg-gradient-to-r from-[#0B1220] via-[#111827] to-[#0B1220] py-32">
       <div className="absolute left-0 top-0 h-72 w-72 rounded-full bg-orange-500/20 blur-[120px]" />
       <div className="absolute right-0 bottom-0 h-72 w-72 rounded-full bg-orange-500/20 blur-[120px]" />
 
@@ -555,7 +562,7 @@ function CTA() {
             <span className="text-orange-500">In Less Than 30 Seconds</span>
           </h2>
 
-          <p className="mx-auto mt-8 max-w-3xl text-lg text-zinc-400">
+          <p className="mx-auto mt-8 max-w-3xl text-lg text-zinc-300">
             Join thousands of developers, marketers and businesses using
             JoshSecLogs for secure SMS verification worldwide.
           </p>
@@ -594,13 +601,10 @@ function CTA() {
 function Footer() {
   return (
     <footer className="relative overflow-hidden border-t border-orange-500/20 bg-[#050816]">
-      {/* Glow */}
       <div className="absolute left-1/2 top-0 h-72 w-72 -translate-x-1/2 rounded-full bg-orange-500/10 blur-[120px]" />
 
       <div className="relative mx-auto max-w-7xl px-6 py-20">
-        {/* Top */}
         <div className="grid gap-16 lg:grid-cols-[1.5fr_1fr_1fr_1fr]">
-          {/* Brand */}
           <div>
             <h2 className="text-4xl font-black">
               <span className="text-white">Josh</span>
@@ -608,7 +612,7 @@ function Footer() {
               <span className="text-white">Logs</span>
             </h2>
 
-            <p className="mt-6 max-w-md leading-8 text-zinc-400">
+            <p className="mt-6 max-w-md leading-8 text-zinc-300">
               Purchase premium virtual phone numbers for SMS verification,
               account creation, API integration and business automation.
             </p>
@@ -627,92 +631,61 @@ function Footer() {
             </div>
           </div>
 
-          {/* Company */}
           <div>
             <h3 className="mb-6 text-lg font-bold text-white">Company</h3>
 
             <div className="space-y-4">
-              <Link href="/" className="block text-zinc-400 hover:text-orange-500">
+              <Link href="/" className="block text-zinc-300 hover:text-orange-500">
                 Home
               </Link>
-
-              <Link
-                href="/pricing"
-                className="block text-zinc-400 hover:text-orange-500"
-              >
+              <Link href="/pricing" className="block text-zinc-300 hover:text-orange-500">
                 Pricing
               </Link>
-
-              <Link
-                href="/how-it-works"
-                className="block text-zinc-400 hover:text-orange-500"
-              >
+              <Link href="/how-it-works" className="block text-zinc-300 hover:text-orange-500">
                 How It Works
               </Link>
-
-              <Link
-                href="/contact"
-                className="block text-zinc-400 hover:text-orange-500"
-              >
+              <Link href="/contact" className="block text-zinc-300 hover:text-orange-500">
                 Contact
               </Link>
             </div>
           </div>
 
-          {/* Resources */}
           <div>
             <h3 className="mb-6 text-lg font-bold text-white">Resources</h3>
 
             <div className="space-y-4">
-              <Link
-                href="/faq"
-                className="block text-zinc-400 hover:text-orange-500"
-              >
+              <Link href="/faq" className="block text-zinc-300 hover:text-orange-500">
                 FAQ
               </Link>
-
-              <Link
-                href="/api-docs"
-                className="block text-zinc-400 hover:text-orange-500"
-              >
+              <Link href="/api-docs" className="block text-zinc-300 hover:text-orange-500">
                 API Documentation
               </Link>
-
-              <Link
-                href="/privacy"
-                className="block text-zinc-400 hover:text-orange-500"
-              >
+              <Link href="/privacy" className="block text-zinc-300 hover:text-orange-500">
                 Privacy Policy
               </Link>
-
-              <Link
-                href="/terms"
-                className="block text-zinc-400 hover:text-orange-500"
-              >
+              <Link href="/terms" className="block text-zinc-300 hover:text-orange-500">
                 Terms of Service
               </Link>
             </div>
           </div>
 
-          {/* Support */}
           <div>
             <h3 className="mb-6 text-lg font-bold text-white">Contact</h3>
 
             <div className="space-y-5">
-              <div className="flex items-center gap-3 text-zinc-400">
+              <div className="flex items-center gap-3 text-zinc-300">
                 <Mail className="h-5 w-5 text-orange-500" />
                 support@joshseclogs.com
               </div>
 
-              <div className="flex items-center gap-3 text-zinc-400">
+              <div className="flex items-center gap-3 text-zinc-300">
                 <Phone className="h-5 w-5 text-orange-500" />
                 +234 XXX XXX XXXX
               </div>
 
               <div className="flex items-start gap-3 rounded-xl border border-orange-500/20 bg-[#0d1525] p-4">
                 <ShieldCheck className="mt-1 h-5 w-5 text-orange-500" />
-
-                <p className="text-sm leading-6 text-zinc-400">
+                <p className="text-sm leading-6 text-zinc-300">
                   24/7 customer support with secure encrypted transactions and
                   instant SMS delivery.
                 </p>
@@ -721,13 +694,11 @@ function Footer() {
           </div>
         </div>
 
-        {/* Newsletter */}
         <div className="mt-20 rounded-3xl border border-orange-500/20 bg-[#0d1525] p-10">
           <div className="flex flex-col items-center justify-between gap-8 lg:flex-row">
             <div>
               <h3 className="text-3xl font-bold text-white">Stay Updated</h3>
-
-              <p className="mt-3 text-zinc-400">
+              <p className="mt-3 text-zinc-300">
                 Receive updates about new countries, features and discounts.
               </p>
             </div>
@@ -738,7 +709,6 @@ function Footer() {
                 placeholder="Enter your email..."
                 className="h-14 flex-1 rounded-xl border border-orange-500/20 bg-[#08111d] px-5 text-white outline-none placeholder:text-zinc-500 focus:border-orange-500"
               />
-
               <button className="rounded-xl bg-orange-500 px-8 font-semibold text-white transition hover:bg-orange-600">
                 Subscribe
               </button>
@@ -746,22 +716,13 @@ function Footer() {
           </div>
         </div>
 
-        {/* Bottom */}
         <div className="mt-14 flex flex-col items-center justify-between gap-5 border-t border-orange-500/10 pt-8 text-sm text-zinc-500 md:flex-row">
           <p>© 2026 JoshSecLogs. All Rights Reserved.</p>
 
           <div className="flex gap-6">
-            <Link href="/privacy" className="hover:text-orange-500">
-              Privacy
-            </Link>
-
-            <Link href="/terms" className="hover:text-orange-500">
-              Terms
-            </Link>
-
-            <Link href="/cookies" className="hover:text-orange-500">
-              Cookies
-            </Link>
+            <Link href="/privacy" className="hover:text-orange-500">Privacy</Link>
+            <Link href="/terms" className="hover:text-orange-500">Terms</Link>
+            <Link href="/cookies" className="hover:text-orange-500">Cookies</Link>
           </div>
         </div>
       </div>
@@ -775,17 +736,7 @@ function Footer() {
 
 export default function Home() {
   return (
-    <main
-      className="
-        min-h-screen
-        bg-white
-        text-gray-900
-        dark:bg-[#050816]
-        dark:text-white
-        transition-colors
-        duration-300
-      "
-    >
+    <main className="min-h-screen bg-white text-gray-900 transition-colors duration-300 dark:bg-[#050816] dark:text-white">
       <Navbar />
 
       <section className="pt-20">
@@ -793,7 +744,7 @@ export default function Home() {
       </section>
 
       <Stats />
-      <TrustedBrands />
+      <TrustStrip />
       <SupportedServices />
       <Features />
       <HowItWorks />
