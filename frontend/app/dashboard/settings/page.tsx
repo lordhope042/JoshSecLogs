@@ -318,13 +318,13 @@ export default function SettingsPage() {
                     onClick={() =>
                       setNotifications({ ...notifications, [item.key]: !notifications[item.key] })
                     }
-                    className={`w-10 h-5.5 rounded-full relative transition-colors ${
+                    className={`relative h-6 w-11 shrink-0 rounded-full transition-colors ${
                       notifications[item.key] ? "bg-orange-500" : "bg-zinc-700"
                     }`}
                   >
                     <span
-                      className={`absolute top-0.5 w-4.5 h-4.5 rounded-full bg-white transition-transform ${
-                        notifications[item.key] ? "translate-x-4.5" : "translate-x-0.5"
+                      className={`absolute top-0.5 left-0.5 h-5 w-5 rounded-full bg-white transition-transform ${
+                        notifications[item.key] ? "translate-x-5" : "translate-x-0"
                       }`}
                     />
                   </button>

@@ -1,10 +1,9 @@
 "use client";
 
-import { useState } from "react";
-import { Copy, Check, Users, Wallet } from "lucide-react";
-
-const REFERRAL_CODE = "JSL-4X92QP"; // TODO: replace with dynamic user referral code
-const REFERRAL_LINK = `https://joshseclogs.com/signup?ref=${REFERRAL_CODE}`;
+import { useEffect, useState } from "react";
+import { Copy, Check, Users, Wallet, Loader2 } from "lucide-react";
+import { toast } from "sonner";
+import api from "@/lib/axios";
 
 interface Referral {
   id: string;
@@ -14,23 +13,64 @@ interface Referral {
   earnings: number;
 }
 
-const mockReferrals: Referral[] = [
-  { id: "1", name: "Ade B.", joinedAt: "2026-07-10", status: "active", earnings: 500 },
-  { id: "2", name: "Chioma N.", joinedAt: "2026-07-08", status: "active", earnings: 500 },
-  { id: "3", name: "Tunde K.", joinedAt: "2026-07-14", status: "pending", earnings: 0 },
-];
+interface ReferralData {
+  referralCode: string | null;
+  referredUsers: Referral[];
+  totalEarnings: number;
+  activeCount: number;
+}
+
+async function fetchReferrals(): Promise<ReferralData> {
+  const { data } = await api.get("/auth/me/referrals");
+  return data.data ?? data;
+}
 
 export default function ReferralsPage() {
+  const [loading, setLoading] = useState(true);
   const [copied, setCopied] = useState(false);
+  const [referralData, setReferralData] = useState<ReferralData | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    (async () => {
+      try {
+        setLoading(true);
+        const data = await fetchReferrals();
+        if (!cancelled) setReferralData(data);
+      } catch (err: any) {
+        if (err?.response?.status === 401) return; // handled by interceptor
+        toast.error(err?.response?.data?.message ?? "Failed to load referral data.");
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const referralLink = referralData?.referralCode
+    ? `https://joshseclogs.com/signup?ref=${referralData.referralCode}`
+    : null;
 
   const handleCopy = async () => {
-    await navigator.clipboard.writeText(REFERRAL_LINK);
+    if (!referralLink) return;
+    await navigator.clipboard.writeText(referralLink);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
 
-  const totalEarnings = mockReferrals.reduce((sum, r) => sum + r.earnings, 0);
-  const activeCount = mockReferrals.filter((r) => r.status === "active").length;
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-[#0f172a] flex items-center justify-center">
+        <Loader2 className="animate-spin text-orange-500" size={28} />
+      </div>
+    );
+  }
+
+  const referrals = referralData?.referredUsers ?? [];
 
   return (
     <div className="min-h-screen bg-[#0f172a] text-white p-6 space-y-6">
@@ -46,11 +86,12 @@ export default function ReferralsPage() {
         <p className="text-sm text-zinc-400 mb-2">Your referral link</p>
         <div className="flex items-center gap-2">
           <div className="flex-1 bg-[#0f172a] border border-zinc-800 rounded-lg px-3 py-2 text-sm text-zinc-200 truncate">
-            {REFERRAL_LINK}
+            {referralLink ?? "No referral code assigned yet"}
           </div>
           <button
             onClick={handleCopy}
-            className="flex items-center gap-1.5 bg-orange-500 hover:bg-orange-600 text-white text-sm font-medium px-3 py-2 rounded-lg transition-colors"
+            disabled={!referralLink}
+            className="flex items-center gap-1.5 bg-orange-500 hover:bg-orange-600 disabled:opacity-50 text-white text-sm font-medium px-3 py-2 rounded-lg transition-colors"
           >
             {copied ? <Check size={16} /> : <Copy size={16} />}
             {copied ? "Copied" : "Copy"}
@@ -66,7 +107,7 @@ export default function ReferralsPage() {
           </div>
           <div>
             <p className="text-sm text-zinc-400">Active referrals</p>
-            <p className="text-xl font-semibold">{activeCount}</p>
+            <p className="text-xl font-semibold">{referralData?.activeCount ?? 0}</p>
           </div>
         </div>
         <div className="bg-[#0B1220] border border-zinc-800 rounded-xl p-5 flex items-center gap-4">
@@ -75,7 +116,9 @@ export default function ReferralsPage() {
           </div>
           <div>
             <p className="text-sm text-zinc-400">Total earned</p>
-            <p className="text-xl font-semibold">₦{totalEarnings.toLocaleString()}</p>
+            <p className="text-xl font-semibold">
+              ₦{(referralData?.totalEarnings ?? 0).toLocaleString()}
+            </p>
           </div>
         </div>
       </div>
@@ -85,17 +128,19 @@ export default function ReferralsPage() {
         <div className="px-5 py-3 border-b border-zinc-800">
           <p className="text-sm font-medium text-zinc-300">Your referrals</p>
         </div>
-        {mockReferrals.length === 0 ? (
+        {referrals.length === 0 ? (
           <div className="p-6 text-center text-zinc-500 text-sm">
             No referrals yet. Share your link to get started.
           </div>
         ) : (
           <div className="divide-y divide-zinc-800">
-            {mockReferrals.map((r) => (
+            {referrals.map((r) => (
               <div key={r.id} className="flex items-center justify-between px-5 py-3">
                 <div>
                   <p className="text-sm font-medium">{r.name}</p>
-                  <p className="text-xs text-zinc-500">Joined {r.joinedAt}</p>
+                  <p className="text-xs text-zinc-500">
+                    Joined {new Date(r.joinedAt).toLocaleDateString()}
+                  </p>
                 </div>
                 <div className="text-right">
                   <span
@@ -107,7 +152,9 @@ export default function ReferralsPage() {
                   >
                     {r.status}
                   </span>
-                  <p className="text-sm text-zinc-300 mt-1">₦{r.earnings.toLocaleString()}</p>
+                  <p className="text-sm text-zinc-300 mt-1">
+                    ₦{r.earnings.toLocaleString()}
+                  </p>
                 </div>
               </div>
             ))}
