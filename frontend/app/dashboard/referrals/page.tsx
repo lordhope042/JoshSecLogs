@@ -52,7 +52,7 @@ export default function ReferralsPage() {
   }, []);
 
   const referralLink = referralData?.referralCode
-    ? `https://joshseclogs.com/signup?ref=${referralData.referralCode}`
+    ? `https://joshseclogs.com/register?ref=${referralData.referralCode}`
     : null;
 
   const handleCopy = async () => {
