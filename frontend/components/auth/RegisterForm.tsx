@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { Suspense, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 
 import {
@@ -16,7 +16,7 @@ import {
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import { useForm } from "react-hook-form";
+import { useForm, UseFormSetValue } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 
 import {
@@ -27,9 +27,26 @@ import {
 import api from "@/lib/axios";
 import { toast } from "sonner";
 
+// Isolated so only this small piece needs the Suspense boundary
+// useSearchParams() requires in the Next.js App Router — the rest
+// of the form renders immediately without waiting on it.
+function ReferralPrefill({
+  setValue,
+}: {
+  setValue: UseFormSetValue<RegisterData>;
+}) {
+  const searchParams = useSearchParams();
+  const refCode = searchParams.get("ref");
+
+  if (refCode) {
+    setValue("referralCode", refCode.trim().toUpperCase());
+  }
+
+  return null;
+}
+
 export default function RegisterForm() {
   const router = useRouter();
-  const searchParams = useSearchParams();
 
   const [showPassword, setShowPassword] = useState(false);
 
@@ -47,16 +64,6 @@ export default function RegisterForm() {
   } = useForm<RegisterData>({
     resolver: zodResolver(registerSchema),
   });
-
-  // Pre-fill the referral field from ?ref=CODE in the URL, e.g.
-  // https://joshseclogs.com/register?ref=U3NM8ZJ8 — the user can
-  // still edit or clear it manually afterward.
-  useEffect(() => {
-    const refCode = searchParams.get("ref");
-    if (refCode) {
-      setValue("referralCode", refCode.trim().toUpperCase());
-    }
-  }, [searchParams, setValue]);
 
   const onSubmit = async (data: RegisterData) => {
     try {
@@ -94,6 +101,10 @@ export default function RegisterForm() {
 <div className="absolute -right-24 bottom-0 h-60 w-60 rounded-full bg-orange-500/10 blur-3xl"/>
 
 <div className="relative z-10">
+
+<Suspense fallback={null}>
+  <ReferralPrefill setValue={setValue} />
+</Suspense>
 
 <div className="mb-8">
 
