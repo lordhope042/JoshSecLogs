@@ -1,8 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 
 import {
   Eye,
@@ -29,6 +29,7 @@ import { toast } from "sonner";
 
 export default function RegisterForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
 
   const [showPassword, setShowPassword] = useState(false);
 
@@ -38,6 +39,7 @@ export default function RegisterForm() {
   const {
     register,
     handleSubmit,
+    setValue,
     formState: {
       errors,
       isSubmitting,
@@ -45,6 +47,16 @@ export default function RegisterForm() {
   } = useForm<RegisterData>({
     resolver: zodResolver(registerSchema),
   });
+
+  // Pre-fill the referral field from ?ref=CODE in the URL, e.g.
+  // https://joshseclogs.com/register?ref=U3NM8ZJ8 — the user can
+  // still edit or clear it manually afterward.
+  useEffect(() => {
+    const refCode = searchParams.get("ref");
+    if (refCode) {
+      setValue("referralCode", refCode.trim().toUpperCase());
+    }
+  }, [searchParams, setValue]);
 
   const onSubmit = async (data: RegisterData) => {
     try {
@@ -61,19 +73,13 @@ export default function RegisterForm() {
       router.push("/login");
 
     } catch (error: any) {
-  console.log("========== BACKEND ERROR ==========");
-  console.log(error.response);
-  console.log(error.response?.data);
-  console.log(error.response?.data?.message);
-  console.log("===================================");
-
-  toast.error(
-    Array.isArray(error.response?.data?.message)
-      ? error.response.data.message.join("\n")
-      : error.response?.data?.message ??
-          "Registration Failed"
-  );
-}
+      toast.error(
+        Array.isArray(error.response?.data?.message)
+          ? error.response.data.message.join("\n")
+          : error.response?.data?.message ??
+              "Registration Failed"
+      );
+    }
   };
 
   const inputStyle =
