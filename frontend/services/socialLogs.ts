@@ -4,6 +4,7 @@ import type {
   SocialLog,
   PurchasedSocialLog,
   SocialLogCategory,
+  SocialLogCategoryValue,
   SocialLogFilters,
   CreateSocialLogDto,
   UpdateSocialLogDto,
@@ -12,9 +13,10 @@ import type {
 
 /* ===============================
    GET ALL SOCIAL LOGS
-   Accepts optional filters — { platform } and/or
-   { category } both work here since the backend's
-   GET /social-logs route reads both query params.
+   Accepts optional filters — only { platform } is actually read
+   server-side (GET /social-logs only has @Query("platform")).
+   Passing { category } here does nothing — use
+   getSocialLogsByCategory() below for category-tab filtering.
 =============================== */
 export async function getSocialLogs(
   filters?: SocialLogFilters,
@@ -22,6 +24,18 @@ export async function getSocialLogs(
   const { data } = await api.get("/social-logs", {
     params: filters,
   });
+  return data.data ?? data;
+}
+
+/* ===============================
+   GET LOGS FOR ONE CATEGORY (marketplace tabs)
+   Hits the dedicated, working endpoint:
+   GET /social-logs/category/:category
+=============================== */
+export async function getSocialLogsByCategory(
+  category: SocialLogCategoryValue,
+): Promise<SocialLog[]> {
+  const { data } = await api.get(`/social-logs/category/${category}`);
   return data.data ?? data;
 }
 

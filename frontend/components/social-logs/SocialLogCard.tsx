@@ -9,23 +9,103 @@ import {
   ShieldCheck,
   Mail,
   Phone,
+  Layers,
 } from "lucide-react";
 
 import { SocialLog } from "@/types/social-log";
 
-interface Props {
-  log: SocialLog;
-  onView: (id: string) => void;
+export interface SocialLogStockGroup {
+  key: string;
+  platform: string;
+  category: string;
+  pageType: string | null;
+  country: string | null;
+  logs: SocialLog[];
 }
 
-const money = (price?: number) =>
-  `₦${Number(price ?? 0).toLocaleString()}`;
+export function groupLogsIntoStock(logs: SocialLog[]): SocialLogStockGroup[] {
+  const groups = new Map<string, SocialLog[]>();
 
-export default function SocialLogCard({
-  log,
-  onView,
-}: Props) {
-  const isSold = log.status === "SOLD";
+  for (const log of logs) {
+    const key = `${log.platform}|${log.category}|${log.pageType ?? ""}|${log.country ?? ""}`;
+    const existing = groups.get(key);
+    if (existing) existing.push(log);
+    else groups.set(key, [log]);
+  }
+
+  return Array.from(groups.entries()).map(([key, groupLogs]) => {
+    const sorted = [...groupLogs].sort(
+      (a, b) => new Date(a.createdAt ?? 0).getTime() - new Date(b.createdAt ?? 0).getTime(),
+    );
+    const first = sorted[0];
+    return {
+      key,
+      platform: first.platform,
+      category: first.category,
+      pageType: first.pageType,
+      country: first.country,
+      logs: sorted,
+    };
+  });
+}
+
+interface Props {
+  group: SocialLogStockGroup;
+  onView: (id: string) => void;
+  searchQuery?: string;
+}
+
+const money = (price?: number) => `₦${Number(price ?? 0).toLocaleString()}`;
+
+function HighlightedText({ text, query }: { text: string; query?: string }) {
+  if (!query?.trim()) return <>{text}</>;
+  const idx = text.toLowerCase().indexOf(query.trim().toLowerCase());
+  if (idx === -1) return <>{text}</>;
+  return (
+    <>
+      {text.slice(0, idx)}
+      <mark className="rounded bg-orange-200 px-0.5 text-inherit dark:bg-orange-500/40">
+        {text.slice(idx, idx + query.trim().length)}
+      </mark>
+      {text.slice(idx + query.trim().length)}
+    </>
+  );
+}
+
+export const CATEGORY_LABELS: Record<string, string> = {
+  FACEBOOK_PAGE: "Facebook Page",
+  FACEBOOK_COUNTRY: "Facebook",
+  TWITTER_FOLLOWERS: "Twitter / X",
+  INSTAGRAM_FOLLOWERS: "Instagram",
+  VPN: "VPN",
+  TEXTPLUS_NEXTPLUS: "Texting App",
+  TELEGRAM_ACCOUNT: "Telegram",
+  TIKTOK_COUNTRY: "TikTok",
+  TIKTOK_FOLLOWERS: "TikTok",
+  MAIL: "Mail",
+};
+
+export const PAGE_TYPE_LABELS: Record<string, string> = {
+  CREATE_PAGE: "Create Page",
+  CREATED_PAGE: "Created Page",
+  MULTI_PAGE: "2x Created",
+  PAGE_WITH_FOLLOWERS: "Page with Followers",
+};
+
+export default function SocialLogCard({ group, onView, searchQuery }: Props) {
+  const representative = group.logs[0];
+  const count = group.logs.length;
+  const isSold = count === 0;
+
+  const hasFollowers = typeof representative?.followers === "number" && (representative.followers ?? 0) > 0;
+
+  const categoryLabel = CATEGORY_LABELS[group.category] ?? group.platform;
+  const subLabel = group.pageType ? PAGE_TYPE_LABELS[group.pageType] ?? group.pageType : group.country ?? undefined;
+
+  const prices = group.logs.map((l) => Number(l.price) || 0);
+  const minPrice = Math.min(...prices);
+  const maxPrice = Math.max(...prices);
+  const uniformPrice = minPrice === maxPrice;
 
   return (
     <div
@@ -49,10 +129,10 @@ export default function SocialLogCard({
       {/* Cover */}
 
       <div className="relative h-44 overflow-hidden bg-zinc-100 dark:bg-zinc-800">
-        {log.image ? (
+        {representative?.image ? (
           <img
-            src={log.image}
-            alt={log.username}
+            src={representative.image}
+            alt={categoryLabel}
             className={`
               h-full
               w-full
@@ -64,24 +144,21 @@ export default function SocialLogCard({
           />
         ) : (
           <div className="flex h-full items-center justify-center bg-gradient-to-r from-orange-500 to-amber-500">
-            <span className="text-5xl font-black text-white">
-              {log.platform.charAt(0)}
-            </span>
+            <span className="text-5xl font-black text-white">{group.platform.charAt(0)}</span>
           </div>
         )}
 
         <div className="absolute left-4 top-4 rounded-full bg-black/40 px-3 py-1 text-xs font-semibold text-white backdrop-blur">
-          {log.platform}
+          {categoryLabel}
         </div>
 
         <div
-          className={`absolute right-4 top-4 rounded-full px-3 py-1 text-xs font-semibold ${
-            log.status === "AVAILABLE"
-              ? "bg-green-500 text-white"
-              : "bg-red-500 text-white"
+          className={`flex items-center gap-1 absolute right-4 top-4 rounded-full px-3 py-1 text-xs font-semibold ${
+            isSold ? "bg-red-500 text-white" : "bg-green-500 text-white"
           }`}
         >
-          {log.status}
+          <Layers size={12} />
+          {isSold ? "Out of Stock" : `${count} stocks available`}
         </div>
       </div>
 
@@ -90,88 +167,74 @@ export default function SocialLogCard({
       <div className="space-y-5 p-5">
         <div>
           <h3 className="truncate text-xl font-bold text-zinc-900 dark:text-white">
-            @{log.username}
+            <HighlightedText text={categoryLabel} query={searchQuery} />
           </h3>
-
-          <p className="mt-1 text-sm text-zinc-500">
-            {log.country}
-          </p>
-        </div>
-
-        {/* Stats */}
-
-        <div className="grid grid-cols-2 gap-3">
-          <div className="rounded-xl bg-zinc-100 p-3 dark:bg-zinc-800">
-            <div className="mb-2 flex items-center gap-2 text-zinc-500">
-              <Users size={15} />
-              <span className="text-xs">
-                Followers
-              </span>
-            </div>
-
-            <p className="font-semibold">
-              {log.followers
-                ? log.followers.toLocaleString()
-                : "N/A"}
+          {subLabel && (
+            <p className="mt-1 text-sm text-zinc-500">
+              <HighlightedText text={subLabel} query={searchQuery} />
             </p>
-          </div>
+          )}
+        </div>
 
-          <div className="rounded-xl bg-zinc-100 p-3 dark:bg-zinc-800">
-            <div className="mb-2 flex items-center gap-2 text-zinc-500">
-              <Calendar size={15} />
-              <span className="text-xs">
-                Age
-              </span>
+        {/* Description now leads the body — shown first, before stats/badges */}
+        {representative?.description && (
+          <p className="line-clamp-3 text-sm text-zinc-600 dark:text-zinc-400">{representative.description}</p>
+        )}
+
+        {representative && (
+          <div className={`grid gap-3 ${hasFollowers ? "grid-cols-2" : "grid-cols-1"}`}>
+            {hasFollowers && (
+              <div className="rounded-xl bg-zinc-100 p-3 dark:bg-zinc-800">
+                <div className="mb-2 flex items-center gap-2 text-zinc-500">
+                  <Users size={15} />
+                  <span className="text-xs">Followers</span>
+                </div>
+                <p className="font-semibold">{representative.followers!.toLocaleString()}</p>
+              </div>
+            )}
+
+            <div className="rounded-xl bg-zinc-100 p-3 dark:bg-zinc-800">
+              <div className="mb-2 flex items-center gap-2 text-zinc-500">
+                <Calendar size={15} />
+                <span className="text-xs">Age</span>
+              </div>
+              <p className="font-semibold">{representative.age} mo</p>
             </div>
-
-            <p className="font-semibold">
-              {log.age} yrs
-            </p>
           </div>
-        </div>
+        )}
 
-        {/* Security */}
-
-        <div className="flex flex-wrap gap-2">
-          {log.verified && (
-            <span className="flex items-center gap-1 rounded-full bg-green-100 px-3 py-1 text-xs font-medium text-green-700 dark:bg-green-500/15 dark:text-green-400">
-              <BadgeCheck size={13} />
-              Verified
-            </span>
-          )}
-
-          {log.ogEmail && (
-            <span className="rounded-full bg-blue-100 px-3 py-1 text-xs font-medium text-blue-700 dark:bg-blue-500/15 dark:text-blue-400">
-              OG Email
-            </span>
-          )}
-
-          {log.twoFactor && (
-            <span className="flex items-center gap-1 rounded-full bg-purple-100 px-3 py-1 text-xs font-medium text-purple-700 dark:bg-purple-500/15 dark:text-purple-400">
-              <ShieldCheck size={13} />
-              2FA
-            </span>
-          )}
-
-          {log.emailAttached && (
-            <span className="flex items-center gap-1 rounded-full bg-orange-100 px-3 py-1 text-xs font-medium text-orange-700 dark:bg-orange-500/15 dark:text-orange-400">
-              <Mail size={13} />
-              Email
-            </span>
-          )}
-
-          {log.phoneAttached && (
-            <span className="flex items-center gap-1 rounded-full bg-cyan-100 px-3 py-1 text-xs font-medium text-cyan-700 dark:bg-cyan-500/15 dark:text-cyan-400">
-              <Phone size={13} />
-              Phone
-            </span>
-          )}
-        </div>
-
-        {log.description && (
-          <p className="line-clamp-2 text-sm text-zinc-600 dark:text-zinc-400">
-            {log.description}
-          </p>
+        {representative && (
+          <div className="flex flex-wrap gap-2">
+            {representative.verified && (
+              <span className="flex items-center gap-1 rounded-full bg-green-100 px-3 py-1 text-xs font-medium text-green-700 dark:bg-green-500/15 dark:text-green-400">
+                <BadgeCheck size={13} />
+                Verified
+              </span>
+            )}
+            {representative.ogEmail && (
+              <span className="rounded-full bg-blue-100 px-3 py-1 text-xs font-medium text-blue-700 dark:bg-blue-500/15 dark:text-blue-400">
+                OG Email
+              </span>
+            )}
+            {representative.twoFactor && (
+              <span className="flex items-center gap-1 rounded-full bg-purple-100 px-3 py-1 text-xs font-medium text-purple-700 dark:bg-purple-500/15 dark:text-purple-400">
+                <ShieldCheck size={13} />
+                2FA
+              </span>
+            )}
+            {representative.emailAttached && (
+              <span className="flex items-center gap-1 rounded-full bg-orange-100 px-3 py-1 text-xs font-medium text-orange-700 dark:bg-orange-500/15 dark:text-orange-400">
+                <Mail size={13} />
+                Email
+              </span>
+            )}
+            {representative.phoneAttached && (
+              <span className="flex items-center gap-1 rounded-full bg-cyan-100 px-3 py-1 text-xs font-medium text-cyan-700 dark:bg-cyan-500/15 dark:text-cyan-400">
+                <Phone size={13} />
+                Phone
+              </span>
+            )}
+          </div>
         )}
       </div>
 
@@ -179,23 +242,18 @@ export default function SocialLogCard({
 
       <div className="flex items-center justify-between border-t border-zinc-200 p-5 dark:border-zinc-800">
         <div>
-          <p className="text-xs text-zinc-500">
-            Price
-          </p>
-
+          <p className="text-xs text-zinc-500">Price</p>
           <p
             className={`text-2xl font-bold ${
-              isSold
-                ? "text-zinc-400 line-through dark:text-zinc-600"
-                : "text-orange-600 dark:text-orange-400"
+              isSold ? "text-zinc-400 line-through dark:text-zinc-600" : "text-orange-600 dark:text-orange-400"
             }`}
           >
-            {money(log.price)}
+            {uniformPrice ? money(minPrice) : `From ${money(minPrice)}`}
           </p>
         </div>
 
         <button
-          onClick={() => !isSold && onView(log.id)}
+          onClick={() => !isSold && representative && onView(representative.id)}
           disabled={isSold}
           className={`
             flex items-center gap-2

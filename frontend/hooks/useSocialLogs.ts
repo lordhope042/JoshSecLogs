@@ -7,6 +7,7 @@ import {
 
 import {
   getSocialLogs,
+  getSocialLogsByCategory,
   getSocialLog,
   getSocialLogCategories,
   purchaseSocialLog,
@@ -88,9 +89,12 @@ export function useSocialLogs() {
   /*
   =====================================
   LOAD CATEGORY
-  (was loadPlatform — Facebook alone spans two categories,
-  so filtering by category rather than platform is what
-  actually drives the 10-tab marketplace now)
+  Hits GET /social-logs/category/:category directly now.
+  The old approach (getSocialLogs({ category })) hit
+  GET /social-logs?category=X — but that controller route
+  only ever reads @Query("platform"), never "category", so
+  every tab silently returned the same unfiltered list.
+  This dedicated endpoint actually filters server-side.
   =====================================
   */
 
@@ -102,9 +106,9 @@ export function useSocialLogs() {
         setLoading(true);
 
         const data =
-          await getSocialLogs({
+          await getSocialLogsByCategory(
             category,
-          });
+          );
 
         setLogs(data);
 
