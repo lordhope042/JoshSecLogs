@@ -55,11 +55,11 @@ export default function DepositModal({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-md p-4">
 
-      <div className="w-full max-w-lg rounded-3xl border border-zinc-800 bg-[#111827] shadow-2xl">
+      <div className="w-full max-w-lg rounded-3xl border border-gray-200 dark:border-zinc-800 bg-white dark:bg-[#111827] shadow-2xl">
 
         {/* Header */}
 
-        <div className="flex items-center justify-between border-b border-zinc-800 p-6">
+        <div className="flex items-center justify-between border-b border-gray-200 dark:border-zinc-800 p-6">
 
           <div className="flex items-center gap-3">
 
@@ -68,11 +68,11 @@ export default function DepositModal({
             </div>
 
             <div>
-              <h2 className="text-2xl font-bold text-white">
+              <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
                 Fund Wallet
               </h2>
 
-              <p className="text-sm text-zinc-500">
+              <p className="text-sm text-gray-400 dark:text-zinc-500">
                 Deposit securely with Paystack
               </p>
             </div>
@@ -82,9 +82,9 @@ export default function DepositModal({
           <button
             onClick={onClose}
             disabled={loading}
-            className="rounded-xl p-2 hover:bg-zinc-800 transition"
+            className="rounded-xl p-2 hover:bg-gray-100 dark:hover:bg-zinc-800 transition"
           >
-            <X className="h-5 w-5 text-zinc-400" />
+            <X className="h-5 w-5 text-gray-500 dark:text-zinc-400" />
           </button>
 
         </div>
@@ -97,7 +97,7 @@ export default function DepositModal({
 
           <div>
 
-            <p className="mb-3 text-sm font-medium text-zinc-400">
+            <p className="mb-3 text-sm font-medium text-gray-500 dark:text-zinc-400">
               Quick Amount
             </p>
 
@@ -113,7 +113,7 @@ export default function DepositModal({
                   className={`rounded-xl border py-3 font-semibold transition ${
                     numericAmount === value
                       ? "border-orange-500 bg-orange-500 text-black"
-                      : "border-zinc-700 bg-zinc-900 text-white hover:border-orange-500"
+                      : "border-gray-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-gray-900 dark:text-white hover:border-orange-500"
                   }`}
                 >
                   ₦{value.toLocaleString()}
@@ -128,13 +128,13 @@ export default function DepositModal({
 
           <div>
 
-            <label className="mb-2 block text-sm font-medium text-zinc-400">
+            <label className="mb-2 block text-sm font-medium text-gray-500 dark:text-zinc-400">
               Deposit Amount
             </label>
 
             <div className="relative">
 
-              <CircleDollarSign className="absolute left-4 top-4 h-5 w-5 text-zinc-500" />
+              <CircleDollarSign className="absolute left-4 top-4 h-5 w-5 text-gray-400 dark:text-zinc-500" />
 
               <input
                 type="number"
@@ -144,12 +144,12 @@ export default function DepositModal({
                   setAmount(e.target.value)
                 }
                 placeholder="Enter amount"
-                className="w-full rounded-2xl border border-zinc-700 bg-zinc-900 py-4 pl-12 pr-4 text-lg text-white outline-none transition focus:border-orange-500"
+                className="w-full rounded-2xl border border-gray-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 py-4 pl-12 pr-4 text-lg text-gray-900 dark:text-white outline-none transition focus:border-orange-500"
               />
 
             </div>
 
-            <p className="mt-2 text-xs text-zinc-500">
+            <p className="mt-2 text-xs text-gray-400 dark:text-zinc-500">
               Minimum deposit: ₦100
             </p>
 
@@ -157,15 +157,15 @@ export default function DepositModal({
 
           {/* Summary */}
 
-          <div className="rounded-2xl border border-zinc-800 bg-zinc-900 p-5 space-y-4">
+          <div className="rounded-2xl border border-gray-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-5 space-y-4">
 
             <div className="flex justify-between">
 
-              <span className="text-zinc-400">
+              <span className="text-gray-500 dark:text-zinc-400">
                 Amount
               </span>
 
-              <span className="font-bold text-white">
+              <span className="font-bold text-gray-900 dark:text-white">
                 ₦
                 {numericAmount
                   ? numericAmount.toLocaleString()
@@ -176,7 +176,7 @@ export default function DepositModal({
 
             <div className="flex justify-between">
 
-              <span className="text-zinc-400">
+              <span className="text-gray-500 dark:text-zinc-400">
                 Payment Gateway
               </span>
 
@@ -195,12 +195,12 @@ export default function DepositModal({
 
         {/* Footer */}
 
-        <div className="flex gap-4 border-t border-zinc-800 p-6">
+        <div className="flex gap-4 border-t border-gray-200 dark:border-zinc-800 p-6">
 
           <button
             onClick={onClose}
             disabled={loading}
-            className="flex-1 rounded-2xl border border-zinc-700 py-3 text-white transition hover:bg-zinc-800"
+            className="flex-1 rounded-2xl border border-gray-300 dark:border-zinc-700 py-3 text-gray-900 dark:text-white transition hover:bg-gray-100 dark:hover:bg-zinc-800"
           >
             Cancel
           </button>

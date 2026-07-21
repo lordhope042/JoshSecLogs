@@ -35,19 +35,19 @@ export default function AdminTable<
   );
 
   return (
-    <div className="overflow-hidden rounded-2xl border border-zinc-800 bg-[#111827]">
+    <div className="overflow-hidden rounded-2xl border border-gray-200 dark:border-zinc-800 bg-white dark:bg-[#111827]">
 
       <div className="overflow-x-auto">
 
         <table className="min-w-full">
 
-          <thead className="bg-[#1f2937]">
+          <thead className="bg-gray-100 dark:bg-[#1f2937]">
 
             <tr>
               {columns.map((column) => (
                 <th
                   key={column.title}
-                  className="whitespace-nowrap px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-zinc-400"
+                  className="whitespace-nowrap px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-zinc-400"
                 >
                   {column.title}
                 </th>
@@ -62,7 +62,7 @@ export default function AdminTable<
               <tr>
                 <td
                   colSpan={columns.length}
-                  className="py-16 text-center text-zinc-500"
+                  className="py-16 text-center text-gray-400 dark:text-zinc-500"
                 >
                   Loading...
                 </td>
@@ -71,7 +71,7 @@ export default function AdminTable<
               <tr>
                 <td
                   colSpan={columns.length}
-                  className="py-16 text-center text-zinc-500"
+                  className="py-16 text-center text-gray-400 dark:text-zinc-500"
                 >
                   {emptyText}
                 </td>
@@ -80,12 +80,12 @@ export default function AdminTable<
               rows.map((row, index) => (
                 <tr
                   key={index}
-                  className="border-t border-zinc-800 transition hover:bg-[#1a2233]"
+                  className="border-t border-gray-200 dark:border-zinc-800 transition hover:bg-[#1a2233]"
                 >
                   {columns.map((column) => (
                     <td
                       key={column.title}
-                      className="whitespace-nowrap px-6 py-4 text-sm text-zinc-300"
+                      className="whitespace-nowrap px-6 py-4 text-sm text-gray-700 dark:text-zinc-300"
                     >
                       {column.render
                         ? column.render(

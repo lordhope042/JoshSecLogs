@@ -110,6 +110,10 @@ export class CreateSocialLogDto {
   loginEmail?: string;
 
   @IsOptional()
+@IsString()
+emailPassword?: string;
+
+  @IsOptional()
   @IsPhoneNumber()
   loginPhone?: string;
 

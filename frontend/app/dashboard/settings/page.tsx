@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { User, Lock, Bell, Shield, Save, Loader2 } from "lucide-react";
+import { User, Lock, Bell, Shield, Save, Loader2, Moon, Sun } from "lucide-react";
+import { useTheme } from "next-themes";
 import { toast } from "sonner";
 import api from "@/lib/axios";
 
@@ -63,9 +64,13 @@ async function updateNotifications(payload: NotificationPrefs) {
 =============================== */
 
 export default function SettingsPage() {
-  const [activeTab, setActiveTab] = useState<"profile" | "security" | "notifications">("profile");
+  const [activeTab, setActiveTab] = useState<"profile" | "security" | "notifications" | "appearance">("profile");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+
+  const { resolvedTheme, setTheme } = useTheme();
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
 
   const [profile, setProfile] = useState<UserProfile>({
     fullName: "",
@@ -182,21 +187,22 @@ export default function SettingsPage() {
     { id: "profile" as const, label: "Profile", icon: User },
     { id: "security" as const, label: "Security", icon: Lock },
     { id: "notifications" as const, label: "Notifications", icon: Bell },
+    { id: "appearance" as const, label: "Appearance", icon: Moon },
   ];
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#0f172a] flex items-center justify-center">
+      <div className="min-h-screen bg-white dark:bg-[#0f172a] flex items-center justify-center">
         <Loader2 className="animate-spin text-orange-500" size={28} />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-[#0f172a] text-white p-6">
+    <div className="min-h-screen bg-white dark:bg-[#0f172a] text-gray-900 dark:text-white p-6">
       <div className="mb-6">
         <h1 className="text-2xl font-semibold">Settings</h1>
-        <p className="text-zinc-400 text-sm mt-1">
+        <p className="text-gray-500 dark:text-zinc-400 text-sm mt-1">
           Manage your account, security, and notification preferences.
         </p>
       </div>
@@ -204,7 +210,7 @@ export default function SettingsPage() {
       <div className="flex flex-col md:flex-row gap-6">
         {/* Sidebar tabs */}
         <div className="md:w-56 shrink-0">
-          <div className="bg-[#0B1220] border border-zinc-800 rounded-xl p-2 flex md:flex-col gap-1">
+          <div className="bg-gray-50 dark:bg-[#0B1220] border border-gray-200 dark:border-zinc-800 rounded-xl p-2 flex md:flex-col gap-1">
             {tabs.map((tab) => {
               const Icon = tab.icon;
               const isActive = activeTab === tab.id;
@@ -215,7 +221,7 @@ export default function SettingsPage() {
                   className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
                     isActive
                       ? "bg-orange-500 text-white"
-                      : "text-zinc-400 hover:bg-zinc-800/50 hover:text-white"
+                      : "text-gray-500 dark:text-zinc-400 hover:bg-gray-100/50 dark:hover:bg-zinc-800/50 hover:text-gray-900 dark:hover:text-white"
                   }`}
                 >
                   <Icon size={16} />
@@ -227,37 +233,37 @@ export default function SettingsPage() {
         </div>
 
         {/* Content */}
-        <div className="flex-1 bg-[#0B1220] border border-zinc-800 rounded-xl p-6">
+        <div className="flex-1 bg-gray-50 dark:bg-[#0B1220] border border-gray-200 dark:border-zinc-800 rounded-xl p-6">
           {activeTab === "profile" && (
             <div className="space-y-4 max-w-md">
               <h2 className="text-lg font-medium mb-4">Profile information</h2>
               <div>
-                <label className="text-sm text-zinc-400 block mb-1.5">Full name</label>
+                <label className="text-sm text-gray-500 dark:text-zinc-400 block mb-1.5">Full name</label>
                 <input
                   type="text"
                   value={profile.fullName}
                   onChange={(e) => setProfile({ ...profile, fullName: e.target.value })}
-                  className="w-full bg-[#0f172a] border border-zinc-800 rounded-lg px-3 py-2 text-sm text-white outline-none focus:border-orange-500"
+                  className="w-full bg-white dark:bg-[#0f172a] border border-gray-200 dark:border-zinc-800 rounded-lg px-3 py-2 text-sm text-gray-900 dark:text-white outline-none focus:border-orange-500"
                   placeholder="Enter your full name"
                 />
               </div>
               <div>
-                <label className="text-sm text-zinc-400 block mb-1.5">Email address</label>
+                <label className="text-sm text-gray-500 dark:text-zinc-400 block mb-1.5">Email address</label>
                 <input
                   type="email"
                   value={profile.email}
                   onChange={(e) => setProfile({ ...profile, email: e.target.value })}
-                  className="w-full bg-[#0f172a] border border-zinc-800 rounded-lg px-3 py-2 text-sm text-white outline-none focus:border-orange-500"
+                  className="w-full bg-white dark:bg-[#0f172a] border border-gray-200 dark:border-zinc-800 rounded-lg px-3 py-2 text-sm text-gray-900 dark:text-white outline-none focus:border-orange-500"
                   placeholder="you@example.com"
                 />
               </div>
               <div>
-                <label className="text-sm text-zinc-400 block mb-1.5">Phone number</label>
+                <label className="text-sm text-gray-500 dark:text-zinc-400 block mb-1.5">Phone number</label>
                 <input
                   type="tel"
                   value={profile.phone}
                   onChange={(e) => setProfile({ ...profile, phone: e.target.value })}
-                  className="w-full bg-[#0f172a] border border-zinc-800 rounded-lg px-3 py-2 text-sm text-white outline-none focus:border-orange-500"
+                  className="w-full bg-white dark:bg-[#0f172a] border border-gray-200 dark:border-zinc-800 rounded-lg px-3 py-2 text-sm text-gray-900 dark:text-white outline-none focus:border-orange-500"
                   placeholder="+234..."
                 />
               </div>
@@ -271,30 +277,30 @@ export default function SettingsPage() {
                 Change password
               </h2>
               <div>
-                <label className="text-sm text-zinc-400 block mb-1.5">Current password</label>
+                <label className="text-sm text-gray-500 dark:text-zinc-400 block mb-1.5">Current password</label>
                 <input
                   type="password"
                   value={password.current}
                   onChange={(e) => setPassword({ ...password, current: e.target.value })}
-                  className="w-full bg-[#0f172a] border border-zinc-800 rounded-lg px-3 py-2 text-sm text-white outline-none focus:border-orange-500"
+                  className="w-full bg-white dark:bg-[#0f172a] border border-gray-200 dark:border-zinc-800 rounded-lg px-3 py-2 text-sm text-gray-900 dark:text-white outline-none focus:border-orange-500"
                 />
               </div>
               <div>
-                <label className="text-sm text-zinc-400 block mb-1.5">New password</label>
+                <label className="text-sm text-gray-500 dark:text-zinc-400 block mb-1.5">New password</label>
                 <input
                   type="password"
                   value={password.next}
                   onChange={(e) => setPassword({ ...password, next: e.target.value })}
-                  className="w-full bg-[#0f172a] border border-zinc-800 rounded-lg px-3 py-2 text-sm text-white outline-none focus:border-orange-500"
+                  className="w-full bg-white dark:bg-[#0f172a] border border-gray-200 dark:border-zinc-800 rounded-lg px-3 py-2 text-sm text-gray-900 dark:text-white outline-none focus:border-orange-500"
                 />
               </div>
               <div>
-                <label className="text-sm text-zinc-400 block mb-1.5">Confirm new password</label>
+                <label className="text-sm text-gray-500 dark:text-zinc-400 block mb-1.5">Confirm new password</label>
                 <input
                   type="password"
                   value={password.confirm}
                   onChange={(e) => setPassword({ ...password, confirm: e.target.value })}
-                  className="w-full bg-[#0f172a] border border-zinc-800 rounded-lg px-3 py-2 text-sm text-white outline-none focus:border-orange-500"
+                  className="w-full bg-white dark:bg-[#0f172a] border border-gray-200 dark:border-zinc-800 rounded-lg px-3 py-2 text-sm text-gray-900 dark:text-white outline-none focus:border-orange-500"
                 />
               </div>
             </div>
@@ -311,15 +317,15 @@ export default function SettingsPage() {
               ].map((item) => (
                 <div
                   key={item.key}
-                  className="flex items-center justify-between bg-[#0f172a] border border-zinc-800 rounded-lg px-4 py-3"
+                  className="flex items-center justify-between bg-white dark:bg-[#0f172a] border border-gray-200 dark:border-zinc-800 rounded-lg px-4 py-3"
                 >
-                  <span className="text-sm text-zinc-200">{item.label}</span>
+                  <span className="text-sm text-gray-800 dark:text-zinc-200">{item.label}</span>
                   <button
                     onClick={() =>
                       setNotifications({ ...notifications, [item.key]: !notifications[item.key] })
                     }
                     className={`relative h-6 w-11 shrink-0 rounded-full transition-colors ${
-                      notifications[item.key] ? "bg-orange-500" : "bg-zinc-700"
+                      notifications[item.key] ? "bg-orange-500" : "bg-gray-200 dark:bg-zinc-700"
                     }`}
                   >
                     <span
@@ -333,16 +339,53 @@ export default function SettingsPage() {
             </div>
           )}
 
-          <div className="mt-6 pt-6 border-t border-zinc-800">
-            <button
-              onClick={handleSave}
-              disabled={saving}
-              className="flex items-center gap-2 bg-orange-500 hover:bg-orange-600 disabled:opacity-60 text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors"
-            >
-              {saving ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />}
-              {saving ? "Saving..." : "Save changes"}
-            </button>
-          </div>
+          {activeTab === "appearance" && (
+            <div className="space-y-4 max-w-md">
+              <h2 className="text-lg font-medium mb-4">Appearance</h2>
+
+              <div className="flex items-center justify-between bg-white dark:bg-[#0f172a] border border-gray-200 dark:border-zinc-800 rounded-lg px-4 py-3">
+                <div className="flex items-center gap-3">
+                  {mounted && resolvedTheme === "dark" ? (
+                    <Moon size={18} className="text-orange-500" />
+                  ) : (
+                    <Sun size={18} className="text-orange-500" />
+                  )}
+                  <div>
+                    <p className="text-sm text-gray-800 dark:text-zinc-200">Dark mode</p>
+                    <p className="text-xs text-gray-500 dark:text-zinc-400">
+                      {mounted && resolvedTheme === "dark" ? "Currently on" : "Currently off"}
+                    </p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setTheme(resolvedTheme === "dark" ? "light" : "dark")}
+                  aria-label="Toggle dark mode"
+                  className={`relative h-6 w-11 shrink-0 rounded-full transition-colors ${
+                    mounted && resolvedTheme === "dark" ? "bg-orange-500" : "bg-gray-200 dark:bg-zinc-700"
+                  }`}
+                >
+                  <span
+                    className={`absolute top-0.5 left-0.5 h-5 w-5 rounded-full bg-white transition-transform ${
+                      mounted && resolvedTheme === "dark" ? "translate-x-5" : "translate-x-0"
+                    }`}
+                  />
+                </button>
+              </div>
+            </div>
+          )}
+
+          {activeTab !== "appearance" && (
+            <div className="mt-6 pt-6 border-t border-gray-200 dark:border-zinc-800">
+              <button
+                onClick={handleSave}
+                disabled={saving}
+                className="flex items-center gap-2 bg-orange-500 hover:bg-orange-600 disabled:opacity-60 text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors"
+              >
+                {saving ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />}
+                {saving ? "Saving..." : "Save changes"}
+              </button>
+            </div>
+          )}
         </div>
       </div>
     </div>

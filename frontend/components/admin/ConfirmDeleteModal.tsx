@@ -42,7 +42,7 @@ export default function ConfirmDeleteModal({
         if (!v && !loading) onCancel();
       }}
     >
-      <DialogContent className="max-w-md rounded-2xl border border-red-500/20 bg-[#0f172a] text-white">
+      <DialogContent className="max-w-md rounded-2xl border border-red-500/20 bg-white dark:bg-[#0f172a] text-gray-900 dark:text-white">
         <DialogHeader>
 
           <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-red-500/15">
@@ -53,7 +53,7 @@ export default function ConfirmDeleteModal({
             {title}
           </DialogTitle>
 
-          <DialogDescription className="pt-2 text-center text-zinc-400">
+          <DialogDescription className="pt-2 text-center text-gray-500 dark:text-zinc-400">
             {description}
           </DialogDescription>
 
@@ -65,7 +65,7 @@ export default function ConfirmDeleteModal({
             variant="outline"
             disabled={loading}
             onClick={onCancel}
-            className="flex-1 border-zinc-700 bg-zinc-900 text-white hover:bg-zinc-800"
+            className="flex-1 border-gray-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-zinc-800"
           >
             Cancel
           </Button>

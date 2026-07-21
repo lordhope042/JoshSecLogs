@@ -146,11 +146,11 @@ function StatCard({
   };
 
   return (
-    <div className="rounded-2xl border border-zinc-800 bg-zinc-900/80 p-6">
+    <div className="rounded-2xl border border-gray-200 dark:border-zinc-800 bg-white/80 dark:bg-zinc-900/80 p-6">
       <div className="flex items-start justify-between">
         <div>
-          <p className="text-sm font-medium text-zinc-400">{title}</p>
-          <p className="mt-2 text-3xl font-bold text-white">{value}</p>
+          <p className="text-sm font-medium text-gray-500 dark:text-zinc-400">{title}</p>
+          <p className="mt-2 text-3xl font-bold text-gray-900 dark:text-white">{value}</p>
         </div>
         <div className={`flex h-12 w-12 items-center justify-center rounded-xl border ${colorMap[color]}`}>
           {icon}
@@ -182,36 +182,36 @@ function UserDetailsModal({ user, onClose }: { user: User | null; onClose: () =>
     >
       <div
         onClick={(e) => e.stopPropagation()}
-        className="w-full max-w-lg rounded-2xl border border-zinc-800 bg-zinc-900 p-6"
+        className="w-full max-w-lg rounded-2xl border border-gray-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-6"
       >
         <div className="flex items-center justify-between">
-          <h3 className="text-lg font-semibold text-white">User Details</h3>
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-white">User Details</h3>
           <button
             onClick={onClose}
-            className="rounded-lg p-1.5 text-zinc-400 transition hover:bg-zinc-800 hover:text-white"
+            className="rounded-lg p-1.5 text-gray-500 dark:text-zinc-400 transition hover:bg-gray-100 dark:hover:bg-zinc-800 hover:text-gray-900 dark:hover:text-white"
           >
             ✕
           </button>
         </div>
 
         <div className="mt-6 space-y-4">
-          <div className="flex items-center gap-4 rounded-xl bg-zinc-800/50 p-4">
+          <div className="flex items-center gap-4 rounded-xl bg-gray-100/50 dark:bg-zinc-800/50 p-4">
             <div className="flex h-14 w-14 items-center justify-center rounded-full bg-orange-500/10 text-xl font-bold text-orange-500">
               {getInitials(user.name)}
             </div>
             <div>
-              <p className="text-lg font-semibold text-white">{displayName}</p>
-              <p className="text-sm text-zinc-400">{displayEmail}</p>
+              <p className="text-lg font-semibold text-gray-900 dark:text-white">{displayName}</p>
+              <p className="text-sm text-gray-500 dark:text-zinc-400">{displayEmail}</p>
             </div>
           </div>
 
           <div className="grid grid-cols-2 gap-4">
-            <div className="rounded-xl bg-zinc-800/50 p-4">
-              <p className="text-xs text-zinc-500">Role</p>
-              <p className="mt-1 text-sm font-medium text-white">{role}</p>
+            <div className="rounded-xl bg-gray-100/50 dark:bg-zinc-800/50 p-4">
+              <p className="text-xs text-gray-400 dark:text-zinc-500">Role</p>
+              <p className="mt-1 text-sm font-medium text-gray-900 dark:text-white">{role}</p>
             </div>
-            <div className="rounded-xl bg-zinc-800/50 p-4">
-              <p className="text-xs text-zinc-500">Status</p>
+            <div className="rounded-xl bg-gray-100/50 dark:bg-zinc-800/50 p-4">
+              <p className="text-xs text-gray-400 dark:text-zinc-500">Status</p>
               <span
                 className={`mt-1 inline-block rounded-full px-2 py-0.5 text-xs font-medium ${
                   isActive ? "bg-green-500/10 text-green-400" : "bg-red-500/10 text-red-400"
@@ -220,21 +220,21 @@ function UserDetailsModal({ user, onClose }: { user: User | null; onClose: () =>
                 {isActive ? "Active" : "Suspended"}
               </span>
             </div>
-            <div className="rounded-xl bg-zinc-800/50 p-4">
-              <p className="text-xs text-zinc-500">Balance</p>
-              <p className="mt-1 text-sm font-medium text-white">{formatCurrency(balance)}</p>
+            <div className="rounded-xl bg-gray-100/50 dark:bg-zinc-800/50 p-4">
+              <p className="text-xs text-gray-400 dark:text-zinc-500">Balance</p>
+              <p className="mt-1 text-sm font-medium text-gray-900 dark:text-white">{formatCurrency(balance)}</p>
             </div>
-            <div className="rounded-xl bg-zinc-800/50 p-4">
-              <p className="text-xs text-zinc-500">Orders</p>
-              <p className="mt-1 text-sm font-medium text-white">{orders}</p>
+            <div className="rounded-xl bg-gray-100/50 dark:bg-zinc-800/50 p-4">
+              <p className="text-xs text-gray-400 dark:text-zinc-500">Orders</p>
+              <p className="mt-1 text-sm font-medium text-gray-900 dark:text-white">{orders}</p>
             </div>
-            <div className="rounded-xl bg-zinc-800/50 p-4">
-              <p className="text-xs text-zinc-500">Transactions</p>
-              <p className="mt-1 text-sm font-medium text-white">{transactions}</p>
+            <div className="rounded-xl bg-gray-100/50 dark:bg-zinc-800/50 p-4">
+              <p className="text-xs text-gray-400 dark:text-zinc-500">Transactions</p>
+              <p className="mt-1 text-sm font-medium text-gray-900 dark:text-white">{transactions}</p>
             </div>
-            <div className="rounded-xl bg-zinc-800/50 p-4">
-              <p className="text-xs text-zinc-500">Joined</p>
-              <p className="mt-1 text-sm font-medium text-white">{joined}</p>
+            <div className="rounded-xl bg-gray-100/50 dark:bg-zinc-800/50 p-4">
+              <p className="text-xs text-gray-400 dark:text-zinc-500">Joined</p>
+              <p className="mt-1 text-sm font-medium text-gray-900 dark:text-white">{joined}</p>
             </div>
           </div>
         </div>
@@ -428,7 +428,7 @@ export default function AdminUsersPage() {
       {/* Header */}
       <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-white">Users</h1>
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Users</h1>
           <p className="text-gray-500">Manage platform users and their accounts.</p>
         </div>
       </div>
@@ -452,9 +452,9 @@ export default function AdminUsersPage() {
       </div>
 
       {/* Filters */}
-      <div className="flex flex-col gap-4 rounded-2xl border border-zinc-800 bg-zinc-900/80 p-4 lg:flex-row lg:items-center">
+      <div className="flex flex-col gap-4 rounded-2xl border border-gray-200 dark:border-zinc-800 bg-white/80 dark:bg-zinc-900/80 p-4 lg:flex-row lg:items-center">
         <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-500" />
+          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400 dark:text-zinc-500" />
           <input
             type="text"
             placeholder="Search by name or email..."
@@ -463,7 +463,7 @@ export default function AdminUsersPage() {
               setSearch(e.target.value);
               setPage(1);
             }}
-            className="w-full rounded-xl border border-zinc-700 bg-zinc-800 py-2.5 pl-10 pr-4 text-sm text-white placeholder-zinc-500 outline-none focus:border-orange-500"
+            className="w-full rounded-xl border border-gray-300 dark:border-zinc-700 bg-gray-100 dark:bg-zinc-800 py-2.5 pl-10 pr-4 text-sm text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-zinc-500 outline-none focus:border-orange-500"
           />
         </div>
 
@@ -473,7 +473,7 @@ export default function AdminUsersPage() {
             setRoleFilter(e.target.value as any);
             setPage(1);
           }}
-          className="rounded-xl border border-zinc-700 bg-zinc-800 px-4 py-2.5 text-sm text-white outline-none focus:border-orange-500"
+          className="rounded-xl border border-gray-300 dark:border-zinc-700 bg-gray-100 dark:bg-zinc-800 px-4 py-2.5 text-sm text-gray-900 dark:text-white outline-none focus:border-orange-500"
         >
           <option value="ALL">All Roles</option>
           <option value="USER">Users</option>
@@ -486,7 +486,7 @@ export default function AdminUsersPage() {
             setStatusFilter(e.target.value as any);
             setPage(1);
           }}
-          className="rounded-xl border border-zinc-700 bg-zinc-800 px-4 py-2.5 text-sm text-white outline-none focus:border-orange-500"
+          className="rounded-xl border border-gray-300 dark:border-zinc-700 bg-gray-100 dark:bg-zinc-800 px-4 py-2.5 text-sm text-gray-900 dark:text-white outline-none focus:border-orange-500"
         >
           <option value="ALL">All Status</option>
           <option value="ACTIVE">Active</option>
@@ -496,7 +496,7 @@ export default function AdminUsersPage() {
         <select
           value={sortBy}
           onChange={(e) => setSortBy(e.target.value as any)}
-          className="rounded-xl border border-zinc-700 bg-zinc-800 px-4 py-2.5 text-sm text-white outline-none focus:border-orange-500"
+          className="rounded-xl border border-gray-300 dark:border-zinc-700 bg-gray-100 dark:bg-zinc-800 px-4 py-2.5 text-sm text-gray-900 dark:text-white outline-none focus:border-orange-500"
         >
           <option value="newest">Newest First</option>
           <option value="oldest">Oldest First</option>
@@ -506,20 +506,20 @@ export default function AdminUsersPage() {
       </div>
 
       {/* Table */}
-      <div className="overflow-hidden rounded-2xl border border-zinc-800 bg-zinc-900/80">
+      <div className="overflow-hidden rounded-2xl border border-gray-200 dark:border-zinc-800 bg-white/80 dark:bg-zinc-900/80">
         <div className="overflow-x-auto">
           <table className="w-full text-left text-sm">
             <thead>
-              <tr className="border-b border-zinc-800 bg-zinc-900/50">
-                <th className="px-6 py-4 font-medium text-zinc-400">User</th>
-                <th className="px-6 py-4 font-medium text-zinc-400">Role</th>
-                <th className="px-6 py-4 font-medium text-zinc-400">Balance</th>
-                <th className="px-6 py-4 font-medium text-zinc-400">Status</th>
-                <th className="px-6 py-4 font-medium text-zinc-400">Joined</th>
-                <th className="px-6 py-4 font-medium text-zinc-400 text-right">Actions</th>
+              <tr className="border-b border-gray-200 dark:border-zinc-800 bg-white/50 dark:bg-zinc-900/50">
+                <th className="px-6 py-4 font-medium text-gray-500 dark:text-zinc-400">User</th>
+                <th className="px-6 py-4 font-medium text-gray-500 dark:text-zinc-400">Role</th>
+                <th className="px-6 py-4 font-medium text-gray-500 dark:text-zinc-400">Balance</th>
+                <th className="px-6 py-4 font-medium text-gray-500 dark:text-zinc-400">Status</th>
+                <th className="px-6 py-4 font-medium text-gray-500 dark:text-zinc-400">Joined</th>
+                <th className="px-6 py-4 font-medium text-gray-500 dark:text-zinc-400 text-right">Actions</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-zinc-800">
+            <tbody className="divide-y divide-gray-200 dark:divide-zinc-800">
               {loading ? (
                 <tr>
                   <td colSpan={6} className="px-6 py-12 text-center">
@@ -528,7 +528,7 @@ export default function AdminUsersPage() {
                 </tr>
               ) : paginatedUsers.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="px-6 py-12 text-center text-zinc-500">
+                  <td colSpan={6} className="px-6 py-12 text-center text-gray-400 dark:text-zinc-500">
                     No users found
                   </td>
                 </tr>
@@ -543,22 +543,22 @@ export default function AdminUsersPage() {
                   const isSelf = currentUserId != null && user.id === currentUserId;
 
                   return (
-                    <tr key={user.id} className="transition hover:bg-zinc-800/30">
+                    <tr key={user.id} className="transition hover:bg-gray-100/30 dark:hover:bg-zinc-800/30">
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-3">
                           <div className="flex h-10 w-10 items-center justify-center rounded-full bg-orange-500/10 text-sm font-bold text-orange-500">
                             {getInitials(user.name)}
                           </div>
                           <div>
-                            <p className="flex items-center gap-1.5 font-medium text-white">
+                            <p className="flex items-center gap-1.5 font-medium text-gray-900 dark:text-white">
                               {displayName}
                               {isSelf && (
-                                <span className="rounded-full bg-zinc-700 px-1.5 py-0.5 text-[10px] font-normal text-zinc-300">
+                                <span className="rounded-full bg-gray-200 dark:bg-zinc-700 px-1.5 py-0.5 text-[10px] font-normal text-gray-700 dark:text-zinc-300">
                                   You
                                 </span>
                               )}
                             </p>
-                            <p className="text-xs text-zinc-500">{displayEmail}</p>
+                            <p className="text-xs text-gray-400 dark:text-zinc-500">{displayEmail}</p>
                           </div>
                         </div>
                       </td>
@@ -574,8 +574,8 @@ export default function AdminUsersPage() {
                         </span>
                       </td>
                       <td className="px-6 py-4">
-                        <div className="flex items-center gap-1.5 text-white">
-                          <Wallet size={14} className="text-zinc-500" />
+                        <div className="flex items-center gap-1.5 text-gray-900 dark:text-white">
+                          <Wallet size={14} className="text-gray-400 dark:text-zinc-500" />
                           {formatCurrency(balance)}
                         </div>
                       </td>
@@ -588,7 +588,7 @@ export default function AdminUsersPage() {
                           {isActive ? "Active" : "Suspended"}
                         </span>
                       </td>
-                      <td className="px-6 py-4 text-zinc-400">
+                      <td className="px-6 py-4 text-gray-500 dark:text-zinc-400">
                         <div className="flex items-center gap-1.5">
                           <Calendar size={14} />
                           {joined}
@@ -599,7 +599,7 @@ export default function AdminUsersPage() {
                           {/* View Details */}
                           <button
                             onClick={() => setSelectedUser(user)}
-                            className="rounded-lg p-2 text-zinc-400 transition hover:bg-zinc-800 hover:text-white"
+                            className="rounded-lg p-2 text-gray-500 dark:text-zinc-400 transition hover:bg-gray-100 dark:hover:bg-zinc-800 hover:text-gray-900 dark:hover:text-white"
                             title="View Details"
                           >
                             <Eye size={16} />
@@ -609,7 +609,7 @@ export default function AdminUsersPage() {
                           <button
                             onClick={() => handleToggleRole(user)}
                             disabled={actionLoading === user.id || isSelf}
-                            className="rounded-lg p-2 text-zinc-400 transition hover:bg-orange-500/10 hover:text-orange-400 disabled:cursor-not-allowed disabled:opacity-40"
+                            className="rounded-lg p-2 text-gray-500 dark:text-zinc-400 transition hover:bg-orange-500/10 hover:text-orange-400 disabled:cursor-not-allowed disabled:opacity-40"
                             title={
                               isSelf
                                 ? "You can't change your own role"
@@ -633,8 +633,8 @@ export default function AdminUsersPage() {
                             disabled={actionLoading === user.id || isSelf}
                             className={`rounded-lg p-2 transition disabled:cursor-not-allowed disabled:opacity-40 ${
                               isActive
-                                ? "text-zinc-400 hover:bg-red-500/10 hover:text-red-400"
-                                : "text-zinc-400 hover:bg-green-500/10 hover:text-green-400"
+                                ? "text-gray-500 dark:text-zinc-400 hover:bg-red-500/10 hover:text-red-400"
+                                : "text-gray-500 dark:text-zinc-400 hover:bg-green-500/10 hover:text-green-400"
                             }`}
                             title={isSelf ? "You can't suspend your own account" : isActive ? "Suspend" : "Activate"}
                           >
@@ -658,8 +658,8 @@ export default function AdminUsersPage() {
 
         {/* Pagination */}
         {totalPages > 1 && (
-          <div className="flex items-center justify-between border-t border-zinc-800 px-6 py-4">
-            <p className="text-sm text-zinc-500">
+          <div className="flex items-center justify-between border-t border-gray-200 dark:border-zinc-800 px-6 py-4">
+            <p className="text-sm text-gray-400 dark:text-zinc-500">
               Showing {(page - 1) * limit + 1} -{" "}
               {Math.min(page * limit, filteredUsers.length)} of {filteredUsers.length} users
             </p>
@@ -667,7 +667,7 @@ export default function AdminUsersPage() {
               <button
                 onClick={() => handlePageChange(page - 1)}
                 disabled={page === 1}
-                className="rounded-lg border border-zinc-700 p-2 text-zinc-400 transition hover:bg-zinc-800 hover:text-white disabled:opacity-50"
+                className="rounded-lg border border-gray-300 dark:border-zinc-700 p-2 text-gray-500 dark:text-zinc-400 transition hover:bg-gray-100 dark:hover:bg-zinc-800 hover:text-gray-900 dark:hover:text-white disabled:opacity-50"
               >
                 <ChevronLeft size={16} />
               </button>
@@ -678,7 +678,7 @@ export default function AdminUsersPage() {
                   className={`rounded-lg px-3 py-2 text-sm font-medium transition ${
                     pageNum === page
                       ? "bg-orange-600 text-white"
-                      : "border border-zinc-700 text-zinc-400 hover:bg-zinc-800 hover:text-white"
+                      : "border border-gray-300 dark:border-zinc-700 text-gray-500 dark:text-zinc-400 hover:bg-gray-100 dark:hover:bg-zinc-800 hover:text-gray-900 dark:hover:text-white"
                   }`}
                 >
                   {pageNum}
@@ -687,7 +687,7 @@ export default function AdminUsersPage() {
               <button
                 onClick={() => handlePageChange(page + 1)}
                 disabled={page === totalPages}
-                className="rounded-lg border border-zinc-700 p-2 text-zinc-400 transition hover:bg-zinc-800 hover:text-white disabled:opacity-50"
+                className="rounded-lg border border-gray-300 dark:border-zinc-700 p-2 text-gray-500 dark:text-zinc-400 transition hover:bg-gray-100 dark:hover:bg-zinc-800 hover:text-gray-900 dark:hover:text-white disabled:opacity-50"
               >
                 <ChevronRight size={16} />
               </button>

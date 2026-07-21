@@ -39,11 +39,11 @@ export default function DashboardPage() {
   return (
     <div className="space-y-8">
       <div>
-        <h1 className="text-4xl font-black text-white">
+        <h1 className="text-4xl font-black text-gray-900 dark:text-white">
           Dashboard
         </h1>
 
-        <p className="mt-2 text-zinc-400">
+        <p className="mt-2 text-gray-500 dark:text-zinc-400">
           Welcome back to JoshSecLogs.
         </p>
       </div>
@@ -81,13 +81,13 @@ export default function DashboardPage() {
 
       {/* Recent Orders */}
       <div className="grid gap-6 lg:grid-cols-2">
-        <div className="rounded-3xl border border-zinc-800 bg-[#111827] p-6">
-          <h2 className="mb-5 text-xl font-bold text-white">
+        <div className="rounded-3xl border border-gray-200 dark:border-zinc-800 bg-white dark:bg-[#111827] p-6">
+          <h2 className="mb-5 text-xl font-bold text-gray-900 dark:text-white">
             Recent Orders
           </h2>
 
           {orders.length === 0 ? (
-            <p className="text-zinc-500">
+            <p className="text-gray-400 dark:text-zinc-500">
               No orders yet.
             </p>
           ) : (
@@ -97,14 +97,14 @@ export default function DashboardPage() {
                 .map((order) => (
                   <div
                     key={order.id}
-                    className="flex items-center justify-between rounded-xl bg-zinc-900 p-3"
+                    className="flex items-center justify-between rounded-xl bg-white dark:bg-zinc-900 p-3"
                   >
                     <div>
-                      <p className="font-medium text-white">
+                      <p className="font-medium text-gray-900 dark:text-white">
                         {order.service}
                       </p>
 
-                      <p className="text-xs text-zinc-400">
+                      <p className="text-xs text-gray-500 dark:text-zinc-400">
                         {order.phoneNumber}
                       </p>
                     </div>
@@ -119,13 +119,13 @@ export default function DashboardPage() {
         </div>
 
         {/* Recent Transactions */}
-        <div className="rounded-3xl border border-zinc-800 bg-[#111827] p-6">
-          <h2 className="mb-5 text-xl font-bold text-white">
+        <div className="rounded-3xl border border-gray-200 dark:border-zinc-800 bg-white dark:bg-[#111827] p-6">
+          <h2 className="mb-5 text-xl font-bold text-gray-900 dark:text-white">
             Recent Transactions
           </h2>
 
           {transactions.length === 0 ? (
-            <p className="text-zinc-500">
+            <p className="text-gray-400 dark:text-zinc-500">
               No transactions yet.
             </p>
           ) : (
@@ -135,14 +135,14 @@ export default function DashboardPage() {
                 .map((transaction) => (
                   <div
                     key={transaction.reference}
-                    className="flex items-center justify-between rounded-xl bg-zinc-900 p-3"
+                    className="flex items-center justify-between rounded-xl bg-white dark:bg-zinc-900 p-3"
                   >
                     <div>
-                      <p className="font-medium text-white">
+                      <p className="font-medium text-gray-900 dark:text-white">
                         {transaction.type}
                       </p>
 
-                      <p className="text-xs text-zinc-400">
+                      <p className="text-xs text-gray-500 dark:text-zinc-400">
                         {new Date(
                           transaction.createdAt,
                         ).toLocaleDateString()}

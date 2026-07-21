@@ -97,23 +97,23 @@ export default function PurchaseModal({
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/80 p-3 backdrop-blur-md sm:items-center sm:p-5">
 
-      <div className="max-h-[95vh] w-full max-w-xl overflow-hidden rounded-3xl border border-zinc-800 bg-[#0f172a] shadow-[0_25px_100px_rgba(0,0,0,.65)]">
+      <div className="max-h-[95vh] w-full max-w-xl overflow-hidden rounded-3xl border border-gray-200 dark:border-zinc-800 bg-white dark:bg-[#0f172a] shadow-[0_25px_100px_rgba(0,0,0,.65)]">
 
         {/* ======================================================
             HEADER
         ====================================================== */}
 
-        <div className="border-b border-zinc-800 bg-gradient-to-r from-orange-500/20 via-orange-500/10 to-transparent px-6 py-6">
+        <div className="border-b border-gray-200 dark:border-zinc-800 bg-gradient-to-r from-orange-500/20 via-orange-500/10 to-transparent px-6 py-6">
 
           <div className="flex items-start justify-between gap-5">
 
             <div>
 
-              <h2 className="text-2xl font-bold text-white">
+              <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
                 Confirm Purchase
               </h2>
 
-              <p className="mt-2 text-sm text-zinc-400">
+              <p className="mt-2 text-sm text-gray-500 dark:text-zinc-400">
                 Review your activation details before
                 completing this transaction.
               </p>
@@ -141,9 +141,9 @@ export default function PurchaseModal({
                 ORDER DETAILS
             ====================================================== */}
 
-            <div className="rounded-2xl border border-zinc-800 bg-zinc-950 p-6">
+            <div className="rounded-2xl border border-gray-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 p-6">
 
-              <h3 className="mb-5 text-sm font-semibold uppercase tracking-widest text-zinc-500">
+              <h3 className="mb-5 text-sm font-semibold uppercase tracking-widest text-gray-400 dark:text-zinc-500">
                 Order Details
               </h3>
 
@@ -207,13 +207,13 @@ export default function PurchaseModal({
                 BALANCE AFTER PURCHASE
             ====================================================== */}
 
-            <div className="rounded-2xl border border-zinc-800 bg-zinc-950 p-6">
+            <div className="rounded-2xl border border-gray-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 p-6">
 
               <div className="flex items-center justify-between">
 
                 <div>
 
-                  <p className="text-sm text-zinc-400">
+                  <p className="text-sm text-gray-500 dark:text-zinc-400">
                     Wallet After Purchase
                   </p>
 
@@ -258,9 +258,9 @@ export default function PurchaseModal({
                 PAYMENT BREAKDOWN
             ====================================================== */}
 
-            <div className="rounded-2xl border border-zinc-800 bg-zinc-950 p-6">
+            <div className="rounded-2xl border border-gray-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 p-6">
 
-              <h3 className="mb-5 text-sm font-semibold uppercase tracking-widest text-zinc-500">
+              <h3 className="mb-5 text-sm font-semibold uppercase tracking-widest text-gray-400 dark:text-zinc-500">
                 Payment Summary
               </h3>
 
@@ -268,11 +268,11 @@ export default function PurchaseModal({
 
                 <div className="flex items-center justify-between">
 
-                  <span className="text-zinc-400">
+                  <span className="text-gray-500 dark:text-zinc-400">
                     Wallet Balance
                   </span>
 
-                  <span className="font-semibold text-white">
+                  <span className="font-semibold text-gray-900 dark:text-white">
                     {money(wallet)}
                   </span>
 
@@ -280,7 +280,7 @@ export default function PurchaseModal({
 
                 <div className="flex items-center justify-between">
 
-                  <span className="text-zinc-400">
+                  <span className="text-gray-500 dark:text-zinc-400">
                     Purchase Price
                   </span>
 
@@ -290,11 +290,11 @@ export default function PurchaseModal({
 
                 </div>
 
-                <div className="border-t border-zinc-800 pt-4">
+                <div className="border-t border-gray-200 dark:border-zinc-800 pt-4">
 
                   <div className="flex items-center justify-between">
 
-                    <span className="font-semibold text-white">
+                    <span className="font-semibold text-gray-900 dark:text-white">
                       Remaining Balance
                     </span>
 
@@ -342,7 +342,7 @@ export default function PurchaseModal({
                       Insufficient Wallet Balance
                     </h3>
 
-                    <p className="mt-2 text-sm leading-6 text-zinc-300">
+                    <p className="mt-2 text-sm leading-6 text-gray-700 dark:text-zinc-300">
                       Your wallet balance is not enough to complete
                       this purchase.
                     </p>
@@ -351,7 +351,7 @@ export default function PurchaseModal({
 
                       <div className="flex items-center justify-between">
 
-                        <span className="text-sm text-zinc-400">
+                        <span className="text-sm text-gray-500 dark:text-zinc-400">
                           Additional Funds Needed
                         </span>
 
@@ -390,7 +390,7 @@ export default function PurchaseModal({
                       Ready to Purchase
                     </h3>
 
-                    <p className="mt-2 text-sm leading-6 text-zinc-300">
+                    <p className="mt-2 text-sm leading-6 text-gray-700 dark:text-zinc-300">
                       Everything looks good. Once you confirm,
                       the purchase amount will be deducted from
                       your wallet immediately and your activation
@@ -415,7 +415,7 @@ export default function PurchaseModal({
                 type="button"
                 disabled={loading}
                 onClick={onClose}
-                className="flex-1 rounded-xl border border-zinc-700 bg-zinc-900 py-3.5 text-sm font-semibold text-zinc-300 transition-all duration-200 hover:border-zinc-600 hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-60"
+                className="flex-1 rounded-xl border border-gray-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 py-3.5 text-sm font-semibold text-gray-700 dark:text-zinc-300 transition-all duration-200 hover:border-zinc-600 hover:bg-gray-100 dark:hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-60"
               >
                 Cancel
               </button>
@@ -470,21 +470,21 @@ function Row({
   value,
 }: RowProps) {
   return (
-    <div className="flex items-center justify-between rounded-xl border border-zinc-800 bg-zinc-900/40 px-4 py-3">
+    <div className="flex items-center justify-between rounded-xl border border-gray-200 dark:border-zinc-800 bg-white/40 dark:bg-zinc-900/40 px-4 py-3">
 
       <div className="flex items-center gap-3">
 
-        <div className="rounded-lg bg-zinc-800 p-2 text-zinc-400">
+        <div className="rounded-lg bg-gray-100 dark:bg-zinc-800 p-2 text-gray-500 dark:text-zinc-400">
           {icon}
         </div>
 
-        <span className="text-sm text-zinc-400">
+        <span className="text-sm text-gray-500 dark:text-zinc-400">
           {label}
         </span>
 
       </div>
 
-      <span className="max-w-[180px] truncate text-right font-semibold text-white">
+      <span className="max-w-[180px] truncate text-right font-semibold text-gray-900 dark:text-white">
         {value}
       </span>
 
@@ -534,7 +534,7 @@ function Card({
 
       <div className="mb-5 flex items-center justify-between">
 
-        <span className="text-sm font-medium text-zinc-300">
+        <span className="text-sm font-medium text-gray-700 dark:text-zinc-300">
           {title}
         </span>
 

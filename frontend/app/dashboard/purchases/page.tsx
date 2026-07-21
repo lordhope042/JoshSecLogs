@@ -119,12 +119,12 @@ export default function MyPurchasesPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-bold text-white">My Purchases</h1>
-        <p className="text-zinc-400">Accounts you've bought</p>
+        <h1 className="text-3xl font-bold text-gray-900 dark:text-white">My Purchases</h1>
+        <p className="text-gray-500 dark:text-zinc-400">Accounts you've bought</p>
       </div>
 
       {purchases.length === 0 ? (
-        <div className="rounded-2xl border border-zinc-800 bg-[#0f172a] p-10 text-center text-zinc-500">
+        <div className="rounded-2xl border border-gray-200 dark:border-zinc-800 bg-white dark:bg-[#0f172a] p-10 text-center text-gray-400 dark:text-zinc-500">
           You haven't purchased any accounts yet.
         </div>
       ) : (
@@ -132,15 +132,15 @@ export default function MyPurchasesPage() {
           {purchases.map((log) => (
             <div
               key={log.id}
-              className="group overflow-hidden rounded-3xl border border-zinc-800 bg-[#0f172a] shadow-sm transition-all duration-300 hover:-translate-y-1 hover:border-orange-400 hover:shadow-xl"
+              className="group overflow-hidden rounded-3xl border border-gray-200 dark:border-zinc-800 bg-white dark:bg-[#0f172a] shadow-sm transition-all duration-300 hover:-translate-y-1 hover:border-orange-400 hover:shadow-xl"
             >
               {/* Cover */}
               <div className="relative flex h-40 items-center justify-center overflow-hidden bg-gradient-to-r from-orange-500 to-amber-500">
-                <span className="text-5xl font-black text-white">
+                <span className="text-5xl font-black text-gray-900 dark:text-white">
                   {log.platform.charAt(0)}
                 </span>
 
-                <div className="absolute left-4 top-4 rounded-full bg-black/40 px-3 py-1 text-xs font-semibold text-white backdrop-blur">
+                <div className="absolute left-4 top-4 rounded-full bg-black/40 px-3 py-1 text-xs font-semibold text-gray-900 dark:text-white backdrop-blur">
                   {log.platform}
                 </div>
 
@@ -153,24 +153,24 @@ export default function MyPurchasesPage() {
               {/* Body */}
               <div className="space-y-4 p-5">
                 <div>
-                  <h3 className="truncate text-lg font-bold text-white">
+                  <h3 className="truncate text-lg font-bold text-gray-900 dark:text-white">
                     @{log.username}
                   </h3>
-                  <p className="mt-1 text-sm text-zinc-500">{log.country}</p>
+                  <p className="mt-1 text-sm text-gray-400 dark:text-zinc-500">{log.country}</p>
                 </div>
 
-                <div className="flex flex-wrap gap-2 text-xs text-zinc-400">
+                <div className="flex flex-wrap gap-2 text-xs text-gray-500 dark:text-zinc-400">
                   {log.purchasedAt && (
-                    <span className="flex items-center gap-1 rounded-full bg-zinc-800 px-2.5 py-1">
+                    <span className="flex items-center gap-1 rounded-full bg-gray-100 dark:bg-zinc-800 px-2.5 py-1">
                       <Calendar size={12} />
                       {new Date(log.purchasedAt).toLocaleDateString()}
                     </span>
                   )}
                 </div>
 
-                <div className="flex items-center justify-between border-t border-zinc-800 pt-4">
+                <div className="flex items-center justify-between border-t border-gray-200 dark:border-zinc-800 pt-4">
                   <div>
-                    <p className="text-xs text-zinc-500">Paid</p>
+                    <p className="text-xs text-gray-400 dark:text-zinc-500">Paid</p>
                     <p className="text-xl font-bold text-orange-400">
                       {money(log.price)}
                     </p>
@@ -199,7 +199,7 @@ export default function MyPurchasesPage() {
         >
           <div
             onClick={(e) => e.stopPropagation()}
-            className="max-h-[85vh] w-full max-w-lg overflow-y-auto rounded-2xl border border-zinc-800 bg-[#0f172a] p-6"
+            className="max-h-[85vh] w-full max-w-lg overflow-y-auto rounded-2xl border border-gray-200 dark:border-zinc-800 bg-white dark:bg-[#0f172a] p-6"
           >
             {detailLoading && (
               <div className="flex items-center justify-center py-16">
@@ -211,17 +211,17 @@ export default function MyPurchasesPage() {
               <>
                 <div className="flex items-start justify-between">
                   <div>
-                    <h3 className="text-lg font-semibold text-white">
+                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
                       @{selected.username}
                     </h3>
-                    <p className="mt-1 text-sm text-zinc-400">
+                    <p className="mt-1 text-sm text-gray-500 dark:text-zinc-400">
                       {selected.platform} · {selected.country}
                     </p>
                   </div>
 
                   <button
                     onClick={closeDetail}
-                    className="rounded-lg p-1.5 text-zinc-400 transition hover:bg-zinc-800 hover:text-white"
+                    className="rounded-lg p-1.5 text-gray-500 dark:text-zinc-400 transition hover:bg-gray-100 dark:hover:bg-zinc-800 hover:text-gray-900 dark:hover:text-white"
                   >
                     <X size={18} />
                   </button>
@@ -238,7 +238,7 @@ export default function MyPurchasesPage() {
 
                     if (!description) {
                       return (
-                        <p className="py-6 text-center text-sm text-zinc-500">
+                        <p className="py-6 text-center text-sm text-gray-400 dark:text-zinc-500">
                           No credentials found for this account. Contact
                           support if this looks wrong.
                         </p>
@@ -246,9 +246,9 @@ export default function MyPurchasesPage() {
                     }
 
                     return (
-                      <div className="rounded-xl border border-zinc-800 bg-zinc-900/60 p-4">
+                      <div className="rounded-xl border border-gray-200 dark:border-zinc-800 bg-white/60 dark:bg-zinc-900/60 p-4">
                         <div className="mb-2 flex items-center justify-between">
-                          <p className="text-xs font-medium text-zinc-500">
+                          <p className="text-xs font-medium text-gray-400 dark:text-zinc-500">
                             Account Details
                           </p>
 
@@ -256,7 +256,7 @@ export default function MyPurchasesPage() {
                             <button
                               onClick={() => setRevealed((r) => !r)}
                               title={revealed ? "Hide" : "Show"}
-                              className="rounded-lg p-2 text-zinc-400 transition hover:bg-zinc-800 hover:text-white"
+                              className="rounded-lg p-2 text-gray-500 dark:text-zinc-400 transition hover:bg-gray-100 dark:hover:bg-zinc-800 hover:text-gray-900 dark:hover:text-white"
                             >
                               {revealed ? (
                                 <EyeOff size={15} />
@@ -268,7 +268,7 @@ export default function MyPurchasesPage() {
                             <button
                               onClick={() => copyDescription(description)}
                               title="Copy all"
-                              className="rounded-lg p-2 text-zinc-400 transition hover:bg-zinc-800 hover:text-white"
+                              className="rounded-lg p-2 text-gray-500 dark:text-zinc-400 transition hover:bg-gray-100 dark:hover:bg-zinc-800 hover:text-gray-900 dark:hover:text-white"
                             >
                               {copied ? (
                                 <Check size={15} className="text-green-400" />
@@ -279,7 +279,7 @@ export default function MyPurchasesPage() {
                           </div>
                         </div>
 
-                        <p className="whitespace-pre-wrap break-all font-mono text-sm leading-6 text-zinc-200">
+                        <p className="whitespace-pre-wrap break-all font-mono text-sm leading-6 text-gray-800 dark:text-zinc-200">
                           {revealed
                             ? description
                             : "•".repeat(Math.min(description.length, 80))}
@@ -289,11 +289,11 @@ export default function MyPurchasesPage() {
                   })()}
 
                   {selected.notes && (
-                    <div className="mt-3 rounded-xl border border-zinc-800 bg-zinc-900/60 p-4">
-                      <p className="mb-1 text-xs font-medium text-zinc-500">
+                    <div className="mt-3 rounded-xl border border-gray-200 dark:border-zinc-800 bg-white/60 dark:bg-zinc-900/60 p-4">
+                      <p className="mb-1 text-xs font-medium text-gray-400 dark:text-zinc-500">
                         Notes
                       </p>
-                      <p className="text-sm text-zinc-200">
+                      <p className="text-sm text-gray-800 dark:text-zinc-200">
                         {selected.notes}
                       </p>
                     </div>

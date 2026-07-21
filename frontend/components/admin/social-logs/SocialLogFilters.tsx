@@ -87,12 +87,12 @@ export default function SocialLogFilters({
   onChange,
 }: Props) {
   return (
-    <div className="rounded-2xl border bg-white p-5 shadow-sm">
+    <div className="rounded-2xl border border-gray-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-5 shadow-sm">
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-6">
         <div className="relative">
           <Search
             size={18}
-            className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
+            className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-zinc-500"
           />
 
           <input
@@ -104,7 +104,7 @@ export default function SocialLogFilters({
                 search: e.target.value,
               })
             }
-            className="w-full rounded-xl border py-2 pl-10 pr-3 outline-none focus:border-orange-500"
+            className="w-full rounded-xl border border-gray-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-gray-900 dark:text-white py-2 pl-10 pr-3 outline-none focus:border-orange-500"
           />
         </div>
 
@@ -117,7 +117,7 @@ export default function SocialLogFilters({
                 : undefined,
             })
           }
-          className="rounded-xl border p-2 outline-none focus:border-orange-500"
+          className="rounded-xl border border-gray-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-gray-900 dark:text-white p-2 outline-none focus:border-orange-500"
         >
           <option value="">
             All Categories
@@ -142,7 +142,7 @@ export default function SocialLogFilters({
                 : undefined,
             })
           }
-          className="rounded-xl border p-2 outline-none focus:border-orange-500"
+          className="rounded-xl border border-gray-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-gray-900 dark:text-white p-2 outline-none focus:border-orange-500"
         >
           <option value="">
             All Platforms
@@ -167,7 +167,7 @@ export default function SocialLogFilters({
                 : undefined,
             })
           }
-          className="rounded-xl border p-2 outline-none focus:border-orange-500"
+          className="rounded-xl border border-gray-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-gray-900 dark:text-white p-2 outline-none focus:border-orange-500"
         >
           <option value="">
             All Status
@@ -194,7 +194,7 @@ export default function SocialLogFilters({
               country: e.target.value,
             })
           }
-          className="rounded-xl border p-2 outline-none focus:border-orange-500"
+          className="rounded-xl border border-gray-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-gray-900 dark:text-white p-2 outline-none focus:border-orange-500"
         />
 
         <select
@@ -206,7 +206,7 @@ export default function SocialLogFilters({
                 : undefined,
             })
           }
-          className="rounded-xl border p-2 outline-none focus:border-orange-500"
+          className="rounded-xl border border-gray-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-gray-900 dark:text-white p-2 outline-none focus:border-orange-500"
         >
           <option value="">
             Sort By

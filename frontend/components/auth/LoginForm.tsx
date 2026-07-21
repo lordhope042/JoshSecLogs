@@ -94,7 +94,7 @@ export default function LoginForm() {
     "w-full rounded-2xl border border-zinc-700 bg-[#111827]/80 py-3.5 pl-12 pr-4 text-white outline-none transition-all placeholder:text-zinc-500 focus:border-orange-500 focus:ring-4 focus:ring-orange-500/10";
 
   return (
-    <div className="overflow-hidden rounded-3xl border border-orange-500/20 bg-[#0b1220]/90 p-8 shadow-[0_0_80px_rgba(255,120,0,.08)] backdrop-blur-xl">
+    <div className="overflow-hidden rounded-3xl border border-orange-500/20 bg-gray-50/90 dark:bg-[#0b1220]/90 p-8 shadow-[0_0_80px_rgba(255,120,0,.08)] backdrop-blur-xl">
 
       {/* Header */}
 
@@ -102,15 +102,15 @@ export default function LoginForm() {
 
         <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-orange-500 to-orange-600">
 
-          <ShieldCheck className="h-8 w-8 text-white" />
+          <ShieldCheck className="h-8 w-8 text-gray-900 dark:text-white" />
 
         </div>
 
-        <h1 className="text-3xl font-bold text-white">
+        <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
           Welcome Back
         </h1>
 
-        <p className="mt-3 text-sm leading-6 text-zinc-400">
+        <p className="mt-3 text-sm leading-6 text-gray-500 dark:text-zinc-400">
           Login to your JoshSecLogs account
           to purchase Virtual Numbers,
           Social Media Accounts,
@@ -129,7 +129,7 @@ export default function LoginForm() {
 
         <div>
 
-          <label className="mb-2 block text-sm font-medium text-zinc-300">
+          <label className="mb-2 block text-sm font-medium text-gray-700 dark:text-zinc-300">
             Email Address
           </label>
 
@@ -137,7 +137,7 @@ export default function LoginForm() {
 
             <Mail
               size={18}
-              className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-500"
+              className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 dark:text-zinc-500"
             />
 
             <input
@@ -161,7 +161,7 @@ export default function LoginForm() {
 
         <div>
 
-          <label className="mb-2 block text-sm font-medium text-zinc-300">
+          <label className="mb-2 block text-sm font-medium text-gray-700 dark:text-zinc-300">
             Password
           </label>
 
@@ -169,7 +169,7 @@ export default function LoginForm() {
 
             <Lock
               size={18}
-              className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-500"
+              className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 dark:text-zinc-500"
             />
 
             <input
@@ -190,7 +190,7 @@ export default function LoginForm() {
                   !showPassword,
                 )
               }
-              className="absolute right-4 top-1/2 -translate-y-1/2 text-zinc-500 transition hover:text-orange-500"
+              className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 dark:text-zinc-500 transition hover:text-orange-500"
             >
               {showPassword ? (
                 <EyeOff size={18} />
@@ -213,7 +213,7 @@ export default function LoginForm() {
 
         <div className="flex items-center justify-between">
 
-          <label className="flex items-center gap-2 text-sm text-zinc-400">
+          <label className="flex items-center gap-2 text-sm text-gray-500 dark:text-zinc-400">
 
             <input
               type="checkbox"
@@ -256,13 +256,13 @@ export default function LoginForm() {
 
           <div className="absolute inset-0 flex items-center">
 
-            <div className="w-full border-t border-zinc-700"></div>
+            <div className="w-full border-t border-gray-300 dark:border-zinc-700"></div>
 
           </div>
 
           <div className="relative flex justify-center">
 
-            <span className="bg-[#0b1220] px-4 text-sm text-zinc-500">
+            <span className="bg-gray-50 dark:bg-[#0b1220] px-4 text-sm text-gray-400 dark:text-zinc-500">
               OR CONTINUE WITH
             </span>
 
@@ -275,7 +275,7 @@ export default function LoginForm() {
         <Button
           type="button"
           variant="outline"
-          className="h-14 w-full rounded-2xl border-zinc-700 bg-[#111827] text-white transition hover:bg-[#192438]"
+          className="h-14 w-full rounded-2xl border-gray-300 dark:border-zinc-700 bg-white dark:bg-[#111827] text-gray-900 dark:text-white transition hover:bg-[#192438]"
         >
 
           <svg
@@ -309,7 +309,7 @@ export default function LoginForm() {
 
         {/* REGISTER */}
 
-        <div className="pt-2 text-center text-sm text-zinc-400">
+        <div className="pt-2 text-center text-sm text-gray-500 dark:text-zinc-400">
 
           Don't have an account?
 

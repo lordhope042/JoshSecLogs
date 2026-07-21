@@ -33,14 +33,14 @@ export default function MarketplaceHeader({
   const serviceList = Array.isArray(services) ? services : [];
 
   return (
-    <div className="rounded-3xl border border-zinc-800 bg-[#111827] p-8">
+    <div className="rounded-3xl border border-gray-200 dark:border-zinc-800 bg-white dark:bg-[#111827] p-8">
 
       <div className="mb-6">
-        <h1 className="text-3xl font-bold text-white">
+        <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
           Virtual Number Marketplace
         </h1>
 
-        <p className="mt-2 text-zinc-400">
+        <p className="mt-2 text-gray-500 dark:text-zinc-400">
           Select a country and service to continue.
         </p>
       </div>
@@ -49,7 +49,7 @@ export default function MarketplaceHeader({
 
         {/* Country */}
         <div>
-          <label className="mb-2 block text-sm text-zinc-400">
+          <label className="mb-2 block text-sm text-gray-500 dark:text-zinc-400">
             Country
           </label>
 
@@ -57,7 +57,7 @@ export default function MarketplaceHeader({
             value={country}
             onChange={(e) => onCountryChange(e.target.value)}
             disabled={disabled || validCountries.length === 0}
-            className="h-12 w-full rounded-xl border border-zinc-700 bg-[#0F172A] px-4 text-white outline-none focus:border-orange-500"
+            className="h-12 w-full rounded-xl border border-gray-300 dark:border-zinc-700 bg-gray-50 dark:bg-[#0F172A] px-4 text-gray-900 dark:text-white outline-none focus:border-orange-500"
           >
             <option value="">
               {validCountries.length === 0
@@ -75,7 +75,7 @@ export default function MarketplaceHeader({
 
         {/* Service */}
         <div>
-          <label className="mb-2 block text-sm text-zinc-400">
+          <label className="mb-2 block text-sm text-gray-500 dark:text-zinc-400">
             Service
           </label>
 
@@ -83,7 +83,7 @@ export default function MarketplaceHeader({
             value={service}
             onChange={(e) => onServiceChange(e.target.value)}
             disabled={!country || serviceList.length === 0}
-            className="h-12 w-full rounded-xl border border-zinc-700 bg-[#0F172A] px-4 text-white outline-none focus:border-orange-500"
+            className="h-12 w-full rounded-xl border border-gray-300 dark:border-zinc-700 bg-gray-50 dark:bg-[#0F172A] px-4 text-gray-900 dark:text-white outline-none focus:border-orange-500"
           >
             <option value="">
               {!country

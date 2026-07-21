@@ -9,14 +9,14 @@ export default function ForgotPasswordForm() {
 
       <div>
 
-        <label className="mb-2 block text-sm text-zinc-300">
+        <label className="mb-2 block text-sm text-gray-700 dark:text-zinc-300">
           Email Address
         </label>
 
         <input
           type="email"
           placeholder="example@email.com"
-          className="w-full rounded-xl border border-zinc-700 bg-[#1b2434] px-4 py-3 text-white outline-none transition-all focus:border-orange-500"
+          className="w-full rounded-xl border border-gray-300 dark:border-zinc-700 bg-gray-100 dark:bg-[#1b2434] px-4 py-3 text-gray-900 dark:text-white outline-none transition-all focus:border-orange-500"
         />
 
       </div>

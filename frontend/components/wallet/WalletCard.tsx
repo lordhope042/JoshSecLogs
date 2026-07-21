@@ -10,7 +10,7 @@ export default function WalletCard({
   onDeposit,
 }: Props) {
   return (
-    <div className="rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 p-8 text-white">
+    <div className="rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 p-8 text-gray-900 dark:text-white">
 
       <p className="text-sm opacity-80">
         Available Balance

@@ -30,7 +30,7 @@ const testimonials = [
 
 export default function Testimonials() {
   return (
-    <section className="bg-[#08111d] py-28">
+    <section className="bg-gray-50 dark:bg-[#08111d] py-28">
       <div className="mx-auto max-w-7xl px-6">
 
         <div className="text-center">
@@ -39,11 +39,11 @@ export default function Testimonials() {
             Testimonials
           </span>
 
-          <h2 className="mt-4 text-5xl font-black text-white">
+          <h2 className="mt-4 text-5xl font-black text-gray-900 dark:text-white">
             What Our Customers Say
           </h2>
 
-          <p className="mx-auto mt-6 max-w-2xl text-zinc-400">
+          <p className="mx-auto mt-6 max-w-2xl text-gray-500 dark:text-zinc-400">
             Thousands of customers trust JoshSecLogs every day.
           </p>
 
@@ -58,7 +58,7 @@ export default function Testimonials() {
               whileInView={{ opacity: 1, y: 0 }}
               transition={{ delay: index * .2 }}
               viewport={{ once: true }}
-              className="rounded-3xl border border-orange-500/10 bg-[#111827] p-8 transition hover:-translate-y-2 hover:border-orange-500 hover:shadow-[0_0_40px_rgba(249,115,22,.25)]"
+              className="rounded-3xl border border-orange-500/10 bg-white dark:bg-[#111827] p-8 transition hover:-translate-y-2 hover:border-orange-500 hover:shadow-[0_0_40px_rgba(249,115,22,.25)]"
             >
               <div className="flex">
 
@@ -72,7 +72,7 @@ export default function Testimonials() {
 
               </div>
 
-              <p className="mt-6 leading-8 text-zinc-300">
+              <p className="mt-6 leading-8 text-gray-700 dark:text-zinc-300">
                 "{item.review}"
               </p>
 
@@ -88,7 +88,7 @@ export default function Testimonials() {
 
                 <div>
 
-                  <h3 className="font-bold text-white">
+                  <h3 className="font-bold text-gray-900 dark:text-white">
                     {item.name}
                   </h3>
 

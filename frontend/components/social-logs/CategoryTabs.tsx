@@ -96,7 +96,7 @@ export default function CategoryTabs({ categories, selected, onSelect, searchQue
           <div className="relative flex-1">
             <Search
               size={16}
-              className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-zinc-400"
+              className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 dark:text-zinc-400"
             />
             <input
               value={searchQuery}
@@ -107,7 +107,7 @@ export default function CategoryTabs({ categories, selected, onSelect, searchQue
             {searchQuery && (
               <button
                 onClick={() => onSearchChange("")}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200"
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 dark:text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200"
               >
                 <X size={16} />
               </button>
@@ -131,7 +131,7 @@ export default function CategoryTabs({ categories, selected, onSelect, searchQue
 
         {/* Live result count — only shown while actively searching */}
         {searchQuery.trim() && (
-          <p className="px-1 text-xs text-zinc-500">
+          <p className="px-1 text-xs text-gray-400 dark:text-zinc-500">
             {visibleCategories.length} categor{visibleCategories.length === 1 ? "y" : "ies"} match "{searchQuery.trim()}"
           </p>
         )}
@@ -139,7 +139,7 @@ export default function CategoryTabs({ categories, selected, onSelect, searchQue
         {/* Tabs — selected one always first, filtered by search when present */}
         <div className="flex gap-3 overflow-x-auto">
           {visibleCategories.length === 0 ? (
-            <p className="px-2 py-3 text-sm text-zinc-500">
+            <p className="px-2 py-3 text-sm text-gray-400 dark:text-zinc-500">
               No {showAll ? "" : "available "}categories match "{searchQuery}".
               {!showAll && (
                 <button onClick={() => setShowAll(true)} className="ml-1 font-medium text-orange-500 hover:underline">

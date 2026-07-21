@@ -101,7 +101,7 @@ export default function DashboardLayout({
   }
 
   return (
-    <div className="flex min-h-screen bg-[#070b14] text-white">
+    <div className="flex min-h-screen bg-white dark:bg-[#070b14] text-gray-900 dark:text-white">
 
       {/* Mobile backdrop */}
 
@@ -115,11 +115,11 @@ export default function DashboardLayout({
       {/* Sidebar */}
 
       <aside
-        className={`fixed inset-y-0 left-0 z-50 flex w-72 flex-col border-r border-zinc-800 bg-[#0b1220] transition-transform duration-300 lg:translate-x-0 ${
+        className={`fixed inset-y-0 left-0 z-50 flex w-72 flex-col border-r border-gray-200 dark:border-zinc-800 bg-gray-50 dark:bg-[#0b1220] transition-transform duration-300 lg:translate-x-0 ${
           open ? "translate-x-0" : "-translate-x-full"
         }`}
       >
-        <div className="flex h-20 shrink-0 items-center justify-between border-b border-zinc-800 px-6">
+        <div className="flex h-20 shrink-0 items-center justify-between border-b border-gray-200 dark:border-zinc-800 px-6">
 
           <h1 className="text-2xl font-black text-orange-500">
             JoshSecLogs
@@ -127,7 +127,7 @@ export default function DashboardLayout({
 
           <button
             onClick={() => setOpen(false)}
-            className="text-zinc-400 hover:text-white lg:hidden"
+            className="text-gray-500 dark:text-zinc-400 hover:text-gray-900 dark:hover:text-white lg:hidden"
           >
             <X />
           </button>
@@ -147,7 +147,7 @@ export default function DashboardLayout({
                 className={`flex items-center gap-3 rounded-xl px-4 py-3 transition ${
                   active
                     ? "bg-orange-500 text-white"
-                    : "text-zinc-400 hover:bg-zinc-800 hover:text-white"
+                    : "text-gray-500 dark:text-zinc-400 hover:bg-gray-100 dark:hover:bg-zinc-800 hover:text-gray-900 dark:hover:text-white"
                 }`}
               >
                 <Icon size={20} />
@@ -158,7 +158,7 @@ export default function DashboardLayout({
 
         </nav>
 
-        <div className="shrink-0 border-t border-zinc-800 p-4">
+        <div className="shrink-0 border-t border-gray-200 dark:border-zinc-800 p-4">
           <button
             onClick={handleLogout}
             disabled={loggingOut}
@@ -180,13 +180,13 @@ export default function DashboardLayout({
 
         {/* Navbar */}
 
-        <header className="sticky top-0 z-30 flex h-20 items-center justify-between border-b border-zinc-800 bg-[#0b1220]/90 px-6 backdrop-blur">
+        <header className="sticky top-0 z-30 flex h-20 items-center justify-between border-b border-gray-200 dark:border-zinc-800 bg-gray-50/90 dark:bg-[#0b1220]/90 px-6 backdrop-blur">
 
           <div className="flex items-center gap-4">
 
             <button
               onClick={() => setOpen(true)}
-              className="text-zinc-400 hover:text-white lg:hidden"
+              className="text-gray-500 dark:text-zinc-400 hover:text-gray-900 dark:hover:text-white lg:hidden"
             >
               <Menu />
             </button>
@@ -200,7 +200,7 @@ export default function DashboardLayout({
 
           <div className="flex items-center gap-5">
 
-            <button className="relative text-zinc-400 hover:text-white">
+            <button className="relative text-gray-500 dark:text-zinc-400 hover:text-gray-900 dark:hover:text-white">
               <Bell />
               <span className="absolute -right-1 -top-1 h-2 w-2 rounded-full bg-orange-500" />
             </button>
@@ -216,7 +216,7 @@ export default function DashboardLayout({
 
               <div className="hidden sm:block">
                 <p className="font-semibold leading-tight">Account</p>
-                <p className="text-sm text-zinc-500 leading-tight">
+                <p className="text-sm text-gray-400 dark:text-zinc-500 leading-tight">
                   View profile
                 </p>
               </div>

@@ -107,22 +107,6 @@ export default function Navbar() {
 
         {/* Right */}
         <div className="hidden items-center gap-4 lg:flex">
-          <Button
-            variant="outline"
-            size="icon"
-            className={`
-              border-orange-500/30
-              bg-zinc-100
-              dark:bg-zinc-900
-              hover:bg-orange-500/10
-              dark:hover:bg-orange-500/20
-              transition-colors
-            `}
-            onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-          >
-            {themeIcon}
-          </Button>
-
           <Link href="/login">
             <Button
               variant="outline"
@@ -131,7 +115,7 @@ export default function Navbar() {
                 text-gray-900
                 dark:text-white
                 hover:bg-orange-500
-                hover:text-white
+                hover:text-gray-900 dark:hover:text-white
                 dark:hover:bg-orange-500
                 transition-colors
               `}
@@ -146,6 +130,23 @@ export default function Navbar() {
             </Button>
           </Link>
         </div>
+
+        {/* Theme toggle — visible at every breakpoint */}
+        <Button
+          variant="outline"
+          size="icon"
+          className={`
+            border-orange-500/30
+            bg-zinc-100
+            dark:bg-zinc-900
+            hover:bg-orange-500/10
+            dark:hover:bg-orange-500/20
+            transition-colors
+          `}
+          onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+        >
+          {themeIcon}
+        </Button>
 
         {/* Mobile */}
         <button

@@ -28,7 +28,7 @@ interface FormValues {
   image?: string;
 
   loginEmail?: string;
-  loginPhone?: string;
+  emailPassword?: string;
   accountPassword?: string;
   twoFactorSecret?: string;
   recoveryEmail?: string;
@@ -134,7 +134,7 @@ const EMPTY_FORM: FormValues = {
   description: "",
   image: "",
   loginEmail: "",
-  loginPhone: "",
+  emailPassword: "",
   accountPassword: "",
   twoFactorSecret: "",
   recoveryEmail: "",
@@ -145,9 +145,6 @@ const EMPTY_FORM: FormValues = {
 
 const URL_PATTERN = /^https?:\/\/.+/i;
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-// Requires a leading + and country code, matching class-validator's
-// @IsPhoneNumber() with no region argument (strict E.164)
-const PHONE_PATTERN = /^\+[1-9]\d{6,14}$/;
 
 export default function SocialLogForm({
   initialData,
@@ -212,14 +209,11 @@ export default function SocialLogForm({
     if (values.image?.trim() && !URL_PATTERN.test(values.image.trim()))
       next.image = "Must be a valid URL starting with http:// or https://";
 
-    if (!values.loginEmail?.trim() && !values.loginPhone?.trim())
-      next.loginEmail = "Provide at least a login email or phone.";
+    if (!values.loginEmail?.trim())
+      next.loginEmail = "Login email is required.";
 
     if (values.loginEmail?.trim() && !EMAIL_PATTERN.test(values.loginEmail.trim()))
       next.loginEmail = "Enter a valid email address.";
-
-    if (values.loginPhone?.trim() && !PHONE_PATTERN.test(values.loginPhone.trim()))
-      next.loginPhone = "Use international format, e.g. +2348012345678";
 
     if (values.recoveryEmail?.trim() && !EMAIL_PATTERN.test(values.recoveryEmail.trim()))
       next.recoveryEmail = "Enter a valid email address.";
@@ -271,7 +265,7 @@ export default function SocialLogForm({
         image: values.image?.trim() || undefined,
 
         loginEmail: values.loginEmail?.trim() || undefined,
-        loginPhone: values.loginPhone?.trim() || undefined,
+        emailPassword: values.emailPassword?.trim() || undefined,
         accountPassword: values.accountPassword?.trim() || undefined,
         twoFactorSecret: values.twoFactorSecret?.trim() || undefined,
         recoveryEmail: values.recoveryEmail?.trim() || undefined,
@@ -296,7 +290,7 @@ export default function SocialLogForm({
       ============================ */}
 
       <div>
-        <h3 className="mb-4 text-sm font-semibold uppercase tracking-wide text-zinc-500">
+        <h3 className="mb-4 text-sm font-semibold uppercase tracking-wide text-gray-400 dark:text-zinc-500">
           Account Info
         </h3>
 
@@ -398,7 +392,7 @@ export default function SocialLogForm({
                       className={`rounded-xl border px-4 py-2.5 text-sm font-medium transition ${
                         values.followers === tier.value
                           ? "border-orange-500 bg-orange-500/10 text-orange-400"
-                          : "border-zinc-700 bg-zinc-800 text-zinc-400 hover:border-zinc-600"
+                          : "border-gray-300 dark:border-zinc-700 bg-gray-100 dark:bg-zinc-800 text-gray-500 dark:text-zinc-400 hover:border-zinc-600"
                       }`}
                     >
                       {tier.label}
@@ -446,7 +440,7 @@ export default function SocialLogForm({
               <img
                 src={values.image}
                 alt="preview"
-                className="h-12 w-12 shrink-0 rounded-lg border border-zinc-700 object-cover"
+                className="h-12 w-12 shrink-0 rounded-lg border border-gray-300 dark:border-zinc-700 object-cover"
               />
             )}
           </div>
@@ -469,7 +463,7 @@ export default function SocialLogForm({
       ============================ */}
 
       <div>
-        <h3 className="mb-4 text-sm font-semibold uppercase tracking-wide text-zinc-500">
+        <h3 className="mb-4 text-sm font-semibold uppercase tracking-wide text-gray-400 dark:text-zinc-500">
           Security & Attributes
         </h3>
 
@@ -507,12 +501,11 @@ export default function SocialLogForm({
       ============================ */}
 
       <div>
-        <h3 className="mb-1 text-sm font-semibold uppercase tracking-wide text-zinc-500">
+        <h3 className="mb-1 text-sm font-semibold uppercase tracking-wide text-gray-400 dark:text-zinc-500">
           Login Credentials
         </h3>
-        <p className="mb-4 text-xs text-zinc-500">
-          These are handed to the buyer after purchase. Phone must include
-          the country code (e.g. +2348012345678).
+        <p className="mb-4 text-xs text-gray-400 dark:text-zinc-500">
+          These are handed to the buyer after purchase.
         </p>
 
         <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
@@ -527,19 +520,18 @@ export default function SocialLogForm({
             />
           </Field>
 
-          <Field label="Login Phone" error={errors.loginPhone}>
+          <Field label="Email Password">
             <input
-              type="text"
-              value={values.loginPhone}
-              onChange={(e) => update("loginPhone", e.target.value)}
-              placeholder="+2348012345678"
-              className={inputClass(!!errors.loginPhone)}
+              type="password"
+              value={values.emailPassword}
+              onChange={(e) => update("emailPassword", e.target.value)}
+              className={inputClass(false)}
             />
           </Field>
 
-          <Field label="Password" error={errors.accountPassword}>
+          <Field label="Account Password" error={errors.accountPassword}>
             <input
-              type="text"
+              type="password"
               value={values.accountPassword}
               onChange={(e) => update("accountPassword", e.target.value)}
               className={inputClass(!!errors.accountPassword)}
@@ -603,7 +595,7 @@ export default function SocialLogForm({
                 SUBMIT
       ============================ */}
 
-      <div className="flex justify-end border-t border-zinc-800 pt-6">
+      <div className="flex justify-end border-t border-gray-200 dark:border-zinc-800 pt-6">
         <button
           type="submit"
           disabled={submitting}
@@ -635,7 +627,7 @@ function Field({
 }) {
   return (
     <div className={className}>
-      <label className="mb-1.5 block text-sm font-medium text-zinc-300">
+      <label className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-zinc-300">
         {label}
       </label>
       {children}
@@ -648,8 +640,8 @@ function Field({
 
 function inputClass(hasError: boolean) {
   return `w-full rounded-xl border ${
-    hasError ? "border-red-500" : "border-zinc-700"
-  } bg-zinc-800 px-4 py-3 text-white placeholder-zinc-500 outline-none focus:border-orange-500`;
+    hasError ? "border-red-500" : "border-gray-300 dark:border-zinc-700"
+  } bg-gray-100 dark:bg-zinc-800 px-4 py-3 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-zinc-500 outline-none focus:border-orange-500`;
 }
 
 /* ===============================
@@ -672,7 +664,7 @@ function Toggle({
       className={`rounded-xl border px-4 py-3 text-sm font-medium transition ${
         checked
           ? "border-orange-500 bg-orange-500/10 text-orange-400"
-          : "border-zinc-700 bg-zinc-800 text-zinc-400 hover:border-zinc-600"
+          : "border-gray-300 dark:border-zinc-700 bg-gray-100 dark:bg-zinc-800 text-gray-500 dark:text-zinc-400 hover:border-zinc-600"
       }`}
     >
       {label}

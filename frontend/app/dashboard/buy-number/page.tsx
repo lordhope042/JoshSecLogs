@@ -20,11 +20,11 @@ export default function BuyNumberPage() {
       {/* Header */}
 
       <div>
-        <h1 className="text-3xl font-bold text-white">
+        <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
           Buy Virtual Number
         </h1>
 
-        <p className="mt-2 text-zinc-400">
+        <p className="mt-2 text-gray-500 dark:text-zinc-400">
           Purchase virtual numbers for WhatsApp, Telegram, Google,
           Facebook and more.
         </p>
@@ -36,7 +36,7 @@ export default function BuyNumberPage() {
 
         {/* Purchase Form */}
 
-        <div className="lg:col-span-2 rounded-3xl border border-zinc-800 bg-[#111827] p-8">
+        <div className="lg:col-span-2 rounded-3xl border border-gray-200 dark:border-zinc-800 bg-white dark:bg-[#111827] p-8">
 
           <h2 className="mb-8 text-xl font-semibold">
             Purchase Details
@@ -47,7 +47,7 @@ export default function BuyNumberPage() {
             {/* Country */}
 
             <div>
-              <label className="mb-2 flex items-center gap-2 text-sm text-zinc-400">
+              <label className="mb-2 flex items-center gap-2 text-sm text-gray-500 dark:text-zinc-400">
                 <Globe size={16} />
                 Country
               </label>
@@ -55,7 +55,7 @@ export default function BuyNumberPage() {
               <select
                 value={country}
                 onChange={(e) => setCountry(e.target.value)}
-                className="h-12 w-full rounded-xl border border-zinc-700 bg-[#0F172A] px-4 text-white outline-none focus:border-orange-500"
+                className="h-12 w-full rounded-xl border border-gray-300 dark:border-zinc-700 bg-gray-50 dark:bg-[#0F172A] px-4 text-gray-900 dark:text-white outline-none focus:border-orange-500"
               >
                 <option value="">Select Country</option>
                 <option>United States</option>
@@ -69,7 +69,7 @@ export default function BuyNumberPage() {
             {/* Operator */}
 
             <div>
-              <label className="mb-2 flex items-center gap-2 text-sm text-zinc-400">
+              <label className="mb-2 flex items-center gap-2 text-sm text-gray-500 dark:text-zinc-400">
                 <Smartphone size={16} />
                 Operator
               </label>
@@ -77,7 +77,7 @@ export default function BuyNumberPage() {
               <select
                 value={operator}
                 onChange={(e) => setOperator(e.target.value)}
-                className="h-12 w-full rounded-xl border border-zinc-700 bg-[#0F172A] px-4 text-white outline-none focus:border-orange-500"
+                className="h-12 w-full rounded-xl border border-gray-300 dark:border-zinc-700 bg-gray-50 dark:bg-[#0F172A] px-4 text-gray-900 dark:text-white outline-none focus:border-orange-500"
               >
                 <option value="">Any Operator</option>
                 <option>Any</option>
@@ -90,7 +90,7 @@ export default function BuyNumberPage() {
             {/* Service */}
 
             <div className="md:col-span-2">
-              <label className="mb-2 flex items-center gap-2 text-sm text-zinc-400">
+              <label className="mb-2 flex items-center gap-2 text-sm text-gray-500 dark:text-zinc-400">
                 <Hash size={16} />
                 Service
               </label>
@@ -98,7 +98,7 @@ export default function BuyNumberPage() {
               <select
                 value={service}
                 onChange={(e) => setService(e.target.value)}
-                className="h-12 w-full rounded-xl border border-zinc-700 bg-[#0F172A] px-4 text-white outline-none focus:border-orange-500"
+                className="h-12 w-full rounded-xl border border-gray-300 dark:border-zinc-700 bg-gray-50 dark:bg-[#0F172A] px-4 text-gray-900 dark:text-white outline-none focus:border-orange-500"
               >
                 <option value="">Select Service</option>
                 <option>WhatsApp</option>
@@ -124,7 +124,7 @@ export default function BuyNumberPage() {
 
         {/* Summary */}
 
-        <div className="rounded-3xl border border-zinc-800 bg-[#111827] p-8">
+        <div className="rounded-3xl border border-gray-200 dark:border-zinc-800 bg-white dark:bg-[#111827] p-8">
 
           <h2 className="mb-6 text-xl font-semibold">
             Purchase Summary
@@ -133,7 +133,7 @@ export default function BuyNumberPage() {
           <div className="space-y-5">
 
             <div className="flex items-center justify-between">
-              <span className="text-zinc-400">
+              <span className="text-gray-500 dark:text-zinc-400">
                 Estimated Price
               </span>
 
@@ -143,7 +143,7 @@ export default function BuyNumberPage() {
             </div>
 
             <div className="flex items-center justify-between">
-              <span className="text-zinc-400">
+              <span className="text-gray-500 dark:text-zinc-400">
                 Available Numbers
               </span>
 
@@ -153,7 +153,7 @@ export default function BuyNumberPage() {
             </div>
 
             <div className="flex items-center justify-between">
-              <span className="flex items-center gap-2 text-zinc-400">
+              <span className="flex items-center gap-2 text-gray-500 dark:text-zinc-400">
                 <Clock size={16} />
                 Duration
               </span>
@@ -180,7 +180,7 @@ export default function BuyNumberPage() {
 
       {/* Active Number */}
 
-      <div className="rounded-3xl border border-zinc-800 bg-[#111827] p-8">
+      <div className="rounded-3xl border border-gray-200 dark:border-zinc-800 bg-white dark:bg-[#111827] p-8">
 
         <div className="mb-6 flex items-center justify-between">
 
@@ -194,9 +194,9 @@ export default function BuyNumberPage() {
 
         </div>
 
-        <div className="rounded-2xl border border-dashed border-zinc-700 p-12 text-center">
+        <div className="rounded-2xl border border-dashed border-gray-300 dark:border-zinc-700 p-12 text-center">
 
-          <p className="text-zinc-500">
+          <p className="text-gray-400 dark:text-zinc-500">
             No active virtual number.
           </p>
 

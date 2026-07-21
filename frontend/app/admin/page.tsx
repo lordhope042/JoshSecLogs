@@ -33,7 +33,7 @@ export default function AdminDashboardPage() {
 
   if (loading) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-[#0B1220]">
+      <div className="flex min-h-screen items-center justify-center bg-gray-50 dark:bg-[#0B1220]">
         <Loader2 className="h-10 w-10 animate-spin text-orange-500" />
       </div>
     );
@@ -41,9 +41,9 @@ export default function AdminDashboardPage() {
 
   if (!stats) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-[#0B1220]">
+      <div className="flex min-h-screen items-center justify-center bg-gray-50 dark:bg-[#0B1220]">
         <div className="text-center">
-          <p className="text-zinc-400">Failed to load dashboard data.</p>
+          <p className="text-gray-500 dark:text-zinc-400">Failed to load dashboard data.</p>
           <button
             onClick={refresh}
             className="mt-4 rounded-xl bg-orange-600 px-4 py-2 text-sm text-white hover:bg-orange-700"
@@ -56,9 +56,9 @@ export default function AdminDashboardPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#0B1220] text-white">
+    <div className="min-h-screen bg-gray-50 dark:bg-[#0B1220] text-gray-900 dark:text-white">
       {/* Topbar */}
-      <header className="sticky top-0 z-40 border-b border-zinc-800 bg-[#0B1220]/80 backdrop-blur-xl">
+      <header className="sticky top-0 z-40 border-b border-gray-200 dark:border-zinc-800 bg-gray-50/80 dark:bg-[#0B1220]/80 backdrop-blur-xl">
         <div className="flex items-center justify-between px-6 py-4">
           <div className="flex items-center gap-3">
             <BarChart3 className="h-6 w-6 text-orange-500" />
@@ -66,7 +66,7 @@ export default function AdminDashboardPage() {
           </div>
           <button
             onClick={handleLogout}
-            className="flex items-center gap-2 rounded-lg bg-zinc-800 px-4 py-2 text-sm text-zinc-300 transition hover:bg-zinc-700 hover:text-white"
+            className="flex items-center gap-2 rounded-lg bg-gray-100 dark:bg-zinc-800 px-4 py-2 text-sm text-gray-700 dark:text-zinc-300 transition hover:bg-zinc-700 hover:text-gray-900 dark:hover:text-white"
           >
             <LogOut size={16} />
             Logout

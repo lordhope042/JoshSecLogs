@@ -94,7 +94,7 @@ export default function RegisterForm() {
 
   return (
 
-<div className="relative overflow-hidden rounded-3xl border border-orange-500/20 bg-[#0a1020]/90 p-8 backdrop-blur-2xl">
+<div className="relative overflow-hidden rounded-3xl border border-orange-500/20 bg-gray-50/90 dark:bg-[#0a1020]/90 p-8 backdrop-blur-2xl">
 
 <div className="absolute -left-20 -top-20 h-56 w-56 rounded-full bg-orange-500/10 blur-3xl"/>
 
@@ -116,13 +116,13 @@ Trusted Platform
 
 </div>
 
-<h2 className="text-4xl font-black text-white">
+<h2 className="text-4xl font-black text-gray-900 dark:text-white">
 
 Create Your Account
 
 </h2>
 
-<p className="mt-3 leading-7 text-zinc-400">
+<p className="mt-3 leading-7 text-gray-500 dark:text-zinc-400">
 
 Create an account to purchase Virtual Numbers,
 Premium Social Media Accounts,
@@ -141,7 +141,7 @@ className="space-y-6"
 
 <div>
 
-<label className="mb-2 block text-sm font-medium text-zinc-300">
+<label className="mb-2 block text-sm font-medium text-gray-700 dark:text-zinc-300">
 
 Full Name
 
@@ -151,7 +151,7 @@ Full Name
 
 <User
 size={19}
-className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-500"
+className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 dark:text-zinc-500"
 />
 
 <input
@@ -179,7 +179,7 @@ className={inputStyle}
 
 <div>
 
-<label className="mb-2 block text-sm font-medium text-zinc-300">
+<label className="mb-2 block text-sm font-medium text-gray-700 dark:text-zinc-300">
 
 Email Address
 
@@ -189,7 +189,7 @@ Email Address
 
 <Mail
 size={19}
-className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-500"
+className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 dark:text-zinc-500"
 />
 
 <input
@@ -217,7 +217,7 @@ className={inputStyle}
 
 <div>
 
-<label className="mb-2 block text-sm font-medium text-zinc-300">
+<label className="mb-2 block text-sm font-medium text-gray-700 dark:text-zinc-300">
 
 Password
 
@@ -227,7 +227,7 @@ Password
 
 <Lock
 size={19}
-className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-500"
+className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 dark:text-zinc-500"
 />
 
 <input
@@ -246,7 +246,7 @@ type="button"
 onClick={() =>
 setShowPassword(!showPassword)
 }
-className="absolute right-4 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-orange-500"
+className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 dark:text-zinc-500 hover:text-orange-500"
 >
 
 {showPassword
@@ -258,7 +258,7 @@ className="absolute right-4 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-or
 
 </div>
 
-<p className="mt-2 text-xs text-zinc-500">
+<p className="mt-2 text-xs text-gray-400 dark:text-zinc-500">
 
 Use at least 8 characters with numbers and symbols.
 
@@ -279,7 +279,7 @@ Use at least 8 characters with numbers and symbols.
 
 <div>
 
-  <label className="mb-2 block text-sm font-medium text-zinc-300">
+  <label className="mb-2 block text-sm font-medium text-gray-700 dark:text-zinc-300">
     Confirm Password
   </label>
 
@@ -287,7 +287,7 @@ Use at least 8 characters with numbers and symbols.
 
     <Lock
       size={19}
-      className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-500"
+      className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 dark:text-zinc-500"
     />
 
     <input
@@ -302,7 +302,7 @@ Use at least 8 characters with numbers and symbols.
       onClick={() =>
         setShowConfirmPassword(!showConfirmPassword)
       }
-      className="absolute right-4 top-1/2 -translate-y-1/2 text-zinc-500 transition hover:text-orange-500"
+      className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 dark:text-zinc-500 transition hover:text-orange-500"
     >
       {showConfirmPassword ? (
         <EyeOff size={18} />
@@ -325,16 +325,16 @@ Use at least 8 characters with numbers and symbols.
 
 <div>
 
-  <label className="mb-2 block text-sm font-medium text-zinc-300">
+  <label className="mb-2 block text-sm font-medium text-gray-700 dark:text-zinc-300">
     Referral Code
-    <span className="ml-2 text-zinc-500">(Optional)</span>
+    <span className="ml-2 text-gray-400 dark:text-zinc-500">(Optional)</span>
   </label>
 
   <div className="relative">
 
     <Gift
       size={19}
-      className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-500"
+      className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 dark:text-zinc-500"
     />
 
     <input
@@ -352,7 +352,7 @@ Use at least 8 characters with numbers and symbols.
 
 <div>
 
-  <label className="flex items-start gap-3 rounded-2xl border border-zinc-700 bg-[#101826]/50 p-4 transition hover:border-orange-500/50">
+  <label className="flex items-start gap-3 rounded-2xl border border-gray-300 dark:border-zinc-700 bg-gray-50/50 dark:bg-[#101826]/50 p-4 transition hover:border-orange-500/50">
 
     <input
       type="checkbox"
@@ -362,7 +362,7 @@ Use at least 8 characters with numbers and symbols.
 
     <div>
 
-      <p className="text-sm leading-6 text-zinc-400">
+      <p className="text-sm leading-6 text-gray-500 dark:text-zinc-400">
         I agree to the{" "}
         <Link
           href="/terms"
@@ -415,11 +415,11 @@ Use at least 8 characters with numbers and symbols.
 <div className="relative py-2">
 
   <div className="absolute inset-0 flex items-center">
-    <div className="w-full border-t border-zinc-700"></div>
+    <div className="w-full border-t border-gray-300 dark:border-zinc-700"></div>
   </div>
 
   <div className="relative flex justify-center">
-    <span className="bg-[#0a1020] px-5 text-sm text-zinc-500">
+    <span className="bg-gray-50 dark:bg-[#0a1020] px-5 text-sm text-gray-400 dark:text-zinc-500">
       OR
     </span>
   </div>
@@ -431,7 +431,7 @@ Use at least 8 characters with numbers and symbols.
 <Button
   type="button"
   variant="outline"
-  className="h-14 w-full rounded-2xl border-zinc-700 bg-[#101826] text-white transition hover:border-orange-500 hover:bg-[#172236]"
+  className="h-14 w-full rounded-2xl border-gray-300 dark:border-zinc-700 bg-gray-50 dark:bg-[#101826] text-gray-900 dark:text-white transition hover:border-orange-500 hover:bg-[#172236]"
 >
 
   <svg
@@ -451,7 +451,7 @@ Use at least 8 characters with numbers and symbols.
 
 {/* Login */}
 
-<p className="pt-4 text-center text-sm text-zinc-400">
+<p className="pt-4 text-center text-sm text-gray-500 dark:text-zinc-400">
 
   Already have an account?
 

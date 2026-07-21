@@ -73,17 +73,17 @@ export default function AdminSidebar({
 
   return (
     <aside
-      className={`relative flex h-screen flex-col border-r border-zinc-800 bg-[#090d14] transition-all duration-300 ${
+      className={`relative flex h-screen flex-col border-r border-gray-200 dark:border-zinc-800 bg-white dark:bg-[#090d14] transition-all duration-300 ${
         collapsed ? "w-24" : "w-72"
       }`}
     >
       {/* Logo */}
 
-      <div className="flex h-20 items-center justify-between border-b border-zinc-800 px-6">
+      <div className="flex h-20 items-center justify-between border-b border-gray-200 dark:border-zinc-800 px-6">
         <div className="overflow-hidden">
           {!collapsed ? (
             <>
-              <h1 className="text-xl font-bold text-white">
+              <h1 className="text-xl font-bold text-gray-900 dark:text-white">
                 JoshSecLogs
               </h1>
 
@@ -100,7 +100,7 @@ export default function AdminSidebar({
 
         <button
           onClick={onToggle}
-          className="rounded-lg p-2 text-zinc-400 transition hover:bg-zinc-800 hover:text-white"
+          className="rounded-lg p-2 text-gray-500 dark:text-zinc-400 transition hover:bg-gray-100 dark:hover:bg-zinc-800 hover:text-gray-900 dark:hover:text-white"
         >
           {collapsed ? (
             <ChevronRight size={18} />
@@ -127,7 +127,7 @@ export default function AdminSidebar({
               className={`group flex items-center rounded-xl px-4 py-3 transition ${
                 active
                   ? "bg-orange-500 text-white"
-                  : "text-zinc-400 hover:bg-zinc-800 hover:text-white"
+                  : "text-gray-500 dark:text-zinc-400 hover:bg-gray-100 dark:hover:bg-zinc-800 hover:text-gray-900 dark:hover:text-white"
               }`}
             >
               <Icon
@@ -147,10 +147,10 @@ export default function AdminSidebar({
 
       {/* Footer — Logout */}
 
-      <div className="border-t border-zinc-800 p-4">
+      <div className="border-t border-gray-200 dark:border-zinc-800 p-4">
         <button
           onClick={handleLogout}
-          className="flex w-full items-center rounded-xl px-4 py-3 text-zinc-400 transition hover:bg-red-500 hover:text-white"
+          className="flex w-full items-center rounded-xl px-4 py-3 text-gray-500 dark:text-zinc-400 transition hover:bg-red-500 hover:text-gray-900 dark:hover:text-white"
         >
           <LogOut size={20} />
 

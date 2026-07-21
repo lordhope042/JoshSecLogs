@@ -60,13 +60,13 @@ export default function SocialLogDetails({ log, open, loading, onClose, onPurcha
             <Image src={log.image} alt={log.username} fill className="object-cover" />
           ) : (
             <div className="flex h-full items-center justify-center">
-              <ShieldCheck size={70} className="text-white/80" />
+              <ShieldCheck size={70} className="text-gray-900/80 dark:text-white/80" />
             </div>
           )}
 
           <button
             onClick={onClose}
-            className="absolute right-5 top-5 rounded-full bg-black/40 p-2 text-white backdrop-blur transition hover:bg-black/60"
+            className="absolute right-5 top-5 rounded-full bg-black/40 p-2 text-gray-900 dark:text-white backdrop-blur transition hover:bg-black/60"
           >
             <X size={22} />
           </button>
@@ -79,7 +79,7 @@ export default function SocialLogDetails({ log, open, loading, onClose, onPurcha
             <div>
               <p className="text-sm uppercase tracking-widest text-orange-500">{categoryLabel}</p>
               <h2 className="mt-1 text-3xl font-bold text-zinc-900 dark:text-white">{log.username}</h2>
-              <p className="mt-2 text-zinc-500">Premium aged account</p>
+              <p className="mt-2 text-gray-400 dark:text-zinc-500">Premium aged account</p>
             </div>
 
             {log.verified && (
@@ -95,14 +95,14 @@ export default function SocialLogDetails({ log, open, loading, onClose, onPurcha
             {hasCountry && (
               <div className="rounded-2xl bg-zinc-100 p-4 dark:bg-zinc-900">
                 <MapPin className="mb-3 text-orange-500" />
-                <p className="text-xs text-zinc-500">Country</p>
+                <p className="text-xs text-gray-400 dark:text-zinc-500">Country</p>
                 <p className="font-semibold text-zinc-900 dark:text-white">{log.country}</p>
               </div>
             )}
 
             <div className="rounded-2xl bg-zinc-100 p-4 dark:bg-zinc-900">
               <Calendar className="mb-3 text-orange-500" />
-              <p className="text-xs text-zinc-500">Age</p>
+              <p className="text-xs text-gray-400 dark:text-zinc-500">Age</p>
               {/* NOTE: aligned to months to match SocialLogCard's "{age} mo" —
                   flip both together if years was actually intended. */}
               <p className="font-semibold text-zinc-900 dark:text-white">{log.age} mo</p>
@@ -111,7 +111,7 @@ export default function SocialLogDetails({ log, open, loading, onClose, onPurcha
             {hasFollowers && (
               <div className="rounded-2xl bg-zinc-100 p-4 dark:bg-zinc-900">
                 <Users className="mb-3 text-orange-500" />
-                <p className="text-xs text-zinc-500">Followers</p>
+                <p className="text-xs text-gray-400 dark:text-zinc-500">Followers</p>
                 <p className="font-semibold text-zinc-900 dark:text-white">{log.followers!.toLocaleString()}</p>
               </div>
             )}

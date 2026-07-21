@@ -13,7 +13,7 @@ import { motion } from "framer-motion";
 
 export default function Hero() {
   return (
-    <section className="relative overflow-hidden bg-[#06080d] pt-32 pb-20">
+    <section className="relative overflow-hidden bg-white dark:bg-[#06080d] pt-32 pb-20">
 
       {/* Background */}
       <div className="absolute inset-0">
@@ -44,7 +44,7 @@ export default function Hero() {
 
           </div>
 
-          <h1 className="mt-8 text-5xl font-black leading-[1.05] text-white md:text-7xl">
+          <h1 className="mt-8 text-5xl font-black leading-[1.05] text-gray-900 dark:text-white md:text-7xl">
 
             Buy Premium
 
@@ -58,7 +58,7 @@ export default function Hero() {
 
           </h1>
 
-          <p className="mt-8 max-w-xl text-lg leading-9 text-zinc-400">
+          <p className="mt-8 max-w-xl text-lg leading-9 text-gray-500 dark:text-zinc-400">
 
             Buy verified Virtual Numbers, Instagram, TikTok,
             Facebook, X (Twitter) and YouTube accounts instantly.
@@ -108,7 +108,7 @@ export default function Hero() {
 
               <Button
                 variant="outline"
-                className="h-14 rounded-xl border-orange-500 bg-transparent px-8 text-lg text-white hover:bg-orange-500"
+                className="h-14 rounded-xl border-orange-500 bg-transparent px-8 text-lg text-gray-900 dark:text-white hover:bg-orange-500"
               >
                 View Pricing
               </Button>
@@ -127,11 +127,11 @@ export default function Hero() {
 
               <div>
 
-                <h4 className="font-semibold text-white">
+                <h4 className="font-semibold text-gray-900 dark:text-white">
                   180+ Countries
                 </h4>
 
-                <p className="text-sm text-zinc-500">
+                <p className="text-sm text-gray-400 dark:text-zinc-500">
                   Worldwide Coverage
                 </p>
 
@@ -145,11 +145,11 @@ export default function Hero() {
 
               <div>
 
-                <h4 className="font-semibold text-white">
+                <h4 className="font-semibold text-gray-900 dark:text-white">
                   99.9% Uptime
                 </h4>
 
-                <p className="text-sm text-zinc-500">
+                <p className="text-sm text-gray-400 dark:text-zinc-500">
                   Reliable Service
                 </p>
 
@@ -163,11 +163,11 @@ export default function Hero() {
 
               <div>
 
-                <h4 className="font-semibold text-white">
+                <h4 className="font-semibold text-gray-900 dark:text-white">
                   24/7 Support
                 </h4>
 
-                <p className="text-sm text-zinc-500">
+                <p className="text-sm text-gray-400 dark:text-zinc-500">
                   Always Available
                 </p>
 
