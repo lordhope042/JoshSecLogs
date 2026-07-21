@@ -199,16 +199,16 @@ const faqs = [
 
 function Stats() {
   return (
-    <section className="bg-[#070b17] py-16">
+    <section className="bg-gray-50 dark:bg-[#070b17] py-16">
       <div className="mx-auto max-w-7xl px-6">
-        <div className="grid grid-cols-2 divide-y divide-orange-500/10 rounded-3xl border border-orange-500/10 bg-[#111827] md:grid-cols-4 md:divide-x md:divide-y-0">
+        <div className="grid grid-cols-2 divide-y divide-orange-500/10 rounded-3xl border border-orange-500/10 bg-white dark:bg-[#111827] md:grid-cols-4 md:divide-x md:divide-y-0">
           {statsData.map((item) => (
             <div key={item.title} className="p-8 text-center md:p-10">
               <h2 className="text-4xl font-black text-orange-500 md:text-5xl">
                 <CountUp end={item.number} duration={3} separator="," />
                 {item.suffix}
               </h2>
-              <p className="mt-3 text-sm text-zinc-400 md:text-base">
+              <p className="mt-3 text-sm text-gray-500 dark:text-zinc-400 md:text-base">
                 {item.title}
               </p>
             </div>
@@ -225,9 +225,9 @@ function Stats() {
 
 function TrustStrip() {
   return (
-    <section className="bg-[#050816] py-12">
+    <section className="bg-white dark:bg-[#050816] py-12">
       <div className="mx-auto max-w-7xl px-6">
-        <p className="mb-8 text-center text-sm uppercase tracking-[4px] text-zinc-500">
+        <p className="mb-8 text-center text-sm uppercase tracking-[4px] text-gray-400 dark:text-zinc-500">
           Trusted With 500+ Online Services
         </p>
 
@@ -237,7 +237,7 @@ function TrustStrip() {
             return (
               <div
                 key={brand.name}
-                className="group flex items-center gap-2 text-zinc-500 grayscale transition duration-300 hover:text-orange-500 hover:grayscale-0"
+                className="group flex items-center gap-2 text-gray-400 dark:text-zinc-500 grayscale transition duration-300 hover:text-orange-500 hover:grayscale-0"
               >
                 <Icon className="text-3xl" />
                 <span className="text-sm font-medium">{brand.name}</span>
@@ -256,7 +256,7 @@ function TrustStrip() {
 
 function SupportedServices() {
   return (
-    <section className="bg-[#08111d] py-28">
+    <section className="bg-gray-50 dark:bg-[#08111d] py-28">
       <div className="mx-auto max-w-7xl px-6">
         <motion.div
           initial={{ opacity: 0, y: 30 }}
@@ -268,12 +268,12 @@ function SupportedServices() {
             Supported Platforms
           </p>
 
-          <h2 className="mt-4 text-5xl font-black text-white">
+          <h2 className="mt-4 text-5xl font-black text-gray-900 dark:text-white">
             Receive SMS For
             <span className="text-orange-500"> 1000+ Services</span>
           </h2>
 
-          <p className="mx-auto mt-6 max-w-3xl text-lg text-zinc-300">
+          <p className="mx-auto mt-6 max-w-3xl text-lg text-gray-700 dark:text-zinc-300">
             Instantly receive verification codes from the world&apos;s most
             popular platforms.
           </p>
@@ -287,17 +287,17 @@ function SupportedServices() {
               whileInView={{ opacity: 1, y: 0 }}
               transition={{ delay: index * 0.05 }}
               viewport={{ once: true }}
-              className="group rounded-2xl border border-orange-500/10 bg-[#111827] p-8 text-center transition-all duration-300 hover:-translate-y-2 hover:border-orange-500 hover:shadow-[0_0_35px_rgba(249,115,22,.35)]"
+              className="group rounded-2xl border border-orange-500/10 bg-white dark:bg-[#111827] p-8 text-center transition-all duration-300 hover:-translate-y-2 hover:border-orange-500 hover:shadow-[0_0_35px_rgba(249,115,22,.35)]"
             >
               <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-orange-500 text-2xl font-bold text-white">
                 {service.charAt(0)}
               </div>
 
-              <h3 className="mt-6 text-xl font-semibold text-white">
+              <h3 className="mt-6 text-xl font-semibold text-gray-900 dark:text-white">
                 {service}
               </h3>
 
-              <p className="mt-2 text-sm text-zinc-400">SMS Verification</p>
+              <p className="mt-2 text-sm text-gray-500 dark:text-zinc-400">SMS Verification</p>
             </motion.div>
           ))}
         </div>
@@ -312,18 +312,18 @@ function SupportedServices() {
 
 function Features() {
   return (
-    <section className="bg-[#08111d] py-28">
+    <section className="bg-gray-50 dark:bg-[#08111d] py-28">
       <div className="mx-auto max-w-7xl px-6">
         <div className="text-center">
           <p className="font-semibold uppercase tracking-[5px] text-orange-500">
             Why Choose JoshSecLogs
           </p>
 
-          <h2 className="mt-4 text-5xl font-black text-white">
+          <h2 className="mt-4 text-5xl font-black text-gray-900 dark:text-white">
             Everything You Need
           </h2>
 
-          <p className="mx-auto mt-6 max-w-3xl text-lg text-zinc-300">
+          <p className="mx-auto mt-6 max-w-3xl text-lg text-gray-700 dark:text-zinc-300">
             Designed for developers, businesses and individuals who need
             reliable virtual numbers with fast SMS delivery.
           </p>
@@ -337,17 +337,17 @@ function Features() {
               <div
                 key={feature.title}
                 style={{ transitionDelay: `${(index % 3) * 40}ms` }}
-                className="group rounded-3xl border border-orange-500/10 bg-[#111827] p-10 transition duration-300 hover:-translate-y-3 hover:border-orange-500 hover:shadow-[0_0_45px_rgba(249,115,22,0.30)]"
+                className="group rounded-3xl border border-orange-500/10 bg-white dark:bg-[#111827] p-10 transition duration-300 hover:-translate-y-3 hover:border-orange-500 hover:shadow-[0_0_45px_rgba(249,115,22,0.30)]"
               >
                 <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-orange-500 text-white transition group-hover:scale-110">
                   <Icon size={30} />
                 </div>
 
-                <h3 className="mt-8 text-2xl font-bold text-white">
+                <h3 className="mt-8 text-2xl font-bold text-gray-900 dark:text-white">
                   {feature.title}
                 </h3>
 
-                <p className="mt-4 leading-8 text-zinc-300">
+                <p className="mt-4 leading-8 text-gray-700 dark:text-zinc-300">
                   {feature.description}
                 </p>
               </div>
@@ -365,14 +365,14 @@ function Features() {
 
 function HowItWorks() {
   return (
-    <section className="bg-[#050816] py-28">
+    <section className="bg-white dark:bg-[#050816] py-28">
       <div className="mx-auto max-w-7xl px-6">
         <div className="text-center">
           <p className="uppercase tracking-[4px] text-orange-500">
             Quick Process
           </p>
 
-          <h2 className="mt-4 text-5xl font-black text-white">
+          <h2 className="mt-4 text-5xl font-black text-gray-900 dark:text-white">
             How It Works
           </h2>
         </div>
@@ -386,24 +386,24 @@ function HowItWorks() {
 
             return (
               <div key={step.number} className="relative">
-                <div className="relative rounded-3xl border border-orange-500/10 bg-[#111827] p-10 text-center transition hover:border-orange-500">
+                <div className="relative rounded-3xl border border-orange-500/10 bg-white dark:bg-[#111827] p-10 text-center transition hover:border-orange-500">
                   <span className="absolute right-8 top-8 text-6xl font-black text-orange-500/20">
                     {step.number}
                   </span>
 
-                  <div className="relative z-10 mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-orange-500 ring-8 ring-[#050816]">
-                    <Icon size={35} className="text-white" />
+                  <div className="relative z-10 mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-orange-500 ring-8 ring-gray-200 dark:ring-[#050816]">
+                    <Icon size={35} className="text-gray-900 dark:text-white" />
                   </div>
 
-                  <h3 className="mt-8 text-2xl font-bold text-white">
+                  <h3 className="mt-8 text-2xl font-bold text-gray-900 dark:text-white">
                     {step.title}
                   </h3>
 
-                  <p className="mt-4 text-zinc-300">{step.text}</p>
+                  <p className="mt-4 text-gray-700 dark:text-zinc-300">{step.text}</p>
                 </div>
 
                 {index < steps.length - 1 && (
-                  <div className="absolute -right-5 top-[52px] z-10 hidden h-10 w-10 items-center justify-center rounded-full bg-[#050816] text-orange-500 lg:flex">
+                  <div className="absolute -right-5 top-[52px] z-10 hidden h-10 w-10 items-center justify-center rounded-full bg-white dark:bg-[#050816] text-orange-500 lg:flex">
                     →
                   </div>
                 )}
@@ -422,18 +422,18 @@ function HowItWorks() {
 
 function Testimonials() {
   return (
-    <section className="bg-[#08111d] py-28">
+    <section className="bg-gray-50 dark:bg-[#08111d] py-28">
       <div className="mx-auto max-w-7xl px-6">
         <div className="text-center">
           <span className="uppercase tracking-[5px] font-semibold text-orange-500">
             Testimonials
           </span>
 
-          <h2 className="mt-4 text-5xl font-black text-white">
+          <h2 className="mt-4 text-5xl font-black text-gray-900 dark:text-white">
             What Our Customers Say
           </h2>
 
-          <p className="mx-auto mt-6 max-w-2xl text-zinc-300">
+          <p className="mx-auto mt-6 max-w-2xl text-gray-700 dark:text-zinc-300">
             Thousands of customers trust JoshSecLogs every day.
           </p>
         </div>
@@ -446,7 +446,7 @@ function Testimonials() {
               whileInView={{ opacity: 1, y: 0 }}
               transition={{ delay: index * 0.2 }}
               viewport={{ once: true }}
-              className="rounded-3xl border border-orange-500/10 bg-[#111827] p-8 transition hover:-translate-y-2 hover:border-orange-500 hover:shadow-[0_0_40px_rgba(249,115,22,.25)]"
+              className="rounded-3xl border border-orange-500/10 bg-white dark:bg-[#111827] p-8 transition hover:-translate-y-2 hover:border-orange-500 hover:shadow-[0_0_40px_rgba(249,115,22,.25)]"
             >
               <div className="flex">
                 {[1, 2, 3, 4, 5].map((star) => (
@@ -458,7 +458,7 @@ function Testimonials() {
                 ))}
               </div>
 
-              <p className="mt-6 leading-8 text-zinc-300">
+              <p className="mt-6 leading-8 text-gray-700 dark:text-zinc-300">
                 &quot;{item.review}&quot;
               </p>
 
@@ -472,7 +472,7 @@ function Testimonials() {
                 />
 
                 <div>
-                  <h3 className="font-bold text-white">{item.name}</h3>
+                  <h3 className="font-bold text-gray-900 dark:text-white">{item.name}</h3>
                   <p className="text-sm text-orange-400">{item.role}</p>
                 </div>
               </div>
@@ -490,7 +490,7 @@ function Testimonials() {
 
 function FAQ() {
   return (
-    <section className="bg-[#050816] py-28">
+    <section className="bg-white dark:bg-[#050816] py-28">
       <div className="mx-auto max-w-5xl px-6">
         <motion.div
           initial={{ opacity: 0, y: 25 }}
@@ -502,16 +502,16 @@ function FAQ() {
             Frequently Asked Questions
           </span>
 
-          <h2 className="mt-4 text-5xl font-black text-white">
+          <h2 className="mt-4 text-5xl font-black text-gray-900 dark:text-white">
             Have Questions?
           </h2>
 
-          <p className="mt-6 text-zinc-300">
+          <p className="mt-6 text-gray-700 dark:text-zinc-300">
             Everything you need to know before using JoshSecLogs.
           </p>
         </motion.div>
 
-        <div className="mt-16 rounded-3xl border border-orange-500/10 bg-[#111827] p-8">
+        <div className="mt-16 rounded-3xl border border-orange-500/10 bg-white dark:bg-[#111827] p-8">
           <Accordion type="single" collapsible className="space-y-5">
             {faqs.map((faq, index) => (
               <AccordionItem
@@ -519,11 +519,11 @@ function FAQ() {
                 value={`item-${index}`}
                 className="rounded-xl border border-orange-500/10 px-5"
               >
-                <AccordionTrigger className="text-left text-lg font-semibold text-white hover:text-orange-500">
+                <AccordionTrigger className="text-left text-lg font-semibold text-gray-900 dark:text-white hover:text-orange-500">
                   {faq.question}
                 </AccordionTrigger>
 
-                <AccordionContent className="text-zinc-300 leading-8">
+                <AccordionContent className="text-gray-700 dark:text-zinc-300 leading-8">
                   {faq.answer}
                 </AccordionContent>
               </AccordionItem>
@@ -541,7 +541,7 @@ function FAQ() {
 
 function CTA() {
   return (
-    <section className="relative overflow-hidden bg-gradient-to-r from-[#0B1220] via-[#111827] to-[#0B1220] py-32">
+    <section className="relative overflow-hidden bg-gradient-to-r from-gray-50 dark:from-[#0B1220] via-white dark:via-[#111827] to-gray-50 dark:to-[#0B1220] py-32">
       <div className="absolute left-0 top-0 h-72 w-72 rounded-full bg-orange-500/20 blur-[120px]" />
       <div className="absolute right-0 bottom-0 h-72 w-72 rounded-full bg-orange-500/20 blur-[120px]" />
 
@@ -550,19 +550,19 @@ function CTA() {
           initial={{ opacity: 0, scale: 0.95 }}
           whileInView={{ opacity: 1, scale: 1 }}
           viewport={{ once: true }}
-          className="rounded-[40px] border border-orange-500/20 bg-[#111827]/80 p-16 text-center backdrop-blur-xl"
+          className="rounded-[40px] border border-orange-500/20 bg-white/80 dark:bg-[#111827]/80 p-16 text-center backdrop-blur-xl"
         >
           <span className="uppercase tracking-[5px] text-orange-500 font-semibold">
             Ready To Start?
           </span>
 
-          <h2 className="mt-6 text-5xl font-black text-white">
+          <h2 className="mt-6 text-5xl font-black text-gray-900 dark:text-white">
             Buy Virtual Numbers
             <br />
             <span className="text-orange-500">In Less Than 30 Seconds</span>
           </h2>
 
-          <p className="mx-auto mt-8 max-w-3xl text-lg text-zinc-300">
+          <p className="mx-auto mt-8 max-w-3xl text-lg text-gray-700 dark:text-zinc-300">
             Join thousands of developers, marketers and businesses using
             JoshSecLogs for secure SMS verification worldwide.
           </p>
@@ -582,7 +582,7 @@ function CTA() {
               <Button
                 size="lg"
                 variant="outline"
-                className="border-orange-500 px-10 py-7 text-lg text-white hover:bg-orange-500"
+                className="border-orange-500 px-10 py-7 text-lg text-gray-900 dark:text-white hover:bg-orange-500"
               >
                 View Pricing
               </Button>
@@ -600,19 +600,19 @@ function CTA() {
 
 function Footer() {
   return (
-    <footer className="relative overflow-hidden border-t border-orange-500/20 bg-[#050816]">
+    <footer className="relative overflow-hidden border-t border-orange-500/20 bg-white dark:bg-[#050816]">
       <div className="absolute left-1/2 top-0 h-72 w-72 -translate-x-1/2 rounded-full bg-orange-500/10 blur-[120px]" />
 
       <div className="relative mx-auto max-w-7xl px-6 py-20">
         <div className="grid gap-16 lg:grid-cols-[1.5fr_1fr_1fr_1fr]">
           <div>
             <h2 className="text-4xl font-black">
-              <span className="text-white">Josh</span>
+              <span className="text-gray-900 dark:text-white">Josh</span>
               <span className="text-orange-500">Sec</span>
-              <span className="text-white">Logs</span>
+              <span className="text-gray-900 dark:text-white">Logs</span>
             </h2>
 
-            <p className="mt-6 max-w-md leading-8 text-zinc-300">
+            <p className="mt-6 max-w-md leading-8 text-gray-700 dark:text-zinc-300">
               Purchase premium virtual phone numbers for SMS verification,
               account creation, API integration and business automation.
             </p>
@@ -622,7 +622,7 @@ function Footer() {
                 (Icon, index) => (
                   <button
                     key={index}
-                    className="flex h-11 w-11 items-center justify-center rounded-xl border border-orange-500/20 bg-[#0d1525] text-zinc-400 transition duration-300 hover:-translate-y-1 hover:border-orange-500 hover:bg-orange-500 hover:text-white"
+                    className="flex h-11 w-11 items-center justify-center rounded-xl border border-orange-500/20 bg-white dark:bg-[#0d1525] text-gray-500 dark:text-zinc-400 transition duration-300 hover:-translate-y-1 hover:border-orange-500 hover:bg-orange-500 hover:text-gray-900 dark:hover:text-white"
                   >
                     <Icon size={18} />
                   </button>
@@ -632,60 +632,60 @@ function Footer() {
           </div>
 
           <div>
-            <h3 className="mb-6 text-lg font-bold text-white">Company</h3>
+            <h3 className="mb-6 text-lg font-bold text-gray-900 dark:text-white">Company</h3>
 
             <div className="space-y-4">
-              <Link href="/" className="block text-zinc-300 hover:text-orange-500">
+              <Link href="/" className="block text-gray-700 dark:text-zinc-300 hover:text-orange-500">
                 Home
               </Link>
-              <Link href="/pricing" className="block text-zinc-300 hover:text-orange-500">
+              <Link href="/pricing" className="block text-gray-700 dark:text-zinc-300 hover:text-orange-500">
                 Pricing
               </Link>
-              <Link href="/how-it-works" className="block text-zinc-300 hover:text-orange-500">
+              <Link href="/how-it-works" className="block text-gray-700 dark:text-zinc-300 hover:text-orange-500">
                 How It Works
               </Link>
-              <Link href="/contact" className="block text-zinc-300 hover:text-orange-500">
+              <Link href="/contact" className="block text-gray-700 dark:text-zinc-300 hover:text-orange-500">
                 Contact
               </Link>
             </div>
           </div>
 
           <div>
-            <h3 className="mb-6 text-lg font-bold text-white">Resources</h3>
+            <h3 className="mb-6 text-lg font-bold text-gray-900 dark:text-white">Resources</h3>
 
             <div className="space-y-4">
-              <Link href="/faq" className="block text-zinc-300 hover:text-orange-500">
+              <Link href="/faq" className="block text-gray-700 dark:text-zinc-300 hover:text-orange-500">
                 FAQ
               </Link>
-              <Link href="/api-docs" className="block text-zinc-300 hover:text-orange-500">
+              <Link href="/api-docs" className="block text-gray-700 dark:text-zinc-300 hover:text-orange-500">
                 API Documentation
               </Link>
-              <Link href="/privacy" className="block text-zinc-300 hover:text-orange-500">
+              <Link href="/privacy" className="block text-gray-700 dark:text-zinc-300 hover:text-orange-500">
                 Privacy Policy
               </Link>
-              <Link href="/terms" className="block text-zinc-300 hover:text-orange-500">
+              <Link href="/terms" className="block text-gray-700 dark:text-zinc-300 hover:text-orange-500">
                 Terms of Service
               </Link>
             </div>
           </div>
 
           <div>
-            <h3 className="mb-6 text-lg font-bold text-white">Contact</h3>
+            <h3 className="mb-6 text-lg font-bold text-gray-900 dark:text-white">Contact</h3>
 
             <div className="space-y-5">
-              <div className="flex items-center gap-3 text-zinc-300">
+              <div className="flex items-center gap-3 text-gray-700 dark:text-zinc-300">
                 <Mail className="h-5 w-5 text-orange-500" />
                 support@joshseclogs.com
               </div>
 
-              <div className="flex items-center gap-3 text-zinc-300">
+              <div className="flex items-center gap-3 text-gray-700 dark:text-zinc-300">
                 <Phone className="h-5 w-5 text-orange-500" />
                 +234 XXX XXX XXXX
               </div>
 
-              <div className="flex items-start gap-3 rounded-xl border border-orange-500/20 bg-[#0d1525] p-4">
+              <div className="flex items-start gap-3 rounded-xl border border-orange-500/20 bg-white dark:bg-[#0d1525] p-4">
                 <ShieldCheck className="mt-1 h-5 w-5 text-orange-500" />
-                <p className="text-sm leading-6 text-zinc-300">
+                <p className="text-sm leading-6 text-gray-700 dark:text-zinc-300">
                   24/7 customer support with secure encrypted transactions and
                   instant SMS delivery.
                 </p>
@@ -694,11 +694,11 @@ function Footer() {
           </div>
         </div>
 
-        <div className="mt-20 rounded-3xl border border-orange-500/20 bg-[#0d1525] p-10">
+        <div className="mt-20 rounded-3xl border border-orange-500/20 bg-white dark:bg-[#0d1525] p-10">
           <div className="flex flex-col items-center justify-between gap-8 lg:flex-row">
             <div>
-              <h3 className="text-3xl font-bold text-white">Stay Updated</h3>
-              <p className="mt-3 text-zinc-300">
+              <h3 className="text-3xl font-bold text-gray-900 dark:text-white">Stay Updated</h3>
+              <p className="mt-3 text-gray-700 dark:text-zinc-300">
                 Receive updates about new countries, features and discounts.
               </p>
             </div>
@@ -707,7 +707,7 @@ function Footer() {
               <input
                 type="email"
                 placeholder="Enter your email..."
-                className="h-14 flex-1 rounded-xl border border-orange-500/20 bg-[#08111d] px-5 text-white outline-none placeholder:text-zinc-500 focus:border-orange-500"
+                className="h-14 flex-1 rounded-xl border border-orange-500/20 bg-gray-50 dark:bg-[#08111d] px-5 text-gray-900 dark:text-white outline-none placeholder:text-zinc-500 focus:border-orange-500"
               />
               <button className="rounded-xl bg-orange-500 px-8 font-semibold text-white transition hover:bg-orange-600">
                 Subscribe
@@ -716,7 +716,7 @@ function Footer() {
           </div>
         </div>
 
-        <div className="mt-14 flex flex-col items-center justify-between gap-5 border-t border-orange-500/10 pt-8 text-sm text-zinc-500 md:flex-row">
+        <div className="mt-14 flex flex-col items-center justify-between gap-5 border-t border-orange-500/10 pt-8 text-sm text-gray-400 dark:text-zinc-500 md:flex-row">
           <p>© 2026 JoshSecLogs. All Rights Reserved.</p>
 
           <div className="flex gap-6">

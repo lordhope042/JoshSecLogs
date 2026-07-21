@@ -1,5 +1,9 @@
 @import "tailwindcss";
 
+/* Enable class-based dark mode (html.dark) instead of the OS media-query
+   default, so it matches the ThemeProvider's toggle behavior. */
+@custom-variant dark (&:where(.dark, .dark *));
+
 html,
 body {
   margin: 0;

@@ -29,7 +29,7 @@ export default function WalletBalance({
   const updatedAt = wallet?.updatedAt;
 
   return (
-    <div className="relative overflow-hidden rounded-3xl border border-orange-500/20 bg-gradient-to-br from-[#111827] via-[#18181b] to-[#09090b] p-8 shadow-xl">
+    <div className="relative overflow-hidden rounded-3xl border border-orange-500/20 bg-gradient-to-br from-gray-50 dark:from-[#111827] via-gray-50 dark:via-[#18181b] to-white dark:to-[#09090b] p-8 shadow-xl">
       <div className="absolute -right-10 -top-10 h-40 w-40 rounded-full bg-orange-500/10 blur-3xl" />
 
       <div className="relative z-10">
@@ -40,11 +40,11 @@ export default function WalletBalance({
             </div>
 
             <div>
-              <p className="text-sm uppercase tracking-widest text-zinc-500">
+              <p className="text-sm uppercase tracking-widest text-gray-400 dark:text-zinc-500">
                 Wallet Balance
               </p>
 
-              <h1 className="mt-1 text-4xl font-bold text-white">
+              <h1 className="mt-1 text-4xl font-bold text-gray-900 dark:text-white">
                 {loading ? (
                   <span className="inline-flex items-center gap-2">
                     <Loader2 className="h-6 w-6 animate-spin" />
@@ -56,12 +56,12 @@ export default function WalletBalance({
                     maximumFractionDigits: 2,
                   })}`
                 ) : (
-                  <span className="text-zinc-400">No wallet found</span>
+                  <span className="text-gray-500 dark:text-zinc-400">No wallet found</span>
                 )}
               </h1>
 
               {updatedAt && (
-                <p className="mt-2 text-xs text-zinc-500">
+                <p className="mt-2 text-xs text-gray-400 dark:text-zinc-500">
                   Last Updated{" "}
                   {new Date(updatedAt).toLocaleString()}
                 </p>
@@ -73,10 +73,10 @@ export default function WalletBalance({
             <button
               onClick={onRefresh}
               disabled={refreshing || loading}
-              className="rounded-xl border border-zinc-700 bg-zinc-900 p-3 transition hover:border-orange-500 hover:bg-zinc-800 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="rounded-xl border border-gray-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 p-3 transition hover:border-orange-500 hover:bg-gray-100 dark:hover:bg-zinc-800 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <RefreshCcw
-                className={`h-5 w-5 text-white ${
+                className={`h-5 w-5 text-gray-900 dark:text-white ${
                   refreshing ? "animate-spin" : ""
                 }`}
               />

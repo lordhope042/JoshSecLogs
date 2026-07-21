@@ -95,33 +95,33 @@ export default function SocialLogsPage() {
   return (
     <div className="space-y-10">
       {/* HEADER */}
-      <div className="overflow-hidden rounded-3xl border border-zinc-800 bg-zinc-950 p-10 text-white shadow-xl">
+      <div className="overflow-hidden rounded-3xl border border-gray-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 p-10 text-gray-900 dark:text-white shadow-xl">
         <div className="flex flex-col gap-8 lg:flex-row lg:items-center lg:justify-between">
           <div>
-            <p className="mb-3 inline-flex rounded-full border border-zinc-700 bg-zinc-900 px-4 py-1 text-xs font-semibold text-zinc-300">
+            <p className="mb-3 inline-flex rounded-full border border-gray-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-4 py-1 text-xs font-semibold text-gray-700 dark:text-zinc-300">
               Premium Marketplace
             </p>
             <h1 className="text-4xl font-black">Social Logs Marketplace</h1>
-            <p className="mt-4 max-w-2xl text-zinc-400">
+            <p className="mt-4 max-w-2xl text-gray-500 dark:text-zinc-400">
               Browse premium aged social media accounts. Verified listings, instant purchase and secure delivery.
             </p>
           </div>
 
           <div className="grid grid-cols-3 gap-4">
-            <div className="rounded-2xl border border-zinc-800 bg-zinc-900 p-5">
+            <div className="rounded-2xl border border-gray-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-5">
               <p className="text-3xl font-bold">{categories.length}</p>
-              <span className="text-sm text-zinc-500">Categories</span>
+              <span className="text-sm text-gray-400 dark:text-zinc-500">Categories</span>
             </div>
 
-            <div className="rounded-2xl border border-zinc-800 bg-zinc-900 p-5">
+            <div className="rounded-2xl border border-gray-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-5">
               {/* Listings = distinct stock groups in this category, not raw units */}
               <p className="text-3xl font-bold">{stockGroups.length}</p>
-              <span className="text-sm text-zinc-500">Listings</span>
+              <span className="text-sm text-gray-400 dark:text-zinc-500">Listings</span>
             </div>
 
-            <div className="rounded-2xl border border-zinc-800 bg-zinc-900 p-5">
+            <div className="rounded-2xl border border-gray-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-5">
               <p className="text-3xl font-bold">24/7</p>
-              <span className="text-sm text-zinc-500">Support</span>
+              <span className="text-sm text-gray-400 dark:text-zinc-500">Support</span>
             </div>
           </div>
         </div>
@@ -129,7 +129,7 @@ export default function SocialLogsPage() {
 
       {/* CATEGORY TABS */}
       {categories.length === 0 && loading ? (
-        <div className="h-24 animate-pulse rounded-3xl border border-zinc-800 bg-zinc-900" />
+        <div className="h-24 animate-pulse rounded-3xl border border-gray-200 dark:border-zinc-800 bg-white dark:bg-zinc-900" />
       ) : (
         <CategoryTabs
           categories={categories.map((item) => item.category)}
@@ -144,16 +144,16 @@ export default function SocialLogsPage() {
       {loading ? (
         <div className="grid gap-7 md:grid-cols-2 xl:grid-cols-3">
           {Array.from({ length: 6 }).map((_, index) => (
-            <div key={index} className="h-80 animate-pulse rounded-3xl border border-zinc-800 bg-zinc-900" />
+            <div key={index} className="h-80 animate-pulse rounded-3xl border border-gray-200 dark:border-zinc-800 bg-white dark:bg-zinc-900" />
           ))}
         </div>
       ) : visibleStockGroups.length === 0 ? (
-        <div className="rounded-3xl border border-dashed border-zinc-700 bg-zinc-900 py-20 text-center">
-          <div className="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-zinc-800">
-            <PackageSearch size={36} className="text-zinc-500" />
+        <div className="rounded-3xl border border-dashed border-gray-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 py-20 text-center">
+          <div className="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-gray-100 dark:bg-zinc-800">
+            <PackageSearch size={36} className="text-gray-400 dark:text-zinc-500" />
           </div>
-          <h2 className="text-2xl font-bold text-white">No Accounts Available</h2>
-          <p className="mt-3 text-zinc-400">
+          <h2 className="text-2xl font-bold text-gray-900 dark:text-white">No Accounts Available</h2>
+          <p className="mt-3 text-gray-500 dark:text-zinc-400">
             {searchQuery.trim()
               ? `No listings match "${searchQuery.trim()}" in this category.`
               : "There are currently no accounts available for this category."}

@@ -76,11 +76,11 @@ export default function EditSocialLogModal({ log, onClose, onUpdated }: EditSoci
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-6 backdrop-blur-sm">
-      <div className="max-h-[95vh] w-full max-w-2xl overflow-y-auto rounded-3xl border border-zinc-800 bg-zinc-900 shadow-[0_25px_80px_rgba(0,0,0,0.65)]">
-        <div className="flex items-center justify-between border-b border-zinc-800 px-8 py-6">
+      <div className="max-h-[95vh] w-full max-w-2xl overflow-y-auto rounded-3xl border border-gray-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 shadow-[0_25px_80px_rgba(0,0,0,0.65)]">
+        <div className="flex items-center justify-between border-b border-gray-200 dark:border-zinc-800 px-8 py-6">
           <div>
-            <h2 className="text-2xl font-bold text-white">Edit Social Log</h2>
-            <p className="mt-2 text-sm text-zinc-400">
+            <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Edit Social Log</h2>
+            <p className="mt-2 text-sm text-gray-500 dark:text-zinc-400">
               {log.platform} · {log.category}
               {log.pageType ? ` · ${log.pageType}` : ""}
               {log.country ? ` · ${log.country}` : ""}
@@ -88,56 +88,56 @@ export default function EditSocialLogModal({ log, onClose, onUpdated }: EditSoci
           </div>
           <button
             onClick={onClose}
-            className="flex h-11 w-11 items-center justify-center rounded-xl border border-zinc-700 bg-zinc-800 text-xl text-zinc-400 transition-all hover:border-red-500 hover:bg-red-500 hover:text-white"
+            className="flex h-11 w-11 items-center justify-center rounded-xl border border-gray-300 dark:border-zinc-700 bg-gray-100 dark:bg-zinc-800 text-xl text-gray-500 dark:text-zinc-400 transition-all hover:border-red-500 hover:bg-red-500 hover:text-gray-900 dark:hover:text-white"
           >
             <X size={18} />
           </button>
         </div>
 
         <div className="space-y-4 p-8">
-          <p className="rounded-lg bg-zinc-800/50 px-4 py-2 text-xs text-zinc-500">
+          <p className="rounded-lg bg-gray-100/50 dark:bg-zinc-800/50 px-4 py-2 text-xs text-gray-400 dark:text-zinc-500">
             Platform and category are fixed for this listing. Private login credentials aren't shown here and
             won't be affected by saving — only the fields below are updated.
           </p>
 
           <div>
-            <label className="mb-2 block text-sm font-medium text-zinc-300">Username / Label</label>
+            <label className="mb-2 block text-sm font-medium text-gray-700 dark:text-zinc-300">Username / Label</label>
             <input
               value={form.username}
               onChange={(e) => set("username", e.target.value)}
-              className="w-full rounded-xl border border-zinc-700 bg-zinc-800 px-4 py-3 text-white"
+              className="w-full rounded-xl border border-gray-300 dark:border-zinc-700 bg-gray-100 dark:bg-zinc-800 px-4 py-3 text-gray-900 dark:text-white"
             />
           </div>
 
           <div>
-            <label className="mb-2 block text-sm font-medium text-zinc-300">Price (₦)</label>
+            <label className="mb-2 block text-sm font-medium text-gray-700 dark:text-zinc-300">Price (₦)</label>
             <input
               type="number"
               value={form.price}
               onChange={(e) => set("price", Number(e.target.value))}
-              className="w-full rounded-xl border border-zinc-700 bg-zinc-800 px-4 py-3 text-white"
+              className="w-full rounded-xl border border-gray-300 dark:border-zinc-700 bg-gray-100 dark:bg-zinc-800 px-4 py-3 text-gray-900 dark:text-white"
             />
           </div>
 
           <div className="grid grid-cols-2 gap-4">
             {typeof log.followers === "number" || log.followers === null ? (
               <div>
-                <label className="mb-2 block text-sm font-medium text-zinc-300">Followers</label>
+                <label className="mb-2 block text-sm font-medium text-gray-700 dark:text-zinc-300">Followers</label>
                 <input
                   type="number"
                   value={form.followers ?? ""}
                   onChange={(e) => set("followers", e.target.value ? Number(e.target.value) : undefined)}
-                  className="w-full rounded-xl border border-zinc-700 bg-zinc-800 px-4 py-3 text-white"
+                  className="w-full rounded-xl border border-gray-300 dark:border-zinc-700 bg-gray-100 dark:bg-zinc-800 px-4 py-3 text-gray-900 dark:text-white"
                 />
               </div>
             ) : null}
             <div>
-              <label className="mb-2 block text-sm font-medium text-zinc-300">Account Age (months)</label>
+              <label className="mb-2 block text-sm font-medium text-gray-700 dark:text-zinc-300">Account Age (months)</label>
               <input
                 type="number"
                 value={form.age}
                 onChange={(e) => set("age", Number(e.target.value))}
-                className="w-full rounded-xl border border-zinc-700 bg-zinc-800 px-4 py-3 text-white"
+                className="w-full rounded-xl border border-gray-300 dark:border-zinc-700 bg-gray-100 dark:bg-zinc-800 px-4 py-3 text-gray-900 dark:text-white"
               />
             </div>
           </div>
@@ -152,7 +152,7 @@ export default function EditSocialLogModal({ log, onClose, onUpdated }: EditSoci
                 ["verified", "verified"],
               ] as const
             ).map(([key, label]) => (
-              <label key={key} className="flex items-center gap-2 text-sm text-zinc-300">
+              <label key={key} className="flex items-center gap-2 text-sm text-gray-700 dark:text-zinc-300">
                 <input type="checkbox" checked={form[key]} onChange={(e) => set(key, e.target.checked)} />
                 {label}
               </label>
@@ -160,21 +160,21 @@ export default function EditSocialLogModal({ log, onClose, onUpdated }: EditSoci
           </div>
 
           <div>
-            <label className="mb-2 block text-sm font-medium text-zinc-300">Description</label>
+            <label className="mb-2 block text-sm font-medium text-gray-700 dark:text-zinc-300">Description</label>
             <textarea
               value={form.description}
               onChange={(e) => set("description", e.target.value)}
               rows={3}
-              className="w-full rounded-xl border border-zinc-700 bg-zinc-800 px-4 py-3 text-white"
+              className="w-full rounded-xl border border-gray-300 dark:border-zinc-700 bg-gray-100 dark:bg-zinc-800 px-4 py-3 text-gray-900 dark:text-white"
             />
           </div>
 
           <div>
-            <label className="mb-2 block text-sm font-medium text-zinc-300">Image URL</label>
+            <label className="mb-2 block text-sm font-medium text-gray-700 dark:text-zinc-300">Image URL</label>
             <input
               value={form.image}
               onChange={(e) => set("image", e.target.value)}
-              className="w-full rounded-xl border border-zinc-700 bg-zinc-800 px-4 py-3 text-white"
+              className="w-full rounded-xl border border-gray-300 dark:border-zinc-700 bg-gray-100 dark:bg-zinc-800 px-4 py-3 text-gray-900 dark:text-white"
             />
           </div>
 
@@ -182,7 +182,7 @@ export default function EditSocialLogModal({ log, onClose, onUpdated }: EditSoci
             <button
               onClick={onClose}
               disabled={submitting}
-              className="rounded-xl bg-zinc-800 px-5 py-2.5 text-sm font-medium text-white transition hover:bg-zinc-700 disabled:opacity-60"
+              className="rounded-xl bg-gray-100 dark:bg-zinc-800 px-5 py-2.5 text-sm font-medium text-gray-900 dark:text-white transition hover:bg-zinc-700 disabled:opacity-60"
             >
               Cancel
             </button>

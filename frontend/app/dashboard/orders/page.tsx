@@ -396,8 +396,8 @@ export default function OrdersPage() {
     <div className="space-y-10">
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-white">My Orders</h1>
-          <p className="text-zinc-400">Purchased activation numbers</p>
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">My Orders</h1>
+          <p className="text-gray-500 dark:text-zinc-400">Purchased activation numbers</p>
         </div>
 
         <button
@@ -414,7 +414,7 @@ export default function OrdersPage() {
 
       <div className="space-y-3">
         {activeOrders.length === 0 && historyOrders.length === 0 && (
-          <div className="rounded-2xl border border-zinc-800 bg-[#0f172a] p-10 text-center text-zinc-500">
+          <div className="rounded-2xl border border-gray-200 dark:border-zinc-800 bg-white dark:bg-[#0f172a] p-10 text-center text-gray-400 dark:text-zinc-500">
             No orders found.
           </div>
         )}
@@ -430,10 +430,10 @@ export default function OrdersPage() {
           return (
             <div
               key={order.id}
-              className="rounded-2xl border border-zinc-800 bg-[#0f172a] px-6 py-4 transition hover:border-zinc-700"
+              className="rounded-2xl border border-gray-200 dark:border-zinc-800 bg-white dark:bg-[#0f172a] px-6 py-4 transition hover:border-gray-300 dark:hover:border-zinc-700"
             >
               {/* Top row: order id + countdown + time + status dot */}
-              <div className="flex items-center justify-between text-sm text-zinc-500">
+              <div className="flex items-center justify-between text-sm text-gray-400 dark:text-zinc-500">
                 <span>№ {order.providerOrderId || order.id}</span>
 
                 <div className="flex items-center gap-3">
@@ -454,14 +454,14 @@ export default function OrdersPage() {
               {/* Main row: service / operator / price / sms count  —  actions */}
               <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
                 <div className="flex flex-wrap items-center gap-4">
-                  <div className="flex items-center gap-2 font-medium text-white">
-                    <span className="flex h-6 w-6 items-center justify-center rounded-full bg-zinc-800 text-xs font-bold text-zinc-200">
+                  <div className="flex items-center gap-2 font-medium text-gray-900 dark:text-white">
+                    <span className="flex h-6 w-6 items-center justify-center rounded-full bg-gray-100 dark:bg-zinc-800 text-xs font-bold text-gray-800 dark:text-zinc-200">
                       {order.service?.charAt(0)}
                     </span>
                     {order.service}
                   </div>
 
-                  <div className="flex items-center gap-1.5 text-zinc-300">
+                  <div className="flex items-center gap-1.5 text-gray-700 dark:text-zinc-300">
                     {flag ? (
                       <span className="text-lg leading-none">{flag}</span>
                     ) : (
@@ -470,13 +470,13 @@ export default function OrdersPage() {
                     {order.operator || order.country}
                   </div>
 
-                  <div className="font-medium text-white">
+                  <div className="font-medium text-gray-900 dark:text-white">
                     ₦{Number(order.sellingPriceNgn).toLocaleString()}
                   </div>
 
                   <button
                     onClick={() => setModalOrder(order)}
-                    className="flex items-center gap-1.5 rounded-full bg-zinc-800 px-3 py-1 text-xs font-medium text-zinc-300 transition hover:bg-zinc-700"
+                    className="flex items-center gap-1.5 rounded-full bg-gray-100 dark:bg-zinc-800 px-3 py-1 text-xs font-medium text-gray-700 dark:text-zinc-300 transition hover:bg-zinc-700"
                   >
                     <MessageSquare size={12} />
                     {smsCount > 0 ? `${smsCount} SMS` : ">1 SMS"}
@@ -542,7 +542,7 @@ export default function OrdersPage() {
               {/* Bottom row: phone number pill + live code from SMS */}
               <div className="mt-4 flex flex-wrap items-center gap-3">
                 <div className="flex items-center gap-3 rounded-xl bg-blue-500 pl-4 pr-2 py-2.5 text-white">
-                  <Smartphone size={16} className="text-white/80" />
+                  <Smartphone size={16} className="text-gray-900/80 dark:text-white/80" />
                   <span className="font-mono font-semibold tracking-wide">
                     {formatPhoneNumber(order)}
                   </span>
@@ -561,11 +561,11 @@ export default function OrdersPage() {
                 </div>
 
                 <div className="flex items-center gap-3">
-                  <span className="text-sm font-medium text-zinc-400">
+                  <span className="text-sm font-medium text-gray-500 dark:text-zinc-400">
                     Code from SMS
                   </span>
 
-                  <div className="flex items-center gap-2 rounded-xl border border-zinc-700 bg-zinc-900 pl-3 pr-2 py-2">
+                  <div className="flex items-center gap-2 rounded-xl border border-gray-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 pl-3 pr-2 py-2">
                     <input
                       readOnly
                       value={code ?? ""}
@@ -591,14 +591,14 @@ export default function OrdersPage() {
 
               {/* Latest SMS text — the actual message body, not just the code */}
               {sms?.messages.length > 0 && (
-                <div className="mt-3 flex items-start justify-between gap-4 rounded-xl border border-zinc-800 bg-zinc-900/60 px-4 py-3">
-                  <div className="flex items-start gap-2 text-sm text-zinc-300">
+                <div className="mt-3 flex items-start justify-between gap-4 rounded-xl border border-gray-200 dark:border-zinc-800 bg-white/60 dark:bg-zinc-900/60 px-4 py-3">
+                  <div className="flex items-start gap-2 text-sm text-gray-700 dark:text-zinc-300">
                     <Mail size={14} className="mt-0.5 shrink-0 text-blue-400" />
                     <span>{sms.messages[sms.messages.length - 1].text}</span>
                   </div>
 
                   {sms.messages[sms.messages.length - 1].created_at && (
-                    <span className="shrink-0 text-xs text-zinc-500">
+                    <span className="shrink-0 text-xs text-gray-400 dark:text-zinc-500">
                       {formatTime(
                         sms.messages[sms.messages.length - 1].created_at!,
                       )}
@@ -615,25 +615,25 @@ export default function OrdersPage() {
 
       {historyOrders.length > 0 && (
         <div className="space-y-3">
-          <h2 className="text-lg font-semibold text-white">Order History</h2>
+          <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Order History</h2>
 
-          <div className="overflow-x-auto rounded-2xl border border-zinc-800">
+          <div className="overflow-x-auto rounded-2xl border border-gray-200 dark:border-zinc-800">
             <table className="w-full min-w-[820px] border-collapse text-left">
               <thead>
-                <tr className="bg-zinc-900/80 text-xs font-bold uppercase tracking-wide text-zinc-400">
-                  <th className="px-5 py-4 border-r border-zinc-800">ID</th>
-                  <th className="px-5 py-4 border-r border-zinc-800">Date</th>
-                  <th className="px-5 py-4 border-r border-zinc-800">Service</th>
-                  <th className="px-5 py-4 border-r border-zinc-800">Country</th>
-                  <th className="px-5 py-4 border-r border-zinc-800">
+                <tr className="bg-white/80 dark:bg-zinc-900/80 text-xs font-bold uppercase tracking-wide text-gray-500 dark:text-zinc-400">
+                  <th className="px-5 py-4 border-r border-gray-200 dark:border-zinc-800">ID</th>
+                  <th className="px-5 py-4 border-r border-gray-200 dark:border-zinc-800">Date</th>
+                  <th className="px-5 py-4 border-r border-gray-200 dark:border-zinc-800">Service</th>
+                  <th className="px-5 py-4 border-r border-gray-200 dark:border-zinc-800">Country</th>
+                  <th className="px-5 py-4 border-r border-gray-200 dark:border-zinc-800">
                     Price
-                    <div className="mt-0.5 text-[10px] font-medium normal-case text-zinc-500">
+                    <div className="mt-0.5 text-[10px] font-medium normal-case text-gray-400 dark:text-zinc-500">
                       Operator
                     </div>
                   </th>
-                  <th className="px-5 py-4 border-r border-zinc-800">
+                  <th className="px-5 py-4 border-r border-gray-200 dark:border-zinc-800">
                     Number
-                    <div className="mt-0.5 text-[10px] font-medium normal-case text-zinc-500">
+                    <div className="mt-0.5 text-[10px] font-medium normal-case text-gray-400 dark:text-zinc-500">
                       Code
                     </div>
                   </th>
@@ -653,9 +653,9 @@ export default function OrdersPage() {
                     <tr
                       key={order.id}
                       onClick={() => setModalOrder(order)}
-                      className="cursor-pointer border-t border-zinc-800/70 bg-[#0f172a] transition hover:bg-zinc-900/60"
+                      className="cursor-pointer border-t border-gray-200/70 dark:border-zinc-800/70 bg-white dark:bg-[#0f172a] transition hover:bg-gray-50/60 dark:hover:bg-zinc-900/60"
                     >
-                      <td className="px-5 py-4 align-top font-semibold text-white">
+                      <td className="px-5 py-4 align-top font-semibold text-gray-900 dark:text-white">
                         {order.providerOrderId || order.id}
                       </td>
 
@@ -663,13 +663,13 @@ export default function OrdersPage() {
                         <div className="font-semibold text-orange-400">
                           {formatDate(order.createdAt)}
                         </div>
-                        <div className="mt-0.5 text-xs text-zinc-500">
+                        <div className="mt-0.5 text-xs text-gray-400 dark:text-zinc-500">
                           {formatTime(order.createdAt)}
                         </div>
                       </td>
 
                       <td className="px-5 py-4 align-top">
-                        <div className="flex h-6 w-6 items-center justify-center rounded-full bg-zinc-800 text-xs font-bold text-zinc-200">
+                        <div className="flex h-6 w-6 items-center justify-center rounded-full bg-gray-100 dark:bg-zinc-800 text-xs font-bold text-gray-800 dark:text-zinc-200">
                           {order.service?.charAt(0)}
                         </div>
                         <div className="mt-1 text-sm font-medium text-blue-400">
@@ -689,7 +689,7 @@ export default function OrdersPage() {
                       </td>
 
                       <td className="px-5 py-4 align-top">
-                        <div className="font-semibold text-white">
+                        <div className="font-semibold text-gray-900 dark:text-white">
                           ₦{Number(order.sellingPriceNgn).toLocaleString()}
                         </div>
                         <div className="mt-0.5 text-sm text-blue-400">
@@ -698,7 +698,7 @@ export default function OrdersPage() {
                       </td>
 
                       <td className="px-5 py-4 align-top">
-                        <div className="font-mono font-semibold text-white">
+                        <div className="font-mono font-semibold text-gray-900 dark:text-white">
                           {formatPhoneNumber(order)}
                         </div>
                         <div className="mt-0.5 flex items-center gap-1.5 text-sm text-blue-400">
@@ -714,7 +714,7 @@ export default function OrdersPage() {
                               ? "bg-red-500/90 text-white"
                               : completed
                                 ? "bg-green-500/90 text-white"
-                                : "bg-zinc-700 text-zinc-300"
+                                : "bg-gray-200 dark:bg-zinc-700 text-gray-700 dark:text-zinc-300"
                           }`}
                           title={order.status}
                         >
@@ -744,21 +744,21 @@ export default function OrdersPage() {
         >
           <div
             onClick={(e) => e.stopPropagation()}
-            className="w-full max-w-lg rounded-2xl border border-zinc-800 bg-[#0f172a] p-6"
+            className="w-full max-w-lg rounded-2xl border border-gray-200 dark:border-zinc-800 bg-white dark:bg-[#0f172a] p-6"
           >
             <div className="flex items-start justify-between">
               <div>
-                <h3 className="text-lg font-semibold text-white">
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
                   {modalOrder.service} — SMS Messages
                 </h3>
-                <p className="mt-1 font-mono text-sm text-zinc-400">
+                <p className="mt-1 font-mono text-sm text-gray-500 dark:text-zinc-400">
                   {formatPhoneNumber(modalOrder)}
                 </p>
               </div>
 
               <button
                 onClick={() => setModalOrder(null)}
-                className="rounded-lg p-1.5 text-zinc-400 transition hover:bg-zinc-800 hover:text-white"
+                className="rounded-lg p-1.5 text-gray-500 dark:text-zinc-400 transition hover:bg-gray-100 dark:hover:bg-zinc-800 hover:text-gray-900 dark:hover:text-white"
               >
                 <X size={18} />
               </button>
@@ -773,7 +773,7 @@ export default function OrdersPage() {
 
               {!smsByOrder[modalOrder.id]?.loading &&
                 (smsByOrder[modalOrder.id]?.messages.length ?? 0) === 0 && (
-                  <p className="py-8 text-center text-sm text-zinc-500">
+                  <p className="py-8 text-center text-sm text-gray-400 dark:text-zinc-500">
                     No messages received yet.
                   </p>
                 )}
@@ -781,19 +781,19 @@ export default function OrdersPage() {
               {smsByOrder[modalOrder.id]?.messages.map((msg) => (
                 <div
                   key={msg.id}
-                  className="rounded-xl border border-zinc-800 bg-zinc-900/60 p-4"
+                  className="rounded-xl border border-gray-200 dark:border-zinc-800 bg-white/60 dark:bg-zinc-900/60 p-4"
                 >
-                  <p className="text-sm text-zinc-200">{msg.text}</p>
+                  <p className="text-sm text-gray-800 dark:text-zinc-200">{msg.text}</p>
 
                   {msg.code && (
-                    <div className="mt-3 flex items-center justify-between rounded-lg bg-zinc-800 px-3 py-2">
+                    <div className="mt-3 flex items-center justify-between rounded-lg bg-gray-100 dark:bg-zinc-800 px-3 py-2">
                       <span className="font-mono text-lg font-bold tracking-widest text-orange-400">
                         {msg.code}
                       </span>
 
                       <button
                         onClick={() => copy(`modal:${msg.id}`, msg.code!)}
-                        className="flex items-center gap-1.5 rounded-md bg-zinc-700 px-2.5 py-1.5 text-xs font-medium text-zinc-200 transition hover:bg-zinc-600"
+                        className="flex items-center gap-1.5 rounded-md bg-gray-200 dark:bg-zinc-700 px-2.5 py-1.5 text-xs font-medium text-gray-800 dark:text-zinc-200 transition hover:bg-zinc-600"
                       >
                         {copiedKey === `modal:${msg.id}` ? (
                           <>
@@ -809,7 +809,7 @@ export default function OrdersPage() {
                   )}
 
                   {msg.created_at && (
-                    <p className="mt-2 text-xs text-zinc-500">
+                    <p className="mt-2 text-xs text-gray-400 dark:text-zinc-500">
                       {new Date(msg.created_at).toLocaleString()}
                     </p>
                   )}
@@ -821,7 +821,7 @@ export default function OrdersPage() {
               <button
                 onClick={() => fetchSms(modalOrder.id)}
                 disabled={smsByOrder[modalOrder.id]?.loading}
-                className="flex items-center gap-2 rounded-xl bg-zinc-800 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-zinc-700 disabled:opacity-60"
+                className="flex items-center gap-2 rounded-xl bg-gray-100 dark:bg-zinc-800 px-4 py-2.5 text-sm font-medium text-gray-900 dark:text-white transition hover:bg-zinc-700 disabled:opacity-60"
               >
                 <RefreshCcw
                   size={14}

@@ -215,7 +215,7 @@ export default function TransactionCard({ transaction }: TransactionCardProps) {
   }
 
   return (
-    <div className="rounded-2xl border border-zinc-800 bg-[#111827] p-5 transition-all duration-300 hover:border-orange-500 hover:shadow-lg hover:shadow-orange-500/10">
+    <div className="rounded-2xl border border-gray-200 dark:border-zinc-800 bg-white dark:bg-[#111827] p-5 transition-all duration-300 hover:border-orange-500 hover:shadow-lg hover:shadow-orange-500/10">
       {/* Header */}
       <div className="flex items-start justify-between gap-4">
         <div className="flex items-start gap-4">
@@ -225,16 +225,16 @@ export default function TransactionCard({ transaction }: TransactionCardProps) {
 
           <div>
             <div className="flex items-center gap-1.5">
-              <h3 className="text-base font-semibold text-white">{title}</h3>
+              <h3 className="text-base font-semibold text-gray-900 dark:text-white">{title}</h3>
               {isInferredRefund && (
                 <span title="We matched this credit to a recent purchase of the same amount, but the backend hasn't confirmed it as a refund.">
-                  <HelpCircle className="h-3.5 w-3.5 text-zinc-500" />
+                  <HelpCircle className="h-3.5 w-3.5 text-gray-400 dark:text-zinc-500" />
                 </span>
               )}
             </div>
 
-            <p className="mt-1 text-sm text-zinc-400">{subLabel}</p>
-            <p className="mt-1 text-xs text-zinc-500">{formatDate(transaction.createdAt)}</p>
+            <p className="mt-1 text-sm text-gray-500 dark:text-zinc-400">{subLabel}</p>
+            <p className="mt-1 text-xs text-gray-400 dark:text-zinc-500">{formatDate(transaction.createdAt)}</p>
           </div>
         </div>
 
@@ -252,42 +252,42 @@ export default function TransactionCard({ transaction }: TransactionCardProps) {
       </div>
 
       {/* Divider */}
-      <div className="my-5 border-t border-zinc-800" />
+      <div className="my-5 border-t border-gray-200 dark:border-zinc-800" />
 
       {/* Balance Information */}
       <div className="grid gap-4 sm:grid-cols-2">
-        <div className="rounded-xl border border-zinc-800 bg-zinc-900/40 p-4">
-          <p className="text-xs font-medium uppercase tracking-wider text-zinc-500">Balance Before</p>
-          <p className="mt-2 text-lg font-semibold text-white">{formatNaira(transaction.balanceBefore)}</p>
+        <div className="rounded-xl border border-gray-200 dark:border-zinc-800 bg-white/40 dark:bg-zinc-900/40 p-4">
+          <p className="text-xs font-medium uppercase tracking-wider text-gray-400 dark:text-zinc-500">Balance Before</p>
+          <p className="mt-2 text-lg font-semibold text-gray-900 dark:text-white">{formatNaira(transaction.balanceBefore)}</p>
         </div>
 
-        <div className="rounded-xl border border-zinc-800 bg-zinc-900/40 p-4">
-          <p className="text-xs font-medium uppercase tracking-wider text-zinc-500">Balance After</p>
+        <div className="rounded-xl border border-gray-200 dark:border-zinc-800 bg-white/40 dark:bg-zinc-900/40 p-4">
+          <p className="text-xs font-medium uppercase tracking-wider text-gray-400 dark:text-zinc-500">Balance After</p>
           <p className="mt-2 text-lg font-semibold text-orange-400">{formatNaira(transaction.balanceAfter)}</p>
         </div>
       </div>
 
       {/* Description */}
       {transaction.description && (
-        <div className="mt-5 rounded-xl border border-zinc-800 bg-zinc-900/40 p-4">
-          <p className="text-xs font-medium uppercase tracking-wider text-zinc-500">Description</p>
-          <p className="mt-2 break-words text-sm leading-6 text-zinc-300">{transaction.description}</p>
+        <div className="mt-5 rounded-xl border border-gray-200 dark:border-zinc-800 bg-white/40 dark:bg-zinc-900/40 p-4">
+          <p className="text-xs font-medium uppercase tracking-wider text-gray-400 dark:text-zinc-500">Description</p>
+          <p className="mt-2 break-words text-sm leading-6 text-gray-700 dark:text-zinc-300">{transaction.description}</p>
         </div>
       )}
 
       {/* Reference */}
-      <div className="mt-5 flex items-center justify-between rounded-xl border border-zinc-800 bg-zinc-900 px-4 py-3">
+      <div className="mt-5 flex items-center justify-between rounded-xl border border-gray-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 px-4 py-3">
         <div className="min-w-0 flex-1">
-          <p className="text-xs uppercase tracking-wider text-zinc-500">Transaction Reference</p>
-          <p className="mt-1 truncate font-mono text-sm text-white">{transaction.reference || "N/A"}</p>
+          <p className="text-xs uppercase tracking-wider text-gray-400 dark:text-zinc-500">Transaction Reference</p>
+          <p className="mt-1 truncate font-mono text-sm text-gray-900 dark:text-white">{transaction.reference || "N/A"}</p>
         </div>
 
         <button
           onClick={copyReference}
           title="Copy Reference"
-          className="ml-4 rounded-lg p-2 transition-colors duration-200 hover:bg-zinc-800"
+          className="ml-4 rounded-lg p-2 transition-colors duration-200 hover:bg-gray-100 dark:hover:bg-zinc-800"
         >
-          {copied ? <Check className="h-5 w-5 text-green-400" /> : <Copy className="h-5 w-5 text-zinc-400" />}
+          {copied ? <Check className="h-5 w-5 text-green-400" /> : <Copy className="h-5 w-5 text-gray-500 dark:text-zinc-400" />}
         </button>
       </div>
     </div>

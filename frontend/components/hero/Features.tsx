@@ -50,7 +50,7 @@ const features = [
 
 export default function Features() {
   return (
-    <section className="bg-[#08111d] py-28">
+    <section className="bg-gray-50 dark:bg-[#08111d] py-28">
       <div className="mx-auto max-w-7xl px-6">
 
         <div className="text-center">
@@ -59,11 +59,11 @@ export default function Features() {
             Why Choose JoshSecLogs
           </p>
 
-          <h2 className="mt-4 text-5xl font-black text-white">
+          <h2 className="mt-4 text-5xl font-black text-gray-900 dark:text-white">
             Everything You Need
           </h2>
 
-          <p className="mx-auto mt-6 max-w-3xl text-lg text-zinc-400">
+          <p className="mx-auto mt-6 max-w-3xl text-lg text-gray-500 dark:text-zinc-400">
             Designed for developers, businesses and individuals who need
             reliable virtual numbers with fast SMS delivery.
           </p>
@@ -78,17 +78,17 @@ export default function Features() {
             return (
               <div
                 key={feature.title}
-                className="group rounded-3xl border border-orange-500/10 bg-[#111827] p-10 transition duration-300 hover:-translate-y-3 hover:border-orange-500 hover:shadow-[0_0_45px_rgba(249,115,22,0.30)]"
+                className="group rounded-3xl border border-orange-500/10 bg-white dark:bg-[#111827] p-10 transition duration-300 hover:-translate-y-3 hover:border-orange-500 hover:shadow-[0_0_45px_rgba(249,115,22,0.30)]"
               >
                 <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-orange-500 text-white transition group-hover:scale-110">
                   <Icon size={30} />
                 </div>
 
-                <h3 className="mt-8 text-2xl font-bold text-white">
+                <h3 className="mt-8 text-2xl font-bold text-gray-900 dark:text-white">
                   {feature.title}
                 </h3>
 
-                <p className="mt-4 leading-8 text-zinc-400">
+                <p className="mt-4 leading-8 text-gray-500 dark:text-zinc-400">
                   {feature.description}
                 </p>
               </div>

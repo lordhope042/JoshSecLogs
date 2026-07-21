@@ -189,39 +189,39 @@ export default function AddSocialLogModal({ open, onClose, onCreated }: AddSocia
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-6 backdrop-blur-sm">
-      <div className="max-h-[95vh] w-full max-w-3xl overflow-y-auto rounded-3xl border border-zinc-800 bg-zinc-900 shadow-[0_25px_80px_rgba(0,0,0,0.65)]">
-        <div className="flex items-center justify-between border-b border-zinc-800 px-8 py-6">
+      <div className="max-h-[95vh] w-full max-w-3xl overflow-y-auto rounded-3xl border border-gray-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 shadow-[0_25px_80px_rgba(0,0,0,0.65)]">
+        <div className="flex items-center justify-between border-b border-gray-200 dark:border-zinc-800 px-8 py-6">
           <div>
-            <div className="flex items-center gap-2 text-2xl font-bold text-white">
+            <div className="flex items-center gap-2 text-2xl font-bold text-gray-900 dark:text-white">
               {step > 1 && group && (
                 <button
                   onClick={changePlatform}
                   title="Change platform"
-                  className="rounded-lg p-1 text-zinc-500 transition hover:bg-zinc-800 hover:text-white"
+                  className="rounded-lg p-1 text-gray-400 dark:text-zinc-500 transition hover:bg-gray-100 dark:hover:bg-zinc-800 hover:text-gray-900 dark:hover:text-white"
                 >
                   <ChevronLeft size={20} />
                 </button>
               )}
               Add Social Log
-              {group && <span className="text-base font-medium text-zinc-500">— {group.label}</span>}
+              {group && <span className="text-base font-medium text-gray-400 dark:text-zinc-500">— {group.label}</span>}
             </div>
-            <p className="mt-2 text-sm text-zinc-400">
+            <p className="mt-2 text-sm text-gray-500 dark:text-zinc-400">
               Step {step} of 4 · {STEP_LABELS[step - 1]}
             </p>
           </div>
           <button
             onClick={handleClose}
-            className="flex h-11 w-11 items-center justify-center rounded-xl border border-zinc-700 bg-zinc-800 text-xl text-zinc-400 transition-all hover:border-red-500 hover:bg-red-500 hover:text-white"
+            className="flex h-11 w-11 items-center justify-center rounded-xl border border-gray-300 dark:border-zinc-700 bg-gray-100 dark:bg-zinc-800 text-xl text-gray-500 dark:text-zinc-400 transition-all hover:border-red-500 hover:bg-red-500 hover:text-gray-900 dark:hover:text-white"
           >
             <X size={18} />
           </button>
         </div>
 
-        <div className="space-y-6 bg-zinc-900 p-8">
+        <div className="space-y-6 bg-white dark:bg-zinc-900 p-8">
           <div className="flex gap-2">
             {STEP_LABELS.map((label, i) => (
               <div key={label} className="flex-1">
-                <div className={`h-1.5 rounded-full ${i < step ? "bg-orange-600" : "bg-zinc-800"}`} />
+                <div className={`h-1.5 rounded-full ${i < step ? "bg-orange-600" : "bg-gray-100 dark:bg-zinc-800"}`} />
                 <p className={`mt-1.5 text-center text-xs ${i < step ? "text-orange-400" : "text-zinc-600"}`}>
                   {label}
                 </p>
@@ -235,7 +235,7 @@ export default function AddSocialLogModal({ open, onClose, onCreated }: AddSocia
                 <button
                   key={g.value}
                   onClick={() => selectGroup(g.value)}
-                  className="rounded-xl border border-zinc-700 bg-zinc-800 px-4 py-6 text-center font-medium text-white transition hover:border-orange-500 hover:bg-zinc-750"
+                  className="rounded-xl border border-gray-300 dark:border-zinc-700 bg-gray-100 dark:bg-zinc-800 px-4 py-6 text-center font-medium text-gray-900 dark:text-white transition hover:border-orange-500 hover:bg-zinc-750"
                 >
                   {g.label}
                 </button>
@@ -248,7 +248,7 @@ export default function AddSocialLogModal({ open, onClose, onCreated }: AddSocia
               {group.value === "FACEBOOK" && group.pageTypes && (
                 <>
                   <div>
-                    <p className="mb-2 text-sm font-medium text-zinc-300">Page Types — select any that apply</p>
+                    <p className="mb-2 text-sm font-medium text-gray-700 dark:text-zinc-300">Page Types — select any that apply</p>
                     <div className="grid grid-cols-2 gap-3">
                       {group.pageTypes.map((pt) => {
                         const checked = wizard.selectedPageTypes.includes(pt.value);
@@ -258,8 +258,8 @@ export default function AddSocialLogModal({ open, onClose, onCreated }: AddSocia
                             onClick={() => togglePageType(pt.value)}
                             className={`flex items-center gap-2 rounded-xl border px-4 py-4 text-left text-sm font-medium transition ${
                               checked
-                                ? "border-orange-500 bg-zinc-800 text-white"
-                                : "border-zinc-700 bg-zinc-900 text-zinc-300 hover:border-zinc-500"
+                                ? "border-orange-500 bg-gray-100 dark:bg-zinc-800 text-gray-900 dark:text-white"
+                                : "border-gray-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-gray-700 dark:text-zinc-300 hover:border-zinc-500"
                             }`}
                           >
                             <span
@@ -277,14 +277,14 @@ export default function AddSocialLogModal({ open, onClose, onCreated }: AddSocia
                   </div>
 
                   <div>
-                    <label className="mb-2 block text-sm font-medium text-zinc-300">
+                    <label className="mb-2 block text-sm font-medium text-gray-700 dark:text-zinc-300">
                       Country (optional) — adds a Facebook-by-Country listing alongside any page types above
                     </label>
                     <input
                       placeholder="e.g. Nigeria"
                       value={wizard.country ?? ""}
                       onChange={(e) => setWizard((s) => ({ ...s, country: e.target.value }))}
-                      className="w-full rounded-xl border border-zinc-700 bg-zinc-800 px-4 py-3 text-white"
+                      className="w-full rounded-xl border border-gray-300 dark:border-zinc-700 bg-gray-100 dark:bg-zinc-800 px-4 py-3 text-gray-900 dark:text-white"
                     />
                   </div>
                 </>
@@ -292,7 +292,7 @@ export default function AddSocialLogModal({ open, onClose, onCreated }: AddSocia
 
               {group.value === "TIKTOK" && (
                 <>
-                  <label className="flex items-center gap-2 text-sm text-zinc-300">
+                  <label className="flex items-center gap-2 text-sm text-gray-700 dark:text-zinc-300">
                     <input
                       type="checkbox"
                       checked={wizard.includeFollowerTier}
@@ -302,14 +302,14 @@ export default function AddSocialLogModal({ open, onClose, onCreated }: AddSocia
                   </label>
 
                   <div>
-                    <label className="mb-2 block text-sm font-medium text-zinc-300">
+                    <label className="mb-2 block text-sm font-medium text-gray-700 dark:text-zinc-300">
                       Country (optional) — adds a TikTok-by-Country listing alongside the follower tier above
                     </label>
                     <input
                       placeholder="e.g. Nigeria"
                       value={wizard.country ?? ""}
                       onChange={(e) => setWizard((s) => ({ ...s, country: e.target.value }))}
-                      className="w-full rounded-xl border border-zinc-700 bg-zinc-800 px-4 py-3 text-white"
+                      className="w-full rounded-xl border border-gray-300 dark:border-zinc-700 bg-gray-100 dark:bg-zinc-800 px-4 py-3 text-gray-900 dark:text-white"
                     />
                   </div>
                 </>
@@ -317,7 +317,7 @@ export default function AddSocialLogModal({ open, onClose, onCreated }: AddSocia
 
               {needsPlatformChoice && (
                 <div>
-                  <p className="mb-2 text-sm font-medium text-zinc-300">Select any that apply</p>
+                  <p className="mb-2 text-sm font-medium text-gray-700 dark:text-zinc-300">Select any that apply</p>
                   <div className="grid grid-cols-2 gap-3">
                     {group.platforms.map((p) => {
                       const checked = wizard.selectedPlatforms.includes(p);
@@ -327,8 +327,8 @@ export default function AddSocialLogModal({ open, onClose, onCreated }: AddSocia
                           onClick={() => togglePlatform(p)}
                           className={`flex items-center gap-2 rounded-xl border px-4 py-4 text-left text-sm font-medium transition ${
                             checked
-                              ? "border-orange-500 bg-zinc-800 text-white"
-                              : "border-zinc-700 bg-zinc-900 text-zinc-300 hover:border-zinc-500"
+                              ? "border-orange-500 bg-gray-100 dark:bg-zinc-800 text-gray-900 dark:text-white"
+                              : "border-gray-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-gray-700 dark:text-zinc-300 hover:border-zinc-500"
                           }`}
                         >
                           <span
@@ -360,11 +360,11 @@ export default function AddSocialLogModal({ open, onClose, onCreated }: AddSocia
               )}
 
               {submissions.length === 0 && (
-                <p className="text-xs text-zinc-500">Select at least one option above to continue.</p>
+                <p className="text-xs text-gray-400 dark:text-zinc-500">Select at least one option above to continue.</p>
               )}
 
               <div className="flex justify-between pt-2">
-                <button onClick={() => setStep(1)} className="text-sm text-zinc-400 hover:text-white">
+                <button onClick={() => setStep(1)} className="text-sm text-gray-500 dark:text-zinc-400 hover:text-gray-900 dark:hover:text-white">
                   Back
                 </button>
                 <button
@@ -382,26 +382,26 @@ export default function AddSocialLogModal({ open, onClose, onCreated }: AddSocia
             <div className="space-y-4">
               {showFollowers && (
                 <div>
-                  <label className="mb-2 block text-sm font-medium text-zinc-300">Follower Count</label>
+                  <label className="mb-2 block text-sm font-medium text-gray-700 dark:text-zinc-300">Follower Count</label>
                   <input
                     type="number"
                     value={wizard.followers ?? ""}
                     onChange={(e) => setWizard((s) => ({ ...s, followers: Number(e.target.value) }))}
-                    className="w-full rounded-xl border border-zinc-700 bg-zinc-800 px-4 py-3 text-white"
+                    className="w-full rounded-xl border border-gray-300 dark:border-zinc-700 bg-gray-100 dark:bg-zinc-800 px-4 py-3 text-gray-900 dark:text-white"
                   />
                 </div>
               )}
               <div>
-                <label className="mb-2 block text-sm font-medium text-zinc-300">Account Age (months)</label>
+                <label className="mb-2 block text-sm font-medium text-gray-700 dark:text-zinc-300">Account Age (months)</label>
                 <input
                   type="number"
                   value={wizard.age ?? ""}
                   onChange={(e) => setWizard((s) => ({ ...s, age: Number(e.target.value) }))}
-                  className="w-full rounded-xl border border-zinc-700 bg-zinc-800 px-4 py-3 text-white"
+                  className="w-full rounded-xl border border-gray-300 dark:border-zinc-700 bg-gray-100 dark:bg-zinc-800 px-4 py-3 text-gray-900 dark:text-white"
                 />
               </div>
               <div className="flex justify-between pt-2">
-                <button onClick={() => setStep(2)} className="text-sm text-zinc-400 hover:text-white">
+                <button onClick={() => setStep(2)} className="text-sm text-gray-500 dark:text-zinc-400 hover:text-gray-900 dark:hover:text-white">
                   Back
                 </button>
                 <button onClick={() => setStep(4)} className="rounded-xl bg-orange-600 px-5 py-2.5 text-sm font-medium text-white">
@@ -413,43 +413,43 @@ export default function AddSocialLogModal({ open, onClose, onCreated }: AddSocia
 
           {step === 4 && group && (
             <div className="space-y-4">
-              <div className="rounded-xl border border-zinc-800 bg-zinc-800/50 p-4">
-                <p className="text-xs font-semibold uppercase tracking-wide text-zinc-400">
+              <div className="rounded-xl border border-gray-200 dark:border-zinc-800 bg-gray-100/50 dark:bg-zinc-800/50 p-4">
+                <p className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-zinc-400">
                   About to create {submissions.length} listing{submissions.length > 1 ? "s" : ""}
                 </p>
-                <ul className="mt-2 space-y-1 text-sm text-zinc-300">
+                <ul className="mt-2 space-y-1 text-sm text-gray-700 dark:text-zinc-300">
                   {submissions.map((s, i) => (
                     <li key={i}>• {s.label}</li>
                   ))}
                 </ul>
                 {submissions.length > 1 && (
-                  <p className="mt-2 text-xs text-zinc-500">
+                  <p className="mt-2 text-xs text-gray-400 dark:text-zinc-500">
                     The fields below apply to all of them — username/price/credentials are shared.
                   </p>
                 )}
               </div>
 
               <div>
-                <label className="mb-2 block text-sm font-medium text-zinc-300">Username / Label</label>
+                <label className="mb-2 block text-sm font-medium text-gray-700 dark:text-zinc-300">Username / Label</label>
                 <input
                   value={wizard.details.username ?? ""}
                   onChange={(e) => setDetail("username", e.target.value)}
-                  className="w-full rounded-xl border border-zinc-700 bg-zinc-800 px-4 py-3 text-white"
+                  className="w-full rounded-xl border border-gray-300 dark:border-zinc-700 bg-gray-100 dark:bg-zinc-800 px-4 py-3 text-gray-900 dark:text-white"
                 />
               </div>
               <div>
-                <label className="mb-2 block text-sm font-medium text-zinc-300">Price (₦)</label>
+                <label className="mb-2 block text-sm font-medium text-gray-700 dark:text-zinc-300">Price (₦)</label>
                 <input
                   type="number"
                   value={wizard.details.price ?? ""}
                   onChange={(e) => setDetail("price", Number(e.target.value))}
-                  className="w-full rounded-xl border border-zinc-700 bg-zinc-800 px-4 py-3 text-white"
+                  className="w-full rounded-xl border border-gray-300 dark:border-zinc-700 bg-gray-100 dark:bg-zinc-800 px-4 py-3 text-gray-900 dark:text-white"
                 />
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 {["emailAttached", "phoneAttached", "twoFactor", "ogEmail", "verified"].map((flag) => (
-                  <label key={flag} className="flex items-center gap-2 text-sm text-zinc-300">
+                  <label key={flag} className="flex items-center gap-2 text-sm text-gray-700 dark:text-zinc-300">
                     <input
                       type="checkbox"
                       checked={!!wizard.details[flag]}
@@ -461,75 +461,76 @@ export default function AddSocialLogModal({ open, onClose, onCreated }: AddSocia
               </div>
 
               <div>
-                <label className="mb-2 block text-sm font-medium text-zinc-300">Description</label>
+                <label className="mb-2 block text-sm font-medium text-gray-700 dark:text-zinc-300">Description</label>
                 <textarea
                   value={wizard.details.description ?? ""}
                   onChange={(e) => setDetail("description", e.target.value)}
                   rows={2}
-                  className="w-full rounded-xl border border-zinc-700 bg-zinc-800 px-4 py-3 text-white"
+                  className="w-full rounded-xl border border-gray-300 dark:border-zinc-700 bg-gray-100 dark:bg-zinc-800 px-4 py-3 text-gray-900 dark:text-white"
                 />
               </div>
 
-              <p className="pt-2 text-xs font-semibold uppercase tracking-wide text-zinc-500">
+              <p className="pt-2 text-xs font-semibold uppercase tracking-wide text-gray-400 dark:text-zinc-500">
                 Private details — only revealed to the buyer after purchase
               </p>
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="mb-2 block text-sm font-medium text-zinc-300">Login Email</label>
+                  <label className="mb-2 block text-sm font-medium text-gray-700 dark:text-zinc-300">Login Email</label>
                   <input
                     value={wizard.details.loginEmail ?? ""}
                     onChange={(e) => setDetail("loginEmail", e.target.value)}
-                    className="w-full rounded-xl border border-zinc-700 bg-zinc-800 px-4 py-3 text-white"
+                    className="w-full rounded-xl border border-gray-300 dark:border-zinc-700 bg-gray-100 dark:bg-zinc-800 px-4 py-3 text-gray-900 dark:text-white"
                   />
                 </div>
                 <div>
-                  <label className="mb-2 block text-sm font-medium text-zinc-300">Login Phone</label>
+                  <label className="mb-2 block text-sm font-medium text-gray-700 dark:text-zinc-300">Email Password</label>
                   <input
-                    value={wizard.details.loginPhone ?? ""}
-                    onChange={(e) => setDetail("loginPhone", e.target.value)}
-                    className="w-full rounded-xl border border-zinc-700 bg-zinc-800 px-4 py-3 text-white"
+                    type="password"
+                    value={wizard.details.emailPassword ?? ""}
+                    onChange={(e) => setDetail("emailPassword", e.target.value)}
+                    className="w-full rounded-xl border border-gray-300 dark:border-zinc-700 bg-gray-100 dark:bg-zinc-800 px-4 py-3 text-gray-900 dark:text-white"
                   />
                 </div>
                 <div>
-                  <label className="mb-2 block text-sm font-medium text-zinc-300">Password</label>
+                  <label className="mb-2 block text-sm font-medium text-gray-700 dark:text-zinc-300">Account Password</label>
                   <input
                     type="password"
                     value={wizard.details.accountPassword ?? ""}
                     onChange={(e) => setDetail("accountPassword", e.target.value)}
-                    className="w-full rounded-xl border border-zinc-700 bg-zinc-800 px-4 py-3 text-white"
+                    className="w-full rounded-xl border border-gray-300 dark:border-zinc-700 bg-gray-100 dark:bg-zinc-800 px-4 py-3 text-gray-900 dark:text-white"
                   />
                 </div>
                 <div>
-                  <label className="mb-2 block text-sm font-medium text-zinc-300">2FA Secret</label>
+                  <label className="mb-2 block text-sm font-medium text-gray-700 dark:text-zinc-300">2FA Secret</label>
                   <input
                     value={wizard.details.twoFactorSecret ?? ""}
                     onChange={(e) => setDetail("twoFactorSecret", e.target.value)}
-                    className="w-full rounded-xl border border-zinc-700 bg-zinc-800 px-4 py-3 text-white"
+                    className="w-full rounded-xl border border-gray-300 dark:border-zinc-700 bg-gray-100 dark:bg-zinc-800 px-4 py-3 text-gray-900 dark:text-white"
                   />
                 </div>
                 <div>
-                  <label className="mb-2 block text-sm font-medium text-zinc-300">Recovery Email</label>
+                  <label className="mb-2 block text-sm font-medium text-gray-700 dark:text-zinc-300">Recovery Email</label>
                   <input
                     value={wizard.details.recoveryEmail ?? ""}
                     onChange={(e) => setDetail("recoveryEmail", e.target.value)}
-                    className="w-full rounded-xl border border-zinc-700 bg-zinc-800 px-4 py-3 text-white"
+                    className="w-full rounded-xl border border-gray-300 dark:border-zinc-700 bg-gray-100 dark:bg-zinc-800 px-4 py-3 text-gray-900 dark:text-white"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="mb-2 block text-sm font-medium text-zinc-300">Notes</label>
+                <label className="mb-2 block text-sm font-medium text-gray-700 dark:text-zinc-300">Notes</label>
                 <textarea
                   value={wizard.details.notes ?? ""}
                   onChange={(e) => setDetail("notes", e.target.value)}
                   rows={2}
-                  className="w-full rounded-xl border border-zinc-700 bg-zinc-800 px-4 py-3 text-white"
+                  className="w-full rounded-xl border border-gray-300 dark:border-zinc-700 bg-gray-100 dark:bg-zinc-800 px-4 py-3 text-gray-900 dark:text-white"
                 />
               </div>
 
               <div className="flex justify-between pt-2">
-                <button onClick={() => setStep(3)} className="text-sm text-zinc-400 hover:text-white">
+                <button onClick={() => setStep(3)} className="text-sm text-gray-500 dark:text-zinc-400 hover:text-gray-900 dark:hover:text-white">
                   Back
                 </button>
                 <button

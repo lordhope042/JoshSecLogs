@@ -36,19 +36,19 @@ export default function ActiveOrder({
 }: Props) {
   if (!order) {
     return (
-      <div className="rounded-3xl border border-zinc-800 bg-[#111827] p-8">
-        <h2 className="text-xl font-bold text-white">
+      <div className="rounded-3xl border border-gray-200 dark:border-zinc-800 bg-white dark:bg-[#111827] p-8">
+        <h2 className="text-xl font-bold text-gray-900 dark:text-white">
           Active Number
         </h2>
 
         <div className="mt-8 flex flex-col items-center justify-center py-12">
           <Smartphone className="mb-4 h-12 w-12 text-zinc-700" />
 
-          <p className="text-lg font-medium text-zinc-400">
+          <p className="text-lg font-medium text-gray-500 dark:text-zinc-400">
             No Active Number
           </p>
 
-          <p className="mt-2 text-sm text-zinc-500">
+          <p className="mt-2 text-sm text-gray-400 dark:text-zinc-500">
             Purchase a number to receive SMS.
           </p>
         </div>
@@ -79,7 +79,7 @@ export default function ActiveOrder({
       : Clock3;
 
   return (
-    <div className="rounded-3xl border border-orange-500 bg-[#111827] p-8 shadow-xl">
+    <div className="rounded-3xl border border-orange-500 bg-white dark:bg-[#111827] p-8 shadow-xl">
 
       {/* Header */}
 
@@ -87,11 +87,11 @@ export default function ActiveOrder({
 
         <div>
 
-          <h2 className="text-3xl font-bold text-white">
+          <h2 className="text-3xl font-bold text-gray-900 dark:text-white">
             {order.phoneNumber}
           </h2>
 
-          <p className="mt-2 text-zinc-500">
+          <p className="mt-2 text-gray-400 dark:text-zinc-500">
             Provider Order #{order.providerOrderId}
           </p>
 
@@ -206,9 +206,9 @@ function InfoRow({
   highlight,
 }: InfoRowProps) {
   return (
-    <div className="rounded-2xl border border-zinc-800 bg-zinc-900/50 p-4">
+    <div className="rounded-2xl border border-gray-200 dark:border-zinc-800 bg-white/50 dark:bg-zinc-900/50 p-4">
 
-      <div className="flex items-center gap-2 text-zinc-400">
+      <div className="flex items-center gap-2 text-gray-500 dark:text-zinc-400">
         {icon}
         <span className="text-sm">{label}</span>
       </div>
@@ -217,7 +217,7 @@ function InfoRow({
         className={`mt-2 break-all text-lg font-semibold ${
           highlight
             ? "text-orange-400"
-            : "text-white"
+            : "text-gray-900 dark:text-white"
         }`}
       >
         {value}

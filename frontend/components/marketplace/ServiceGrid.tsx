@@ -23,8 +23,8 @@ export default function ServiceGrid({
 }: ServiceGridProps) {
   if (loading) {
     return (
-      <div className="rounded-3xl border border-zinc-800 bg-[#111827] p-12 text-center">
-        <p className="text-zinc-400">
+      <div className="rounded-3xl border border-gray-200 dark:border-zinc-800 bg-white dark:bg-[#111827] p-12 text-center">
+        <p className="text-gray-500 dark:text-zinc-400">
           Loading available services...
         </p>
       </div>
@@ -33,12 +33,12 @@ export default function ServiceGrid({
 
   if (!prices.length) {
     return (
-      <div className="rounded-3xl border border-dashed border-zinc-800 bg-[#111827] p-16 text-center">
-        <h2 className="text-xl font-semibold text-white">
+      <div className="rounded-3xl border border-dashed border-gray-200 dark:border-zinc-800 bg-white dark:bg-[#111827] p-16 text-center">
+        <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
           Select a Country
         </h2>
 
-        <p className="mt-3 text-zinc-500">
+        <p className="mt-3 text-gray-400 dark:text-zinc-500">
           Choose a country to view available virtual numbers.
         </p>
       </div>
@@ -54,12 +54,12 @@ export default function ServiceGrid({
 
   if (!filtered.length) {
     return (
-      <div className="rounded-3xl border border-dashed border-zinc-800 bg-[#111827] p-16 text-center">
-        <h2 className="text-xl font-semibold text-white">
+      <div className="rounded-3xl border border-dashed border-gray-200 dark:border-zinc-800 bg-white dark:bg-[#111827] p-16 text-center">
+        <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
           Service Not Available
         </h2>
 
-        <p className="mt-3 text-zinc-500">
+        <p className="mt-3 text-gray-400 dark:text-zinc-500">
           The selected service is not available for this country.
         </p>
       </div>

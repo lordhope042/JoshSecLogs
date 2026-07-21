@@ -32,6 +32,7 @@ const PURCHASED_SELECT = {
   status: true,
   purchasedAt: true,
   loginEmail: true,
+  emailPassword: true,   // add this line
   loginPhone: true,
   password: true,
   twoFactorSecret: true,

@@ -72,7 +72,7 @@ export default function AdminShell({ children }: Props) {
 
   if (checking) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-[#0B1220]">
+      <div className="flex min-h-screen items-center justify-center bg-gray-50 dark:bg-[#0B1220]">
         <Loader2 className="h-10 w-10 animate-spin text-orange-500" />
       </div>
     );
@@ -83,7 +83,7 @@ export default function AdminShell({ children }: Props) {
   }
 
   return (
-    <div className="flex min-h-screen bg-[#0B1220]">
+    <div className="flex min-h-screen bg-gray-50 dark:bg-[#0B1220]">
       <AdminSidebar
         collapsed={collapsed}
         onToggle={() => setCollapsed((prev) => !prev)}
@@ -94,7 +94,7 @@ export default function AdminShell({ children }: Props) {
           onMenuClick={() => setCollapsed((prev) => !prev)}
         />
 
-        <main className="flex-1 overflow-y-auto bg-[#0F172A] p-6 lg:p-8">
+        <main className="flex-1 overflow-y-auto bg-gray-50 dark:bg-[#0F172A] p-6 lg:p-8">
           {children}
         </main>
       </div>

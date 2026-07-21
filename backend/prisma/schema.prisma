@@ -84,6 +84,7 @@ model SocialLog {
   cookies         Json?
   /// PRIVATE LOGIN DETAILS
   loginEmail      String?
+  emailPassword String?
   loginPhone      String?
   notes           String?
   password        String?

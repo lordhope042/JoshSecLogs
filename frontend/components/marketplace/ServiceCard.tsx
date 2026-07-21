@@ -27,16 +27,16 @@ export default function ServiceCard({
   onBuy,
 }: ServiceCardProps) {
   return (
-    <div className="rounded-3xl border border-zinc-800 bg-zinc-900 p-6 transition-all duration-300 hover:border-orange-500 hover:shadow-xl">
+    <div className="rounded-3xl border border-gray-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-6 transition-all duration-300 hover:border-orange-500 hover:shadow-xl">
 
       <div className="mb-6 flex items-center justify-between">
 
         <div>
-          <h3 className="text-xl font-bold capitalize text-white">
+          <h3 className="text-xl font-bold capitalize text-gray-900 dark:text-white">
             {service}
           </h3>
 
-          <p className="text-sm text-zinc-500">
+          <p className="text-sm text-gray-400 dark:text-zinc-500">
             Available Activation Types
           </p>
         </div>
@@ -53,19 +53,19 @@ export default function ServiceCard({
             .map((activation) => (
               <div
                 key={activation.activationType}
-                className="rounded-2xl border border-zinc-800 bg-zinc-950/60 p-4"
+                className="rounded-2xl border border-gray-200 dark:border-zinc-800 bg-white/60 dark:bg-zinc-950/60 p-4"
               >
                 <div className="flex items-center justify-between">
 
                   <div>
 
-                    <h4 className="font-semibold text-white capitalize">
+                    <h4 className="font-semibold text-gray-900 dark:text-white capitalize">
                       {activation.activationType}
                     </h4>
 
                     <div className="mt-1 flex items-center gap-2 text-sm">
 
-                      <Boxes className="h-4 w-4 text-zinc-500" />
+                      <Boxes className="h-4 w-4 text-gray-400 dark:text-zinc-500" />
 
                       <span
                         className={
@@ -87,7 +87,7 @@ export default function ServiceCard({
                       ₦{activation.priceNgn.toLocaleString()}
                     </p>
 
-                    <p className="text-xs text-zinc-500">
+                    <p className="text-xs text-gray-400 dark:text-zinc-500">
                       ${activation.priceUsd.toFixed(2)}
                     </p>
 
@@ -114,7 +114,7 @@ export default function ServiceCard({
               </div>
             ))
         ) : (
-          <div className="rounded-2xl border border-dashed border-zinc-800 p-6 text-center text-zinc-500">
+          <div className="rounded-2xl border border-dashed border-gray-200 dark:border-zinc-800 p-6 text-center text-gray-400 dark:text-zinc-500">
             No activation types available.
           </div>
         )}

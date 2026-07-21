@@ -78,19 +78,19 @@ export default function BuySummary({
   );
 
   return (
-    <aside className="sticky top-24 overflow-hidden rounded-3xl border border-zinc-800 bg-[#0f172a] shadow-[0_20px_80px_rgba(0,0,0,.45)]">
+    <aside className="sticky top-24 overflow-hidden rounded-3xl border border-gray-200 dark:border-zinc-800 bg-white dark:bg-[#0f172a] shadow-[0_20px_80px_rgba(0,0,0,.45)]">
 
       {/* =====================================================
           HEADER
       ===================================================== */}
 
-      <div className="border-b border-zinc-800 bg-gradient-to-r from-orange-500/20 via-orange-500/10 to-transparent px-7 py-6">
+      <div className="border-b border-gray-200 dark:border-zinc-800 bg-gradient-to-r from-orange-500/20 via-orange-500/10 to-transparent px-7 py-6">
 
-        <h2 className="text-2xl font-bold text-white">
+        <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
           Purchase Summary
         </h2>
 
-        <p className="mt-2 text-sm text-zinc-400">
+        <p className="mt-2 text-sm text-gray-500 dark:text-zinc-400">
           Review your order before confirming payment.
         </p>
 
@@ -108,7 +108,7 @@ export default function BuySummary({
 
             <div>
 
-              <p className="text-sm text-zinc-400">
+              <p className="text-sm text-gray-500 dark:text-zinc-400">
                 Wallet Balance
               </p>
 
@@ -116,7 +116,7 @@ export default function BuySummary({
                 {money(wallet)}
               </h2>
 
-              <p className="mt-2 text-xs text-zinc-500">
+              <p className="mt-2 text-xs text-gray-400 dark:text-zinc-500">
                 Available for purchases
               </p>
 
@@ -139,9 +139,9 @@ export default function BuySummary({
             ORDER DETAILS
         ===================================================== */}
 
-        <div className="rounded-2xl border border-zinc-800 bg-zinc-950 p-6">
+        <div className="rounded-2xl border border-gray-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 p-6">
 
-          <h3 className="mb-5 text-sm font-semibold uppercase tracking-widest text-zinc-500">
+          <h3 className="mb-5 text-sm font-semibold uppercase tracking-widest text-gray-400 dark:text-zinc-500">
             Order Details
           </h3>
 
@@ -219,22 +219,22 @@ export default function BuySummary({
 
         {price === 0 ? (
 
-          <div className="rounded-2xl border border-zinc-700 bg-zinc-900 p-6 text-center">
+          <div className="rounded-2xl border border-gray-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 p-6 text-center">
 
-            <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-zinc-800">
+            <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-gray-100 dark:bg-zinc-800">
 
               <Package
                 size={30}
-                className="text-zinc-500"
+                className="text-gray-400 dark:text-zinc-500"
               />
 
             </div>
 
-            <h3 className="text-lg font-semibold text-white">
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
               Nothing Selected
             </h3>
 
-            <p className="mt-2 text-sm leading-6 text-zinc-400">
+            <p className="mt-2 text-sm leading-6 text-gray-500 dark:text-zinc-400">
               Choose a country, service and activation type
               to see pricing and continue.
             </p>
@@ -262,7 +262,7 @@ export default function BuySummary({
                   Ready to Purchase
                 </h3>
 
-                <p className="mt-2 text-sm leading-6 text-zinc-300">
+                <p className="mt-2 text-sm leading-6 text-gray-700 dark:text-zinc-300">
                   Your wallet balance is sufficient for this
                   purchase. Once confirmed, the amount will be
                   deducted instantly and your virtual number
@@ -295,9 +295,9 @@ export default function BuySummary({
                   Insufficient Balance
                 </h3>
 
-                <p className="mt-2 text-sm leading-6 text-zinc-300">
+                <p className="mt-2 text-sm leading-6 text-gray-700 dark:text-zinc-300">
                   You need an additional{" "}
-                  <span className="font-semibold text-white">
+                  <span className="font-semibold text-gray-900 dark:text-white">
                     {money(amountNeeded)}
                   </span>{" "}
                   before you can complete this purchase.
@@ -307,11 +307,11 @@ export default function BuySummary({
 
                   <div className="flex items-center justify-between">
 
-                    <span className="text-sm text-zinc-400">
+                    <span className="text-sm text-gray-500 dark:text-zinc-400">
                       Wallet Balance
                     </span>
 
-                    <span className="font-semibold text-white">
+                    <span className="font-semibold text-gray-900 dark:text-white">
                       {money(wallet)}
                     </span>
 
@@ -319,7 +319,7 @@ export default function BuySummary({
 
                   <div className="mt-3 flex items-center justify-between">
 
-                    <span className="text-sm text-zinc-400">
+                    <span className="text-sm text-gray-500 dark:text-zinc-400">
                       Required
                     </span>
 
@@ -371,21 +371,21 @@ function SummaryItem({
   value,
 }: SummaryItemProps) {
   return (
-    <div className="flex items-center justify-between rounded-xl border border-zinc-800 bg-zinc-900/40 px-4 py-3">
+    <div className="flex items-center justify-between rounded-xl border border-gray-200 dark:border-zinc-800 bg-white/40 dark:bg-zinc-900/40 px-4 py-3">
 
       <div className="flex items-center gap-3">
 
-        <div className="rounded-lg bg-zinc-800 p-2 text-zinc-400">
+        <div className="rounded-lg bg-gray-100 dark:bg-zinc-800 p-2 text-gray-500 dark:text-zinc-400">
           {icon}
         </div>
 
-        <span className="text-sm text-zinc-400">
+        <span className="text-sm text-gray-500 dark:text-zinc-400">
           {title}
         </span>
 
       </div>
 
-      <span className="max-w-[180px] truncate text-right font-semibold text-white">
+      <span className="max-w-[180px] truncate text-right font-semibold text-gray-900 dark:text-white">
         {value}
       </span>
 
@@ -447,7 +447,7 @@ function InfoCard({
 
       <div className="mb-5 flex items-center justify-between">
 
-        <span className="text-sm font-medium text-zinc-300">
+        <span className="text-sm font-medium text-gray-700 dark:text-zinc-300">
           {title}
         </span>
 

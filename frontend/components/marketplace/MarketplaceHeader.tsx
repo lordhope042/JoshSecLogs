@@ -37,14 +37,14 @@ export default function MarketplaceHeader({
   const validProducts = Array.isArray(products) ? products : [];
 
   return (
-    <div className="rounded-3xl border border-zinc-800 bg-gradient-to-r from-[#111827] via-[#0F172A] to-[#111827] p-8 shadow-lg">
+    <div className="rounded-3xl border border-gray-200 dark:border-zinc-800 bg-gradient-to-r from-gray-50 dark:from-[#111827] via-gray-50 dark:via-[#0F172A] to-gray-50 dark:to-[#111827] p-8 shadow-lg">
 
       <div className="mb-8">
-        <h1 className="text-3xl font-bold text-white">
+        <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
           Virtual Number Marketplace
         </h1>
 
-        <p className="mt-2 text-zinc-400">
+        <p className="mt-2 text-gray-500 dark:text-zinc-400">
           Select your preferred country and service to continue.
         </p>
       </div>
@@ -53,7 +53,7 @@ export default function MarketplaceHeader({
 
         {/* Country */}
         <div>
-          <label className="mb-2 block text-sm font-medium text-zinc-400">
+          <label className="mb-2 block text-sm font-medium text-gray-500 dark:text-zinc-400">
             Country
           </label>
 
@@ -61,7 +61,7 @@ export default function MarketplaceHeader({
             value={country}
             onChange={(e) => onCountryChange(e.target.value)}
             disabled={disabled || validCountries.length === 0}
-            className="h-12 w-full rounded-xl border border-zinc-700 bg-[#0F172A] px-4 text-white transition focus:border-orange-500 focus:outline-none"
+            className="h-12 w-full rounded-xl border border-gray-300 dark:border-zinc-700 bg-gray-50 dark:bg-[#0F172A] px-4 text-gray-900 dark:text-white transition focus:border-orange-500 focus:outline-none"
           >
             <option value="">
               {validCountries.length === 0
@@ -83,7 +83,7 @@ export default function MarketplaceHeader({
 
         {/* Service */}
         <div>
-          <label className="mb-2 block text-sm font-medium text-zinc-400">
+          <label className="mb-2 block text-sm font-medium text-gray-500 dark:text-zinc-400">
             Service
           </label>
 
@@ -91,7 +91,7 @@ export default function MarketplaceHeader({
             value={service}
             onChange={(e) => onServiceChange(e.target.value)}
             disabled={!country || validProducts.length === 0}
-            className="h-12 w-full rounded-xl border border-zinc-700 bg-[#0F172A] px-4 text-white transition focus:border-orange-500 focus:outline-none"
+            className="h-12 w-full rounded-xl border border-gray-300 dark:border-zinc-700 bg-gray-50 dark:bg-[#0F172A] px-4 text-gray-900 dark:text-white transition focus:border-orange-500 focus:outline-none"
           >
             <option value="">
               {!country

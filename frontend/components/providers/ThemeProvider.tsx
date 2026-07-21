@@ -1,11 +1,30 @@
 "use client";
 
 import { ReactNode } from "react";
-import { ThemeProvider as NextThemesProvider } from "next-themes";
+import { ThemeProvider as NextThemesProvider, useTheme } from "next-themes";
 import { Toaster } from "sonner";
 
 interface Props {
   children: ReactNode;
+}
+
+function ThemedToaster() {
+  const { resolvedTheme } = useTheme();
+
+  return (
+    <Toaster
+      theme={resolvedTheme === "light" ? "light" : "dark"}
+      richColors
+      expand
+      closeButton
+      position="top-right"
+      duration={4000}
+      toastOptions={{
+        className:
+          "rounded-xl border border-gray-200 bg-white text-gray-900 shadow-2xl dark:border-zinc-700 dark:bg-[#111827] dark:text-gray-50",
+      }}
+    />
+  );
 }
 
 export function ThemeProvider({
@@ -15,28 +34,12 @@ export function ThemeProvider({
     <NextThemesProvider
       attribute="class"
       defaultTheme="dark"
-      forcedTheme="dark"
       enableSystem={false}
       disableTransitionOnChange
     >
       {children}
 
-      <Toaster
-        theme="dark"
-        richColors
-        expand
-        closeButton
-        position="top-right"
-        duration={4000}
-        toastOptions={{
-          className:
-            "rounded-xl border border-zinc-700 shadow-2xl",
-          style: {
-            background: "#111827",
-            color: "#F9FAFB",
-          },
-        }}
-      />
+      <ThemedToaster />
     </NextThemesProvider>
   );
 }

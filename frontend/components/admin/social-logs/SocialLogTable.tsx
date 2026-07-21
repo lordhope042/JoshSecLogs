@@ -114,10 +114,10 @@ export default function SocialLogsTable({
 
   if (loading) {
     return (
-      <div className="rounded-3xl border border-zinc-800 bg-zinc-900 p-12">
+      <div className="rounded-3xl border border-gray-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-12">
         <div className="flex flex-col items-center justify-center gap-4">
-          <div className="h-10 w-10 animate-spin rounded-full border-4 border-zinc-700 border-t-orange-500" />
-          <p className="text-sm text-zinc-400">Loading social logs...</p>
+          <div className="h-10 w-10 animate-spin rounded-full border-4 border-gray-300 dark:border-zinc-700 border-t-orange-500" />
+          <p className="text-sm text-gray-500 dark:text-zinc-400">Loading social logs...</p>
         </div>
       </div>
     );
@@ -125,12 +125,12 @@ export default function SocialLogsTable({
 
   if (logs.length === 0) {
     return (
-      <div className="rounded-3xl border border-zinc-800 bg-zinc-900 p-16 text-center">
-        <div className="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-3xl bg-zinc-800">
-          <Package size={36} className="text-zinc-500" />
+      <div className="rounded-3xl border border-gray-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-16 text-center">
+        <div className="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-3xl bg-gray-100 dark:bg-zinc-800">
+          <Package size={36} className="text-gray-400 dark:text-zinc-500" />
         </div>
-        <h3 className="text-xl font-bold text-white">No Social Logs Found</h3>
-        <p className="mt-2 text-sm text-zinc-400">
+        <h3 className="text-xl font-bold text-gray-900 dark:text-white">No Social Logs Found</h3>
+        <p className="mt-2 text-sm text-gray-500 dark:text-zinc-400">
           No accounts match your current filters. Try adjusting your search or add a new social log.
         </p>
       </div>
@@ -153,8 +153,8 @@ export default function SocialLogsTable({
             key={log.id}
             className={`overflow-hidden rounded-3xl border transition-all duration-300 ${
               isExpanded
-                ? "border-orange-500/30 bg-zinc-900 shadow-[0_0_40px_rgba(234,88,12,0.08)]"
-                : "border-zinc-800 bg-zinc-900 hover:border-zinc-700"
+                ? "border-orange-500/30 bg-white dark:bg-zinc-900 shadow-[0_0_40px_rgba(234,88,12,0.08)]"
+                : "border-gray-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 hover:border-gray-300 dark:hover:border-zinc-700"
             }`}
           >
             {/* Main Row */}
@@ -165,22 +165,22 @@ export default function SocialLogsTable({
                   <img
                     src={log.image}
                     alt={log.username}
-                    className="h-14 w-14 rounded-2xl object-cover ring-2 ring-zinc-800"
+                    className="h-14 w-14 rounded-2xl object-cover ring-2 ring-gray-200 dark:ring-zinc-800"
                   />
                 ) : (
-                  <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-zinc-800 ring-2 ring-zinc-700">
-                    <ImageIcon size={24} className="text-zinc-500" />
+                  <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-gray-100 dark:bg-zinc-800 ring-2 ring-zinc-700">
+                    <ImageIcon size={24} className="text-gray-400 dark:text-zinc-500" />
                   </div>
                 )}
                 <div
-                  className={`absolute -bottom-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full border-2 border-zinc-900 ${statusStyle.dot}`}
+                  className={`absolute -bottom-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full border-2 border-gray-200 dark:border-zinc-900 ${statusStyle.dot}`}
                 />
               </div>
 
               {/* Info */}
               <div className="min-w-0 flex-1">
                 <div className="flex items-center gap-2">
-                  <h3 className="truncate text-base font-bold text-white">
+                  <h3 className="truncate text-base font-bold text-gray-900 dark:text-white">
                     @{log.username}
                   </h3>
                   {log.verified && (
@@ -192,7 +192,7 @@ export default function SocialLogsTable({
                     </span>
                   )}
                 </div>
-                <div className="mt-1.5 flex flex-wrap items-center gap-3 text-xs text-zinc-400">
+                <div className="mt-1.5 flex flex-wrap items-center gap-3 text-xs text-gray-500 dark:text-zinc-400">
                   <span className="inline-flex items-center gap-1 rounded-lg border border-orange-500/20 bg-orange-500/10 px-2 py-0.5 font-medium text-orange-400">
                     <Layers size={11} />
                     {categoryLabel}
@@ -232,7 +232,7 @@ export default function SocialLogsTable({
 
               {/* Price */}
               <div className="hidden flex-shrink-0 text-right md:block">
-                <p className="text-lg font-bold text-white">
+                <p className="text-lg font-bold text-gray-900 dark:text-white">
                   ₦{log.price.toLocaleString()}
                 </p>
                 <span
@@ -247,7 +247,7 @@ export default function SocialLogsTable({
               <div className="flex flex-shrink-0 items-center gap-1">
                 <button
                   onClick={() => toggleExpand(log.id)}
-                  className="flex h-9 w-9 items-center justify-center rounded-xl text-zinc-400 transition hover:bg-zinc-800 hover:text-white"
+                  className="flex h-9 w-9 items-center justify-center rounded-xl text-gray-500 dark:text-zinc-400 transition hover:bg-gray-100 dark:hover:bg-zinc-800 hover:text-gray-900 dark:hover:text-white"
                   title="View Details"
                 >
                   {isExpanded ? <ChevronUp size={18} /> : <Eye size={18} />}
@@ -255,7 +255,7 @@ export default function SocialLogsTable({
                 {log.status === "AVAILABLE" && onMarkSold && (
                   <button
                     onClick={() => onMarkSold(log)}
-                    className="flex h-9 w-9 items-center justify-center rounded-xl text-zinc-400 transition hover:bg-orange-500/10 hover:text-orange-400"
+                    className="flex h-9 w-9 items-center justify-center rounded-xl text-gray-500 dark:text-zinc-400 transition hover:bg-orange-500/10 hover:text-orange-400"
                     title="Mark as Sold"
                   >
                     <Tag size={18} />
@@ -263,14 +263,14 @@ export default function SocialLogsTable({
                 )}
                 <button
                   onClick={() => onEdit(log)}
-                  className="flex h-9 w-9 items-center justify-center rounded-xl text-zinc-400 transition hover:bg-blue-500/10 hover:text-blue-400"
+                  className="flex h-9 w-9 items-center justify-center rounded-xl text-gray-500 dark:text-zinc-400 transition hover:bg-blue-500/10 hover:text-blue-400"
                   title="Edit"
                 >
                   <Pencil size={18} />
                 </button>
                 <button
                   onClick={() => onDelete(log.id)}
-                  className="flex h-9 w-9 items-center justify-center rounded-xl text-zinc-400 transition hover:bg-red-500/10 hover:text-red-400"
+                  className="flex h-9 w-9 items-center justify-center rounded-xl text-gray-500 dark:text-zinc-400 transition hover:bg-red-500/10 hover:text-red-400"
                   title="Delete"
                 >
                   <Trash2 size={18} />
@@ -280,7 +280,7 @@ export default function SocialLogsTable({
 
             {/* Expanded Details - Matches Form Sections */}
             {isExpanded && (
-              <div className="border-t border-zinc-800 bg-zinc-950/40 px-5 pb-6 pt-4 md:px-6">
+              <div className="border-t border-gray-200 dark:border-zinc-800 bg-white/40 dark:bg-zinc-950/40 px-5 pb-6 pt-4 md:px-6">
                 <div className="grid gap-6 md:grid-cols-2">
                   {/* Basic Info Column */}
                   <div className="space-y-4">
@@ -338,11 +338,11 @@ export default function SocialLogsTable({
                   <div className="space-y-4">
                     {log.description && (
                       <div>
-                        <h4 className="mb-2 flex items-center gap-2 text-sm font-bold uppercase tracking-wider text-zinc-400">
+                        <h4 className="mb-2 flex items-center gap-2 text-sm font-bold uppercase tracking-wider text-gray-500 dark:text-zinc-400">
                           <Tag size={14} />
                           Marketplace Description
                         </h4>
-                        <p className="rounded-2xl border border-zinc-800 bg-zinc-900 p-4 text-sm leading-relaxed text-zinc-300">
+                        <p className="rounded-2xl border border-gray-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-4 text-sm leading-relaxed text-gray-700 dark:text-zinc-300">
                           {log.description}
                         </p>
                       </div>
@@ -356,7 +356,7 @@ export default function SocialLogsTable({
                           <p className="text-sm font-semibold text-orange-300">
                             Login Credentials Hidden
                           </p>
-                          <p className="mt-1 text-xs leading-relaxed text-zinc-400">
+                          <p className="mt-1 text-xs leading-relaxed text-gray-500 dark:text-zinc-400">
                             Login email, password, 2FA secrets, recovery info, backup codes, 
                             and cookies are hidden from this view. They are only revealed to 
                             the buyer after successful purchase.
@@ -370,11 +370,11 @@ export default function SocialLogsTable({
                 {/* Full Width Image Preview */}
                 {log.image && (
                   <div className="mt-6">
-                    <h4 className="mb-3 flex items-center gap-2 text-sm font-bold uppercase tracking-wider text-zinc-400">
+                    <h4 className="mb-3 flex items-center gap-2 text-sm font-bold uppercase tracking-wider text-gray-500 dark:text-zinc-400">
                       <ImageIcon size={14} />
                       Profile Preview
                     </h4>
-                    <div className="overflow-hidden rounded-2xl border border-zinc-800">
+                    <div className="overflow-hidden rounded-2xl border border-gray-200 dark:border-zinc-800">
                       <img
                         src={log.image}
                         alt={log.username}
@@ -408,8 +408,8 @@ function DetailItem({
   valueClass?: string;
 }) {
   return (
-    <div className="rounded-xl border border-zinc-800 bg-zinc-900/80 p-3">
-      <p className="mb-1 flex items-center gap-1.5 text-[11px] font-medium uppercase tracking-wider text-zinc-500">
+    <div className="rounded-xl border border-gray-200 dark:border-zinc-800 bg-white/80 dark:bg-zinc-900/80 p-3">
+      <p className="mb-1 flex items-center gap-1.5 text-[11px] font-medium uppercase tracking-wider text-gray-400 dark:text-zinc-500">
         {icon}
         {label}
       </p>
@@ -432,7 +432,7 @@ function FeatureBadge({
       className={`inline-flex items-center gap-1.5 rounded-lg border px-2.5 py-1.5 text-xs font-medium transition ${
         active
           ? "border-emerald-500/20 bg-emerald-500/10 text-emerald-400"
-          : "border-zinc-800 bg-zinc-900 text-zinc-600"
+          : "border-gray-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-zinc-600"
       }`}
     >
       {icon}

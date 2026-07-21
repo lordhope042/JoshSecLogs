@@ -144,11 +144,11 @@ export default function SocialLogCard({ group, onView, searchQuery }: Props) {
           />
         ) : (
           <div className="flex h-full items-center justify-center bg-gradient-to-r from-orange-500 to-amber-500">
-            <span className="text-5xl font-black text-white">{group.platform.charAt(0)}</span>
+            <span className="text-5xl font-black text-gray-900 dark:text-white">{group.platform.charAt(0)}</span>
           </div>
         )}
 
-        <div className="absolute left-4 top-4 rounded-full bg-black/40 px-3 py-1 text-xs font-semibold text-white backdrop-blur">
+        <div className="absolute left-4 top-4 rounded-full bg-black/40 px-3 py-1 text-xs font-semibold text-gray-900 dark:text-white backdrop-blur">
           {categoryLabel}
         </div>
 
@@ -170,7 +170,7 @@ export default function SocialLogCard({ group, onView, searchQuery }: Props) {
             <HighlightedText text={categoryLabel} query={searchQuery} />
           </h3>
           {subLabel && (
-            <p className="mt-1 text-sm text-zinc-500">
+            <p className="mt-1 text-sm text-gray-400 dark:text-zinc-500">
               <HighlightedText text={subLabel} query={searchQuery} />
             </p>
           )}
@@ -185,7 +185,7 @@ export default function SocialLogCard({ group, onView, searchQuery }: Props) {
           <div className={`grid gap-3 ${hasFollowers ? "grid-cols-2" : "grid-cols-1"}`}>
             {hasFollowers && (
               <div className="rounded-xl bg-zinc-100 p-3 dark:bg-zinc-800">
-                <div className="mb-2 flex items-center gap-2 text-zinc-500">
+                <div className="mb-2 flex items-center gap-2 text-gray-400 dark:text-zinc-500">
                   <Users size={15} />
                   <span className="text-xs">Followers</span>
                 </div>
@@ -194,7 +194,7 @@ export default function SocialLogCard({ group, onView, searchQuery }: Props) {
             )}
 
             <div className="rounded-xl bg-zinc-100 p-3 dark:bg-zinc-800">
-              <div className="mb-2 flex items-center gap-2 text-zinc-500">
+              <div className="mb-2 flex items-center gap-2 text-gray-400 dark:text-zinc-500">
                 <Calendar size={15} />
                 <span className="text-xs">Age</span>
               </div>
@@ -242,10 +242,10 @@ export default function SocialLogCard({ group, onView, searchQuery }: Props) {
 
       <div className="flex items-center justify-between border-t border-zinc-200 p-5 dark:border-zinc-800">
         <div>
-          <p className="text-xs text-zinc-500">Price</p>
+          <p className="text-xs text-gray-400 dark:text-zinc-500">Price</p>
           <p
             className={`text-2xl font-bold ${
-              isSold ? "text-zinc-400 line-through dark:text-zinc-600" : "text-orange-600 dark:text-orange-400"
+              isSold ? "text-gray-500 dark:text-zinc-400 line-through dark:text-zinc-600" : "text-orange-600 dark:text-orange-400"
             }`}
           >
             {uniformPrice ? money(minPrice) : `From ${money(minPrice)}`}

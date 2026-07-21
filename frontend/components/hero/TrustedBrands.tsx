@@ -41,11 +41,11 @@ const brands = [
 
 export default function TrustedBrands() {
   return (
-    <section className="bg-[#050816] py-20">
+    <section className="bg-white dark:bg-[#050816] py-20">
 
       <div className="mx-auto max-w-7xl px-6">
 
-        <h2 className="mb-12 text-center text-4xl font-bold text-white">
+        <h2 className="mb-12 text-center text-4xl font-bold text-gray-900 dark:text-white">
           Trusted With
           <span className="text-orange-500">
             {" "}500+{" "}
@@ -61,11 +61,11 @@ export default function TrustedBrands() {
             return (
               <div
                 key={brand.name}
-                className="flex flex-col items-center justify-center rounded-2xl border border-orange-500/10 bg-[#111827] p-8 transition hover:border-orange-500 hover:bg-[#1b2433]"
+                className="flex flex-col items-center justify-center rounded-2xl border border-orange-500/10 bg-white dark:bg-[#111827] p-8 transition hover:border-orange-500 hover:bg-[#1b2433]"
               >
                 <Icon className="mb-4 text-5xl text-orange-500" />
 
-                <span className="font-semibold text-white">
+                <span className="font-semibold text-gray-900 dark:text-white">
                   {brand.name}
                 </span>
               </div>

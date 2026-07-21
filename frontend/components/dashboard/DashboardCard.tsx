@@ -16,23 +16,23 @@ export default function DashboardCard({
   subtitle,
 }: DashboardCardProps) {
   return (
-    <div className="group rounded-3xl border border-zinc-800 bg-[#111827] p-6 transition-all duration-300 hover:border-orange-500 hover:shadow-lg hover:shadow-orange-500/10">
+    <div className="group rounded-3xl border border-gray-200 dark:border-zinc-800 bg-white dark:bg-[#111827] p-6 transition-all duration-300 hover:border-orange-500 hover:shadow-lg hover:shadow-orange-500/10">
       <div className="flex items-center justify-between">
         <div className="flex-1">
-          <p className="text-sm font-medium text-zinc-400">
+          <p className="text-sm font-medium text-gray-500 dark:text-zinc-400">
             {title}
           </p>
 
-          <h2 className="mt-3 text-3xl font-bold tracking-tight text-white">
+          <h2 className="mt-3 text-3xl font-bold tracking-tight text-gray-900 dark:text-white">
             {loading ? (
-              <span className="inline-block h-9 w-24 animate-pulse rounded bg-zinc-700" />
+              <span className="inline-block h-9 w-24 animate-pulse rounded bg-gray-200 dark:bg-zinc-700" />
             ) : (
               value
             )}
           </h2>
 
           {subtitle && (
-            <p className="mt-2 text-xs text-zinc-500">
+            <p className="mt-2 text-xs text-gray-400 dark:text-zinc-500">
               {subtitle}
             </p>
           )}

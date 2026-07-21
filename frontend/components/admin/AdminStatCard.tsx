@@ -40,14 +40,14 @@ export default function AdminStatCard({
   const style = colors[color];
 
   return (
-    <div className="rounded-2xl border border-zinc-800 bg-[#111827] p-6 shadow-lg">
+    <div className="rounded-2xl border border-gray-200 dark:border-zinc-800 bg-white dark:bg-[#111827] p-6 shadow-lg">
       <div className="flex items-center justify-between">
         <div>
-          <p className="text-sm text-zinc-400">
+          <p className="text-sm text-gray-500 dark:text-zinc-400">
             {title}
           </p>
 
-          <h2 className="mt-2 text-3xl font-bold text-white">
+          <h2 className="mt-2 text-3xl font-bold text-gray-900 dark:text-white">
             {value}
           </h2>
         </div>
@@ -83,7 +83,7 @@ export default function AdminStatCard({
             {Math.abs(change)}%
           </span>
 
-          <span className="text-sm text-zinc-500">
+          <span className="text-sm text-gray-400 dark:text-zinc-500">
             vs last month
           </span>
         </div>

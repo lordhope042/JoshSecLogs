@@ -71,7 +71,7 @@ export default function DashboardLayout({
   const toggleMobile = useCallback(() => setMobileOpen((p) => !p), []);
 
   return (
-    <div className="flex min-h-screen overflow-x-hidden bg-[#050B18]">
+    <div className="flex min-h-screen overflow-x-hidden bg-white dark:bg-[#050B18]">
       <Sidebar
         collapsed={collapsed}
         onToggle={toggleCollapsed}

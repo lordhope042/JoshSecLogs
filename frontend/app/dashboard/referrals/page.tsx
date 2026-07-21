@@ -64,7 +64,7 @@ export default function ReferralsPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#0f172a] flex items-center justify-center">
+      <div className="min-h-screen bg-white dark:bg-[#0f172a] flex items-center justify-center">
         <Loader2 className="animate-spin text-orange-500" size={28} />
       </div>
     );
@@ -73,19 +73,19 @@ export default function ReferralsPage() {
   const referrals = referralData?.referredUsers ?? [];
 
   return (
-    <div className="min-h-screen bg-[#0f172a] text-white p-6 space-y-6">
+    <div className="min-h-screen bg-white dark:bg-[#0f172a] text-gray-900 dark:text-white p-6 space-y-6">
       <div>
         <h1 className="text-2xl font-semibold">Referrals</h1>
-        <p className="text-zinc-400 text-sm mt-1">
+        <p className="text-gray-500 dark:text-zinc-400 text-sm mt-1">
           Invite friends and earn rewards when they join JoshSecLogs.
         </p>
       </div>
 
       {/* Referral link card */}
-      <div className="bg-[#0B1220] border border-zinc-800 rounded-xl p-5">
-        <p className="text-sm text-zinc-400 mb-2">Your referral link</p>
+      <div className="bg-gray-50 dark:bg-[#0B1220] border border-gray-200 dark:border-zinc-800 rounded-xl p-5">
+        <p className="text-sm text-gray-500 dark:text-zinc-400 mb-2">Your referral link</p>
         <div className="flex items-center gap-2">
-          <div className="flex-1 bg-[#0f172a] border border-zinc-800 rounded-lg px-3 py-2 text-sm text-zinc-200 truncate">
+          <div className="flex-1 bg-white dark:bg-[#0f172a] border border-gray-200 dark:border-zinc-800 rounded-lg px-3 py-2 text-sm text-gray-800 dark:text-zinc-200 truncate">
             {referralLink ?? "No referral code assigned yet"}
           </div>
           <button
@@ -101,21 +101,21 @@ export default function ReferralsPage() {
 
       {/* Stats */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <div className="bg-[#0B1220] border border-zinc-800 rounded-xl p-5 flex items-center gap-4">
+        <div className="bg-gray-50 dark:bg-[#0B1220] border border-gray-200 dark:border-zinc-800 rounded-xl p-5 flex items-center gap-4">
           <div className="bg-orange-500/10 text-orange-500 p-3 rounded-lg">
             <Users size={20} />
           </div>
           <div>
-            <p className="text-sm text-zinc-400">Active referrals</p>
+            <p className="text-sm text-gray-500 dark:text-zinc-400">Active referrals</p>
             <p className="text-xl font-semibold">{referralData?.activeCount ?? 0}</p>
           </div>
         </div>
-        <div className="bg-[#0B1220] border border-zinc-800 rounded-xl p-5 flex items-center gap-4">
+        <div className="bg-gray-50 dark:bg-[#0B1220] border border-gray-200 dark:border-zinc-800 rounded-xl p-5 flex items-center gap-4">
           <div className="bg-orange-500/10 text-orange-500 p-3 rounded-lg">
             <Wallet size={20} />
           </div>
           <div>
-            <p className="text-sm text-zinc-400">Total earned</p>
+            <p className="text-sm text-gray-500 dark:text-zinc-400">Total earned</p>
             <p className="text-xl font-semibold">
               ₦{(referralData?.totalEarnings ?? 0).toLocaleString()}
             </p>
@@ -124,21 +124,21 @@ export default function ReferralsPage() {
       </div>
 
       {/* Referral list */}
-      <div className="bg-[#0B1220] border border-zinc-800 rounded-xl overflow-hidden">
-        <div className="px-5 py-3 border-b border-zinc-800">
-          <p className="text-sm font-medium text-zinc-300">Your referrals</p>
+      <div className="bg-gray-50 dark:bg-[#0B1220] border border-gray-200 dark:border-zinc-800 rounded-xl overflow-hidden">
+        <div className="px-5 py-3 border-b border-gray-200 dark:border-zinc-800">
+          <p className="text-sm font-medium text-gray-700 dark:text-zinc-300">Your referrals</p>
         </div>
         {referrals.length === 0 ? (
-          <div className="p-6 text-center text-zinc-500 text-sm">
+          <div className="p-6 text-center text-gray-400 dark:text-zinc-500 text-sm">
             No referrals yet. Share your link to get started.
           </div>
         ) : (
-          <div className="divide-y divide-zinc-800">
+          <div className="divide-y divide-gray-200 dark:divide-zinc-800">
             {referrals.map((r) => (
               <div key={r.id} className="flex items-center justify-between px-5 py-3">
                 <div>
                   <p className="text-sm font-medium">{r.name}</p>
-                  <p className="text-xs text-zinc-500">
+                  <p className="text-xs text-gray-400 dark:text-zinc-500">
                     Joined {new Date(r.joinedAt).toLocaleDateString()}
                   </p>
                 </div>
@@ -147,12 +147,12 @@ export default function ReferralsPage() {
                     className={`text-xs px-2 py-0.5 rounded-full ${
                       r.status === "active"
                         ? "bg-green-500/10 text-green-400"
-                        : "bg-zinc-700/50 text-zinc-400"
+                        : "bg-gray-200/50 dark:bg-zinc-700/50 text-gray-500 dark:text-zinc-400"
                     }`}
                   >
                     {r.status}
                   </span>
-                  <p className="text-sm text-zinc-300 mt-1">
+                  <p className="text-sm text-gray-700 dark:text-zinc-300 mt-1">
                     ₦{r.earnings.toLocaleString()}
                   </p>
                 </div>

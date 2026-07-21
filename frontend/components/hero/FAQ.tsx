@@ -43,7 +43,7 @@ const faqs = [
 
 export default function FAQ() {
   return (
-    <section className="bg-[#050816] py-28">
+    <section className="bg-white dark:bg-[#050816] py-28">
       <div className="mx-auto max-w-5xl px-6">
 
         <motion.div
@@ -56,16 +56,16 @@ export default function FAQ() {
             Frequently Asked Questions
           </span>
 
-          <h2 className="mt-4 text-5xl font-black text-white">
+          <h2 className="mt-4 text-5xl font-black text-gray-900 dark:text-white">
             Have Questions?
           </h2>
 
-          <p className="mt-6 text-zinc-400">
+          <p className="mt-6 text-gray-500 dark:text-zinc-400">
             Everything you need to know before using JoshSecLogs.
           </p>
         </motion.div>
 
-        <div className="mt-16 rounded-3xl border border-orange-500/10 bg-[#111827] p-8">
+        <div className="mt-16 rounded-3xl border border-orange-500/10 bg-white dark:bg-[#111827] p-8">
 
           <Accordion type="single" collapsible className="space-y-5">
 
@@ -75,11 +75,11 @@ export default function FAQ() {
                 value={`item-${index}`}
                 className="rounded-xl border border-orange-500/10 px-5"
               >
-                <AccordionTrigger className="text-left text-lg font-semibold text-white hover:text-orange-500">
+                <AccordionTrigger className="text-left text-lg font-semibold text-gray-900 dark:text-white hover:text-orange-500">
                   {faq.question}
                 </AccordionTrigger>
 
-                <AccordionContent className="text-zinc-400 leading-8">
+                <AccordionContent className="text-gray-500 dark:text-zinc-400 leading-8">
                   {faq.answer}
                 </AccordionContent>
               </AccordionItem>

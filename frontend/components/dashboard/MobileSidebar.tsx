@@ -69,17 +69,17 @@ export default function Sidebar({ collapsed = false, onToggle }: SidebarProps) {
   const sidebarContent = (
     <>
       {/* Logo Section */}
-      <div className={`border-b border-zinc-800 ${collapsed ? "p-4 flex justify-center" : "p-6"}`}>
+      <div className={`border-b border-gray-200 dark:border-zinc-800 ${collapsed ? "p-4 flex justify-center" : "p-6"}`}>
         {collapsed ? (
-          <h1 className="text-2xl font-black text-white">
+          <h1 className="text-2xl font-black text-gray-900 dark:text-white">
             J<span className="text-orange-500">S</span>
           </h1>
         ) : (
           <>
-            <h1 className="text-2xl font-black text-white">
+            <h1 className="text-2xl font-black text-gray-900 dark:text-white">
               Josh<span className="text-orange-500">SecLogs</span>
             </h1>
-            <p className="mt-1 text-sm text-zinc-500">
+            <p className="mt-1 text-sm text-gray-400 dark:text-zinc-500">
               Secure Digital Marketplace
             </p>
           </>
@@ -91,7 +91,7 @@ export default function Sidebar({ collapsed = false, onToggle }: SidebarProps) {
         <div className={`flex ${collapsed ? "justify-center" : "justify-end"} px-3 pt-3`}>
           <button
             onClick={onToggle}
-            className="rounded-lg p-2 text-zinc-400 transition hover:bg-zinc-800 hover:text-white"
+            className="rounded-lg p-2 text-gray-500 dark:text-zinc-400 transition hover:bg-gray-100 dark:hover:bg-zinc-800 hover:text-gray-900 dark:hover:text-white"
             aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
           >
             {collapsed ? <ChevronRight size={18} /> : <ChevronLeft size={18} />}
@@ -115,7 +115,7 @@ export default function Sidebar({ collapsed = false, onToggle }: SidebarProps) {
                 ${
                   active
                     ? "bg-orange-500 text-white shadow-lg shadow-orange-500/20"
-                    : "text-zinc-400 hover:bg-zinc-900 hover:text-white"
+                    : "text-gray-500 dark:text-zinc-400 hover:bg-gray-50 dark:hover:bg-zinc-900 hover:text-gray-900 dark:hover:text-white"
                 }
                 ${collapsed ? "justify-center" : "gap-3"}`}
               >
@@ -128,10 +128,10 @@ export default function Sidebar({ collapsed = false, onToggle }: SidebarProps) {
       </nav>
 
       {/* Logout */}
-      <div className="border-t border-zinc-800 p-4">
+      <div className="border-t border-gray-200 dark:border-zinc-800 p-4">
         <button
           onClick={handleLogout}
-          className={`flex w-full items-center rounded-2xl px-4 py-3 text-zinc-400 transition hover:bg-red-500 hover:text-white
+          className={`flex w-full items-center rounded-2xl px-4 py-3 text-gray-500 dark:text-zinc-400 transition hover:bg-red-500 hover:text-gray-900 dark:hover:text-white
           ${collapsed ? "justify-center" : "gap-3"}`}
         >
           <LogOut size={20} className="shrink-0" />
@@ -146,10 +146,10 @@ export default function Sidebar({ collapsed = false, onToggle }: SidebarProps) {
       {/* Mobile Hamburger Button - Only show when collapsed is false or on mobile */}
       <button
         onClick={() => setIsMobileOpen(true)}
-        className="fixed left-4 top-4 z-50 rounded-xl border border-zinc-700 bg-[#0A1020] p-2 md:hidden"
+        className="fixed left-4 top-4 z-50 rounded-xl border border-gray-300 dark:border-zinc-700 bg-gray-50 dark:bg-[#0A1020] p-2 md:hidden"
         aria-label="Open menu"
       >
-        <Menu className="h-6 w-6 text-white" />
+        <Menu className="h-6 w-6 text-gray-900 dark:text-white" />
       </button>
 
       {/* Mobile Overlay */}
@@ -162,7 +162,7 @@ export default function Sidebar({ collapsed = false, onToggle }: SidebarProps) {
 
       {/* Mobile Sidebar - Always full width, not collapsible */}
       <aside
-        className={`fixed inset-y-0 left-0 z-50 flex w-72 flex-col bg-[#0A1020] border-r border-zinc-800 transform transition-transform duration-300 ease-in-out md:hidden ${
+        className={`fixed inset-y-0 left-0 z-50 flex w-72 flex-col bg-gray-50 dark:bg-[#0A1020] border-r border-gray-200 dark:border-zinc-800 transform transition-transform duration-300 ease-in-out md:hidden ${
           isMobileOpen ? "translate-x-0" : "-translate-x-full"
         }`}
       >
@@ -170,7 +170,7 @@ export default function Sidebar({ collapsed = false, onToggle }: SidebarProps) {
         <div className="absolute right-4 top-4">
           <button
             onClick={() => setIsMobileOpen(false)}
-            className="rounded-xl border border-zinc-700 p-2 text-zinc-400 hover:text-white hover:border-zinc-600"
+            className="rounded-xl border border-gray-300 dark:border-zinc-700 p-2 text-gray-500 dark:text-zinc-400 hover:text-gray-900 dark:hover:text-white hover:border-zinc-600"
             aria-label="Close menu"
           >
             <X className="h-5 w-5" />
@@ -183,7 +183,7 @@ export default function Sidebar({ collapsed = false, onToggle }: SidebarProps) {
 
       {/* Desktop Sidebar - Collapsible */}
       <aside
-        className={`hidden md:flex h-screen flex-col border-r border-zinc-800 bg-[#0A1020] transition-all duration-300 ${
+        className={`hidden md:flex h-screen flex-col border-r border-gray-200 dark:border-zinc-800 bg-gray-50 dark:bg-[#0A1020] transition-all duration-300 ${
           collapsed ? "w-20" : "w-72"
         }`}
       >
@@ -205,17 +205,17 @@ function SidebarContent({ collapsed }: { collapsed: boolean }) {
 
   return (
     <>
-      <div className={`border-b border-zinc-800 ${collapsed ? "p-4 flex justify-center" : "p-6"}`}>
+      <div className={`border-b border-gray-200 dark:border-zinc-800 ${collapsed ? "p-4 flex justify-center" : "p-6"}`}>
         {collapsed ? (
-          <h1 className="text-2xl font-black text-white">
+          <h1 className="text-2xl font-black text-gray-900 dark:text-white">
             J<span className="text-orange-500">S</span>
           </h1>
         ) : (
           <>
-            <h1 className="text-2xl font-black text-white">
+            <h1 className="text-2xl font-black text-gray-900 dark:text-white">
               Josh<span className="text-orange-500">SecLogs</span>
             </h1>
-            <p className="mt-1 text-sm text-zinc-500">
+            <p className="mt-1 text-sm text-gray-400 dark:text-zinc-500">
               Secure Digital Marketplace
             </p>
           </>
@@ -236,7 +236,7 @@ function SidebarContent({ collapsed }: { collapsed: boolean }) {
                 ${
                   active
                     ? "bg-orange-500 text-white shadow-lg shadow-orange-500/20"
-                    : "text-zinc-400 hover:bg-zinc-900 hover:text-white"
+                    : "text-gray-500 dark:text-zinc-400 hover:bg-gray-50 dark:hover:bg-zinc-900 hover:text-gray-900 dark:hover:text-white"
                 }
                 ${collapsed ? "justify-center" : "gap-3"}`}
               >
@@ -248,10 +248,10 @@ function SidebarContent({ collapsed }: { collapsed: boolean }) {
         </div>
       </nav>
 
-      <div className="border-t border-zinc-800 p-4">
+      <div className="border-t border-gray-200 dark:border-zinc-800 p-4">
         <button
           onClick={handleLogout}
-          className={`flex w-full items-center rounded-2xl px-4 py-3 text-zinc-400 transition hover:bg-red-500 hover:text-white
+          className={`flex w-full items-center rounded-2xl px-4 py-3 text-gray-500 dark:text-zinc-400 transition hover:bg-red-500 hover:text-gray-900 dark:hover:text-white
           ${collapsed ? "justify-center" : "gap-3"}`}
         >
           <LogOut size={20} className="shrink-0" />

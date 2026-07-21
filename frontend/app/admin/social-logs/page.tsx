@@ -192,10 +192,10 @@ export default function AdminSocialLogsPage() {
       />
 
       {!loading && filteredLogs.length === 0 && (
-        <div className="flex flex-col items-center justify-center rounded-2xl border border-zinc-800 bg-zinc-900/50 py-16">
+        <div className="flex flex-col items-center justify-center rounded-2xl border border-gray-200 dark:border-zinc-800 bg-white/50 dark:bg-zinc-900/50 py-16">
           <Users size={48} className="text-zinc-600" />
-          <p className="mt-4 text-lg font-medium text-zinc-400">No social logs found</p>
-          <p className="text-sm text-zinc-500">
+          <p className="mt-4 text-lg font-medium text-gray-500 dark:text-zinc-400">No social logs found</p>
+          <p className="text-sm text-gray-400 dark:text-zinc-500">
             {filters.search || filters.platform || filters.category || filters.status || filters.country
               ? "Try adjusting your filters."
               : "Get started by adding a new social log."}
@@ -211,28 +211,28 @@ export default function AdminSocialLogsPage() {
 
       {markingSold && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-6 backdrop-blur-sm" onClick={closeMarkSold}>
-          <div onClick={(e) => e.stopPropagation()} className="w-full max-w-md rounded-2xl border border-zinc-800 bg-zinc-900 p-6">
+          <div onClick={(e) => e.stopPropagation()} className="w-full max-w-md rounded-2xl border border-gray-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-6">
             <div className="flex items-start justify-between">
               <div>
-                <h3 className="text-lg font-semibold text-white">Mark as Sold</h3>
-                <p className="mt-1 text-sm text-zinc-400">
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Mark as Sold</h3>
+                <p className="mt-1 text-sm text-gray-500 dark:text-zinc-400">
                   @{markingSold.username} · {markingSold.platform}
                 </p>
               </div>
-              <button onClick={closeMarkSold} className="rounded-lg p-1.5 text-zinc-400 transition hover:bg-zinc-800 hover:text-white">
+              <button onClick={closeMarkSold} className="rounded-lg p-1.5 text-gray-500 dark:text-zinc-400 transition hover:bg-gray-100 dark:hover:bg-zinc-800 hover:text-gray-900 dark:hover:text-white">
                 <X size={18} />
               </button>
             </div>
             <div className="mt-5">
-              <label className="mb-2 block text-sm font-medium text-zinc-300">Buyer User ID</label>
+              <label className="mb-2 block text-sm font-medium text-gray-700 dark:text-zinc-300">Buyer User ID</label>
               <input
                 type="text"
                 value={buyerIdInput}
                 onChange={(e) => setBuyerIdInput(e.target.value)}
                 placeholder="Enter the buyer's user ID"
-                className="w-full rounded-xl border border-zinc-700 bg-zinc-800 px-4 py-3 text-white placeholder-zinc-500 outline-none focus:border-orange-500"
+                className="w-full rounded-xl border border-gray-300 dark:border-zinc-700 bg-gray-100 dark:bg-zinc-800 px-4 py-3 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-zinc-500 outline-none focus:border-orange-500"
               />
-              <p className="mt-2 text-xs text-zinc-500">
+              <p className="mt-2 text-xs text-gray-400 dark:text-zinc-500">
                 This manually assigns the account to a user outside of the normal purchase flow.
               </p>
             </div>
@@ -240,7 +240,7 @@ export default function AdminSocialLogsPage() {
               <button
                 onClick={closeMarkSold}
                 disabled={submittingSold}
-                className="rounded-xl bg-zinc-800 px-5 py-2.5 text-sm font-medium text-white transition hover:bg-zinc-700 disabled:opacity-60"
+                className="rounded-xl bg-gray-100 dark:bg-zinc-800 px-5 py-2.5 text-sm font-medium text-gray-900 dark:text-white transition hover:bg-zinc-700 disabled:opacity-60"
               >
                 Cancel
               </button>
