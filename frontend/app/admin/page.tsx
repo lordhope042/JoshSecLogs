@@ -1,135 +1,30 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   Users,
   ShoppingCart,
-  CheckCircle,
-  XCircle,
   Wallet,
   LogOut,
   Loader2,
   TrendingUp,
   CreditCard,
   BarChart3,
+  Activity,
+  Layers,
 } from "lucide-react";
-import { toast } from "sonner";
 
-import api from "@/lib/axios";
-/* ───────────────────────────────────────────
-   Types
-   ─────────────────────────────────────────── */
-interface DashboardStats {
-  totalUsers: number;
-  totalOrders: number;
-  successfulOrders: number;
-  cancelledOrders: number;
-  totalDeposits: number;
-  totalLogsPurchased: number;
-  totalRevenue: number;
-  recentOrders: RecentOrder[];
-  recentUsers: RecentUser[];
-}
+import { useAdminDashboard } from "@/hooks/useAdminDashboard";
+import AdminStatCard from "@/components/admin/AdminStatCard";
 
-interface RecentOrder {
-  id: string;
-  user: { username: string };
-  status: string;
-  amount: number;
-  createdAt: string;
-}
-
-interface RecentUser {
-  id: string;
-  username: string;
-  email: string;
-  createdAt: string;
-}
-
-/* ───────────────────────────────────────────
-   Helpers
-   ─────────────────────────────────────────── */
 function formatCurrency(value: number): string {
   if (!value || isNaN(value)) return "₦0";
   return `₦${value.toLocaleString("en-NG")}`;
 }
 
-function formatDate(date: string): string {
-  return new Date(date).toLocaleDateString("en-NG", {
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-  });
-}
-
-/* ───────────────────────────────────────────
-   Stat Card Component
-   ─────────────────────────────────────────── */
-function StatCard({
-  title,
-  value,
-  icon,
-  color,
-  subtitle,
-}: {
-  title: string;
-  value: string | number;
-  icon: React.ReactNode;
-  color: "blue" | "green" | "orange" | "purple" | "red" | "emerald";
-  subtitle?: string;
-}) {
-  const colorMap = {
-    blue: "bg-blue-500/10 text-blue-400 border-blue-500/20",
-    green: "bg-green-500/10 text-green-400 border-green-500/20",
-    orange: "bg-orange-500/10 text-orange-400 border-orange-500/20",
-    purple: "bg-purple-500/10 text-purple-400 border-purple-500/20",
-    red: "bg-red-500/10 text-red-400 border-red-500/20",
-    emerald: "bg-emerald-500/10 text-emerald-400 border-emerald-500/20",
-  };
-
-  return (
-    <div className="rounded-2xl border border-zinc-800 bg-zinc-900/80 p-6 transition hover:border-zinc-700">
-      <div className="flex items-start justify-between">
-        <div>
-          <p className="text-sm font-medium text-zinc-400">{title}</p>
-          <p className="mt-2 text-3xl font-bold text-white">{value}</p>
-          {subtitle && <p className="mt-1 text-xs text-zinc-500">{subtitle}</p>}
-        </div>
-        <div
-          className={`flex h-12 w-12 items-center justify-center rounded-xl border ${colorMap[color]}`}
-        >
-          {icon}
-        </div>
-      </div>
-    </div>
-  );
-}
-
-/* ───────────────────────────────────────────
-   Admin Dashboard Page
-   ─────────────────────────────────────────── */
 export default function AdminDashboardPage() {
   const router = useRouter();
-  const [loading, setLoading] = useState(true);
-  const [stats, setStats] = useState<DashboardStats | null>(null);
-
-  const loadDashboard = useCallback(async () => {
-    try {
-      setLoading(true);
-      const { data } = await api.get("/admin/dashboard");
-      setStats(data);
-    } catch (err: any) {
-      const msg = err?.response?.data?.message || "Failed to load dashboard data";
-      toast.error(msg);
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    loadDashboard();
-  }, [loadDashboard]);
+  const { stats, loading, refresh } = useAdminDashboard();
 
   const handleLogout = () => {
     localStorage.removeItem("access_token");
@@ -150,7 +45,7 @@ export default function AdminDashboardPage() {
         <div className="text-center">
           <p className="text-zinc-400">Failed to load dashboard data.</p>
           <button
-            onClick={loadDashboard}
+            onClick={refresh}
             className="mt-4 rounded-xl bg-orange-600 px-4 py-2 text-sm text-white hover:bg-orange-700"
           >
             Retry
@@ -180,140 +75,65 @@ export default function AdminDashboardPage() {
       </header>
 
       <main className="p-6">
-        {/* Stats Grid */}
+        {/* Stats Grid — every field here matches AdminDashboardStats exactly */}
         <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-          <StatCard
+          <AdminStatCard
             title="Total Users"
-            value={stats.totalUsers?.toLocaleString() || 0}
+            value={stats.users?.toLocaleString() ?? 0}
             icon={<Users size={24} />}
             color="blue"
           />
-          <StatCard
-            title="Total Orders"
-            value={stats.totalOrders?.toLocaleString() || 0}
-            icon={<ShoppingCart size={24} />}
-            color="orange"
-            subtitle={`${stats.successfulOrders || 0} successful · ${stats.cancelledOrders || 0} cancelled`}
-          />
-          <StatCard
-            title="Successful Orders"
-            value={stats.successfulOrders?.toLocaleString() || 0}
-            icon={<CheckCircle size={24} />}
+          <AdminStatCard
+            title="Wallet Balance"
+            value={formatCurrency(stats.walletBalance ?? 0)}
+            icon={<Wallet size={24} />}
             color="green"
           />
-          <StatCard
-            title="Cancelled Orders"
-            value={stats.cancelledOrders?.toLocaleString() || 0}
-            icon={<XCircle size={24} />}
-            color="red"
+          <AdminStatCard
+            title="Total Orders"
+            value={stats.orders?.toLocaleString() ?? 0}
+            icon={<ShoppingCart size={24} />}
+            color="orange"
           />
-          <StatCard
-            title="Total Deposits"
-            value={formatCurrency(stats.totalDeposits || 0)}
-            icon={<Wallet size={24} />}
-            color="emerald"
-          />
-          <StatCard
-            title="Logs Purchased"
-            value={stats.totalLogsPurchased?.toLocaleString() || 0}
-            icon={<CreditCard size={24} />}
+          <AdminStatCard
+            title="Active Orders"
+            value={stats.activeOrders?.toLocaleString() ?? 0}
+            icon={<Activity size={24} />}
             color="purple"
           />
-          <StatCard
+          <AdminStatCard
             title="Total Revenue"
-            value={formatCurrency(stats.totalRevenue || 0)}
+            value={formatCurrency(stats.revenue ?? 0)}
             icon={<TrendingUp size={24} />}
             color="green"
           />
+          <AdminStatCard
+            title="Payments"
+            value={stats.payments?.toLocaleString() ?? 0}
+            icon={<CreditCard size={24} />}
+            color="blue"
+          />
+          <AdminStatCard
+            title="Social Logs"
+            value={stats.socialLogs?.toLocaleString() ?? 0}
+            icon={<Layers size={24} />}
+            color="orange"
+          />
+          <AdminStatCard
+            title="Available Logs"
+            value={stats.availableLogs?.toLocaleString() ?? 0}
+            icon={<Layers size={24} />}
+            color="purple"
+          />
         </div>
 
-        {/* Recent Activity */}
-        <div className="mt-8 grid gap-6 lg:grid-cols-2">
-          {/* Recent Orders */}
-          <div className="rounded-2xl border border-zinc-800 bg-zinc-900/80">
-            <div className="flex items-center justify-between border-b border-zinc-800 px-6 py-4">
-              <h2 className="text-lg font-semibold">Recent Orders</h2>
-              <button
-                onClick={() => router.push("/admin/orders")}
-                className="text-sm text-orange-400 hover:text-orange-300"
-              >
-                View All →
-              </button>
-            </div>
-            <div className="divide-y divide-zinc-800">
-              {stats.recentOrders?.length === 0 && (
-                <p className="px-6 py-8 text-center text-sm text-zinc-500">
-                  No orders yet
-                </p>
-              )}
-              {stats.recentOrders?.map((order) => (
-                <div
-                  key={order.id}
-                  className="flex items-center justify-between px-6 py-4"
-                >
-                  <div>
-                    <p className="text-sm font-medium text-white">
-                      {order.user?.username || "Unknown"}
-                    </p>
-                    <p className="text-xs text-zinc-500">{formatDate(order.createdAt)}</p>
-                  </div>
-                  <div className="text-right">
-                    <p className="text-sm font-semibold text-white">
-                      {formatCurrency(order.amount || 0)}
-                    </p>
-                    <span
-                      className={`inline-block rounded-full px-2 py-0.5 text-xs font-medium ${
-                        order.status === "SUCCESS" || order.status === "COMPLETED"
-                          ? "bg-green-500/10 text-green-400"
-                          : order.status === "CANCELLED" || order.status === "FAILED"
-                          ? "bg-red-500/10 text-red-400"
-                          : "bg-orange-500/10 text-orange-400"
-                      }`}
-                    >
-                      {order.status}
-                    </span>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Recent Users */}
-          <div className="rounded-2xl border border-zinc-800 bg-zinc-900/80">
-            <div className="flex items-center justify-between border-b border-zinc-800 px-6 py-4">
-              <h2 className="text-lg font-semibold">Recent Users</h2>
-              <button
-                onClick={() => router.push("/admin/users")}
-                className="text-sm text-orange-400 hover:text-orange-300"
-              >
-                View All →
-              </button>
-            </div>
-            <div className="divide-y divide-zinc-800">
-              {stats.recentUsers?.length === 0 && (
-                <p className="px-6 py-8 text-center text-sm text-zinc-500">
-                  No users yet
-                </p>
-              )}
-              {stats.recentUsers?.map((user) => (
-                <div
-                  key={user.id}
-                  className="flex items-center justify-between px-6 py-4"
-                >
-                  <div>
-                    <p className="text-sm font-medium text-white">
-                      {user.username}
-                    </p>
-                    <p className="text-xs text-zinc-500">{user.email}</p>
-                  </div>
-                  <p className="text-xs text-zinc-500">
-                    {formatDate(user.createdAt)}
-                  </p>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
+        {/*
+          Recent Orders / Recent Users panels removed — AdminDashboardStats
+          has no fields for either. If your backend actually returns recent
+          activity data (under any field name), share the real response
+          shape and these can come back properly wired, instead of reading
+          fields that don't exist on the type.
+        */}
       </main>
     </div>
   );
