@@ -150,24 +150,24 @@ export default function AddSocialLogModal({ open, onClose, onCreated }: AddSocia
     setSubmitting(true);
     try {
       for (const sub of submissions) {
-        const submissionUsesFollowers =
-          sub.category === "TIKTOK_FOLLOWERS" ||
-          sub.category === "TWITTER_FOLLOWERS" ||
-          sub.category === "INSTAGRAM_FOLLOWERS" ||
-          (sub.category === "FACEBOOK_PAGE" && sub.pageType === "PAGE_WITH_FOLLOWERS");
+  const submissionUsesFollowers =
+    sub.category === "TIKTOK_FOLLOWERS" ||
+    sub.category === "TWITTER_FOLLOWERS" ||
+    sub.category === "INSTAGRAM_FOLLOWERS" ||
+    (sub.category === "FACEBOOK_PAGE" && sub.pageType === "PAGE_WITH_FOLLOWERS");
 
-        // wizard.details spread LAST — nothing after it may override
-        // username/price/credentials the admin actually typed on step 4.
-      const payload = {
-  platform: sub.platform,
-  category: sub.category as any,
-  pageType: sub.pageType,
-  country: sub.country,
-  followers: submissionUsesFollowers ? wizard.followers : undefined,
-  age: wizard.age ?? 0,
-  ...wizard.details,
-} as CreateSocialLogDto;
-        
+  const payload = {
+    platform: sub.platform,
+    category: sub.category as any,
+    pageType: sub.pageType,
+    country: sub.country,
+    followers: submissionUsesFollowers ? wizard.followers : undefined,
+    age: wizard.age ?? 0,
+    ...wizard.details,
+  } as CreateSocialLogDto;
+
+  await createSocialLog(payload);
+
       }
       toast.success(
         submissions.length > 1 ? `Added ${submissions.length} listings to stock.` : "Added to stock.",
