@@ -14,6 +14,8 @@ import {
   getPurchasedSocialLog,
 } from "@/services/socialLogs";
 
+import { ALL_CATEGORIES } from "@/components/social-logs/CategoryTabs";
+
 import {
   PurchasedSocialLog,
   SocialLog,
@@ -43,6 +45,13 @@ export function useSocialLogs() {
   /*
   =====================================
   LOAD CATEGORIES
+  The backend only returns categories that currently have AVAILABLE
+  stock (SocialLogRepository.categories() groups by category WHERE
+  status = AVAILABLE), so a category with zero stock is simply absent
+  from the response — not returned with count: 0. Backfill the full
+  static list here so every category always renders on the page, with
+  real counts where they exist and 0 (→ "Out of Stock" in the UI)
+  where they don't.
   =====================================
   */
 
@@ -51,9 +60,19 @@ export function useSocialLogs() {
       const data =
         await getSocialLogCategories();
 
-      setCategories(data);
+      const byCategory = new Map(data.map((c) => [c.category, c.count]));
 
-      return data;
+      const complete: SocialLogCategory[] = ALL_CATEGORIES.map((category) => ({
+        category,
+        count: byCategory.get(category) ?? 0,
+        // `total` is required on SocialLogCategory; mirror `count` when
+        // the backend doesn't provide a separate total value.
+        total: byCategory.get(category) ?? 0,
+      }));
+
+      setCategories(complete);
+
+      return complete;
     } catch (error) {
       console.error(error);
 
@@ -172,7 +191,10 @@ export function useSocialLogs() {
         );
 
         // Update category tab counts (was matching on `.platform`,
-        // now matches on `.category` since that's the tab key)
+        // now matches on `.category` since that's the tab key). Still
+        // safe now that `categories` is always the full static list —
+        // this only decrements whichever entry matches, everything
+        // else (including entries already at 0) passes through as-is.
         setCategories((prev) =>
           prev.map((category) => ({
             ...category,

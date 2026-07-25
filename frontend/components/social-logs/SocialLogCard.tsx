@@ -12,7 +12,7 @@ import {
   Layers,
 } from "lucide-react";
 
-import { SocialLog } from "@/types/social-log";
+import { SocialLog, SocialLogCategoryValue, SocialLogPageType } from "@/types/social-log";
 
 export interface SocialLogStockGroup {
   key: string;
@@ -44,6 +44,74 @@ export function groupLogsIntoStock(logs: SocialLog[]): SocialLogStockGroup[] {
       category: first.category,
       pageType: first.pageType,
       country: first.country,
+      logs: sorted,
+    };
+  });
+}
+
+/*
+=====================================
+STATIC LISTING TYPES
+The fixed set of "sellable types" that should always render a card,
+whether or not an admin has actually added stock for it yet:
+  - FACEBOOK_PAGE splits into its 4 known page types
+  - FACEBOOK_COUNTRY / TIKTOK_COUNTRY have no fixed sub-list (country
+    is free text) — collapsed into a single aggregate "By Country"
+    card per category rather than one card per country
+  - everything else is one flat card per category
+This is purely for what the CARD GRID displays. Actual purchase logic
+still runs against groupLogsIntoStock() per exact log, so a buyer
+grabbing units from an aggregated "By Country" card still only ever
+receives units matching the specific country they opened in Details —
+never a mix of countries just because the card lumped the count.
+=====================================
+*/
+
+interface StaticListingType {
+  category: SocialLogCategoryValue;
+  pageType?: SocialLogPageType;
+  aggregateCountry?: boolean;
+}
+
+const STATIC_LISTING_TYPES: StaticListingType[] = [
+  { category: "FACEBOOK_PAGE", pageType: "CREATE_PAGE" },
+  { category: "FACEBOOK_PAGE", pageType: "CREATED_PAGE" },
+  { category: "FACEBOOK_PAGE", pageType: "MULTI_PAGE" },
+  { category: "FACEBOOK_PAGE", pageType: "PAGE_WITH_FOLLOWERS" },
+  { category: "FACEBOOK_COUNTRY", aggregateCountry: true },
+  { category: "TWITTER_FOLLOWERS" },
+  { category: "INSTAGRAM_FOLLOWERS" },
+  { category: "VPN" },
+  { category: "TEXTPLUS_NEXTPLUS" },
+  { category: "TELEGRAM_ACCOUNT" },
+  { category: "TIKTOK_COUNTRY", aggregateCountry: true },
+  { category: "TIKTOK_FOLLOWERS" },
+  { category: "MAIL" },
+];
+
+export function buildStaticStockGroups(logs: SocialLog[]): SocialLogStockGroup[] {
+  return STATIC_LISTING_TYPES.map((type) => {
+    const matching = logs.filter((l) => {
+      if (l.category !== type.category) return false;
+      if (type.pageType) return l.pageType === type.pageType;
+      return true;
+    });
+
+    const sorted = [...matching].sort(
+      (a, b) => new Date(a.createdAt ?? 0).getTime() - new Date(b.createdAt ?? 0).getTime(),
+    );
+
+    const first = sorted[0];
+
+    return {
+      key: `${type.category}|${type.pageType ?? ""}`,
+      // Falls back to the category itself so the card still has
+      // something to derive its placeholder letter/label from even
+      // with zero stock (no `first` log to read `.platform` off of).
+      platform: first?.platform ?? type.category,
+      category: type.category,
+      pageType: type.pageType ?? null,
+      country: type.aggregateCountry ? "By Country" : first?.country ?? null,
       logs: sorted,
     };
   });
@@ -102,9 +170,14 @@ export default function SocialLogCard({ group, onView, searchQuery }: Props) {
   const categoryLabel = CATEGORY_LABELS[group.category] ?? group.platform;
   const subLabel = group.pageType ? PAGE_TYPE_LABELS[group.pageType] ?? group.pageType : group.country ?? undefined;
 
+  // Empty-stock static cards have no logs to price off of — Math.min/max
+  // on an empty array returns ±Infinity, which used to render literally
+  // as "From ₦Infinity". Guard against that and show a placeholder dash
+  // instead whenever there's nothing currently priced.
   const prices = group.logs.map((l) => Number(l.price) || 0);
-  const minPrice = Math.min(...prices);
-  const maxPrice = Math.max(...prices);
+  const hasPrices = prices.length > 0;
+  const minPrice = hasPrices ? Math.min(...prices) : 0;
+  const maxPrice = hasPrices ? Math.max(...prices) : 0;
   const uniformPrice = minPrice === maxPrice;
 
   return (
@@ -248,7 +321,7 @@ export default function SocialLogCard({ group, onView, searchQuery }: Props) {
               isSold ? "text-gray-500 dark:text-zinc-400 line-through dark:text-zinc-600" : "text-orange-600 dark:text-orange-400"
             }`}
           >
-            {uniformPrice ? money(minPrice) : `From ${money(minPrice)}`}
+            {!hasPrices ? "—" : uniformPrice ? money(minPrice) : `From ${money(minPrice)}`}
           </p>
         </div>
 
