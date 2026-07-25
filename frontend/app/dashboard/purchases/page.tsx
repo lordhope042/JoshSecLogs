@@ -12,12 +12,15 @@ import {
   Calendar,
   BadgeCheck,
   KeyRound,
+  MapPin,
 } from "lucide-react";
 
 import {
   getMyPurchases,
   getPurchasedSocialLog,
 } from "@/services/socialLogs";
+
+import { CATEGORY_LABELS, PAGE_TYPE_LABELS } from "@/components/social-logs/SocialLogCard";
 
 import type { SocialLog, PurchasedSocialLog } from "@/types/social-log";
 
@@ -129,64 +132,79 @@ export default function MyPurchasesPage() {
         </div>
       ) : (
         <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
-          {purchases.map((log) => (
-            <div
-              key={log.id}
-              className="group overflow-hidden rounded-3xl border border-gray-200 dark:border-zinc-800 bg-white dark:bg-[#0f172a] shadow-sm transition-all duration-300 hover:-translate-y-1 hover:border-orange-400 hover:shadow-xl"
-            >
-              {/* Cover */}
-              <div className="relative flex h-40 items-center justify-center overflow-hidden bg-gradient-to-r from-orange-500 to-amber-500">
-                <span className="text-5xl font-black text-gray-900 dark:text-white">
-                  {log.platform.charAt(0)}
-                </span>
+          {purchases.map((log) => {
+            const categoryLabel = CATEGORY_LABELS[log.category] ?? log.platform;
+            const subLabel = log.pageType
+              ? PAGE_TYPE_LABELS[log.pageType] ?? log.pageType
+              : log.country ?? undefined;
 
-                <div className="absolute left-4 top-4 rounded-full bg-black/40 px-3 py-1 text-xs font-semibold text-gray-900 dark:text-white backdrop-blur">
-                  {log.platform}
-                </div>
+            return (
+              <div
+                key={log.id}
+                className="group overflow-hidden rounded-3xl border border-gray-200 dark:border-zinc-800 bg-white dark:bg-[#0f172a] shadow-sm transition-all duration-300 hover:-translate-y-1 hover:border-orange-400 hover:shadow-xl"
+              >
+                {/* Cover */}
+                <div className="relative flex h-40 items-center justify-center overflow-hidden bg-gradient-to-r from-orange-500 to-amber-500">
+                  <span className="text-5xl font-black text-gray-900 dark:text-white">
+                    {log.platform.charAt(0)}
+                  </span>
 
-                <div className="absolute right-4 top-4 flex items-center gap-1 rounded-full bg-green-500/90 px-3 py-1 text-xs font-semibold text-white">
-                  <BadgeCheck size={13} />
-                  Owned
-                </div>
-              </div>
-
-              {/* Body */}
-              <div className="space-y-4 p-5">
-                <div>
-                  <h3 className="truncate text-lg font-bold text-gray-900 dark:text-white">
-                    @{log.username}
-                  </h3>
-                  <p className="mt-1 text-sm text-gray-400 dark:text-zinc-500">{log.country}</p>
-                </div>
-
-                <div className="flex flex-wrap gap-2 text-xs text-gray-500 dark:text-zinc-400">
-                  {log.purchasedAt && (
-                    <span className="flex items-center gap-1 rounded-full bg-gray-100 dark:bg-zinc-800 px-2.5 py-1">
-                      <Calendar size={12} />
-                      {new Date(log.purchasedAt).toLocaleDateString()}
-                    </span>
-                  )}
-                </div>
-
-                <div className="flex items-center justify-between border-t border-gray-200 dark:border-zinc-800 pt-4">
-                  <div>
-                    <p className="text-xs text-gray-400 dark:text-zinc-500">Paid</p>
-                    <p className="text-xl font-bold text-orange-400">
-                      {money(log.price)}
-                    </p>
+                  <div className="absolute left-4 top-4 rounded-full bg-black/40 px-3 py-1 text-xs font-semibold text-gray-900 dark:text-white backdrop-blur">
+                    {categoryLabel}
                   </div>
 
-                  <button
-                    onClick={() => openDetail(log.id)}
-                    className="flex items-center gap-2 rounded-xl bg-orange-500 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-orange-600"
-                  >
-                    <KeyRound size={15} />
-                    View Login
-                  </button>
+                  <div className="absolute right-4 top-4 flex items-center gap-1 rounded-full bg-green-500/90 px-3 py-1 text-xs font-semibold text-white">
+                    <BadgeCheck size={13} />
+                    Owned
+                  </div>
+                </div>
+
+                {/* Body */}
+                <div className="space-y-4 p-5">
+                  <div>
+                    <h3 className="truncate text-lg font-bold text-gray-900 dark:text-white">
+                      @{log.username}
+                    </h3>
+                    {/* Only rendered when this purchase actually has a
+                        page type or country — VPN/Mail/Telegram/TextPlus
+                        purchases won't, so no more blank subtitle line. */}
+                    {subLabel && (
+                      <p className="mt-1 flex items-center gap-1 text-sm text-gray-400 dark:text-zinc-500">
+                        {!log.pageType && log.country && <MapPin size={12} />}
+                        {subLabel}
+                      </p>
+                    )}
+                  </div>
+
+                  <div className="flex flex-wrap gap-2 text-xs text-gray-500 dark:text-zinc-400">
+                    {log.purchasedAt && (
+                      <span className="flex items-center gap-1 rounded-full bg-gray-100 dark:bg-zinc-800 px-2.5 py-1">
+                        <Calendar size={12} />
+                        {new Date(log.purchasedAt).toLocaleDateString()}
+                      </span>
+                    )}
+                  </div>
+
+                  <div className="flex items-center justify-between border-t border-gray-200 dark:border-zinc-800 pt-4">
+                    <div>
+                      <p className="text-xs text-gray-400 dark:text-zinc-500">Paid</p>
+                      <p className="text-xl font-bold text-orange-400">
+                        {money(log.price)}
+                      </p>
+                    </div>
+
+                    <button
+                      onClick={() => openDetail(log.id)}
+                      className="flex items-center gap-2 rounded-xl bg-orange-500 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-orange-600"
+                    >
+                      <KeyRound size={15} />
+                      View Login
+                    </button>
+                  </div>
                 </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
 
@@ -215,7 +233,8 @@ export default function MyPurchasesPage() {
                       @{selected.username}
                     </h3>
                     <p className="mt-1 text-sm text-gray-500 dark:text-zinc-400">
-                      {selected.platform} · {selected.country}
+                      {CATEGORY_LABELS[selected.category] ?? selected.platform}
+                      {selected.country ? ` · ${selected.country}` : ""}
                     </p>
                   </div>
 
