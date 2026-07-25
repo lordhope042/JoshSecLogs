@@ -4,7 +4,6 @@ import {
   Eye,
   Lock,
   Users,
-  Calendar,
   BadgeCheck,
   ShieldCheck,
   Mail,
@@ -105,9 +104,6 @@ export function buildStaticStockGroups(logs: SocialLog[]): SocialLogStockGroup[]
 
     return {
       key: `${type.category}|${type.pageType ?? ""}`,
-      // Falls back to the category itself so the card still has
-      // something to derive its placeholder letter/label from even
-      // with zero stock (no `first` log to read `.platform` off of).
       platform: first?.platform ?? type.category,
       category: type.category,
       pageType: type.pageType ?? null,
@@ -170,10 +166,6 @@ export default function SocialLogCard({ group, onView, searchQuery }: Props) {
   const categoryLabel = CATEGORY_LABELS[group.category] ?? group.platform;
   const subLabel = group.pageType ? PAGE_TYPE_LABELS[group.pageType] ?? group.pageType : group.country ?? undefined;
 
-  // Empty-stock static cards have no logs to price off of — Math.min/max
-  // on an empty array returns ±Infinity, which used to render literally
-  // as "From ₦Infinity". Guard against that and show a placeholder dash
-  // instead whenever there's nothing currently priced.
   const prices = group.logs.map((l) => Number(l.price) || 0);
   const hasPrices = prices.length > 0;
   const minPrice = hasPrices ? Math.min(...prices) : 0;
@@ -249,29 +241,22 @@ export default function SocialLogCard({ group, onView, searchQuery }: Props) {
           )}
         </div>
 
-        {/* Description now leads the body — shown first, before stats/badges */}
+        {/* Description leads the body — shown first, before anything else */}
         {representative?.description && (
           <p className="line-clamp-3 text-sm text-zinc-600 dark:text-zinc-400">{representative.description}</p>
         )}
 
-        {representative && (
-          <div className={`grid gap-3 ${hasFollowers ? "grid-cols-2" : "grid-cols-1"}`}>
-            {hasFollowers && (
-              <div className="rounded-xl bg-zinc-100 p-3 dark:bg-zinc-800">
-                <div className="mb-2 flex items-center gap-2 text-gray-400 dark:text-zinc-500">
-                  <Users size={15} />
-                  <span className="text-xs">Followers</span>
-                </div>
-                <p className="font-semibold">{representative.followers!.toLocaleString()}</p>
-              </div>
-            )}
-
+        {/* Age removed from the default card view — still visible in the
+            details modal's "View full details" section. Followers stays
+            here since it's a stronger at-a-glance signal for buyers. */}
+        {representative && hasFollowers && (
+          <div className="grid grid-cols-1 gap-3">
             <div className="rounded-xl bg-zinc-100 p-3 dark:bg-zinc-800">
               <div className="mb-2 flex items-center gap-2 text-gray-400 dark:text-zinc-500">
-                <Calendar size={15} />
-                <span className="text-xs">Age</span>
+                <Users size={15} />
+                <span className="text-xs">Followers</span>
               </div>
-              <p className="font-semibold">{representative.age} mo</p>
+              <p className="font-semibold">{representative.followers!.toLocaleString()}</p>
             </div>
           </div>
         )}
