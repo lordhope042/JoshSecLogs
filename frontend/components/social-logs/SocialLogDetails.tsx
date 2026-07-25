@@ -13,6 +13,8 @@ import {
   Minus,
   Plus,
   Layers,
+  ChevronDown,
+  ChevronUp,
 } from "lucide-react";
 
 import { SocialLog } from "@/types/social-log";
@@ -56,10 +58,12 @@ export default function SocialLogDetails({
   onPurchase,
 }: Props) {
   const [quantity, setQuantity] = useState(1);
+  const [showFullDetails, setShowFullDetails] = useState(false);
 
-  // Reset quantity whenever a different log is opened.
+  // Reset quantity and collapse details whenever a different log is opened.
   useEffect(() => {
     setQuantity(1);
+    setShowFullDetails(false);
   }, [log?.id]);
 
   if (!open || !log) return null;
@@ -122,7 +126,6 @@ export default function SocialLogDetails({
             <div>
               <p className="text-sm uppercase tracking-widest text-orange-500">{categoryLabel}</p>
               <h2 className="mt-1 text-3xl font-bold text-zinc-900 dark:text-white">{log.username}</h2>
-              <p className="mt-2 text-gray-400 dark:text-zinc-500">Premium aged account</p>
             </div>
 
             {log.verified && (
@@ -133,52 +136,67 @@ export default function SocialLogDetails({
             )}
           </div>
 
-          {/* Stats — only shown when meaningful for this category */}
-          <div className={`grid gap-4 ${statGridClass}`}>
-            {hasCountry && (
-              <div className="rounded-2xl bg-zinc-100 p-4 dark:bg-zinc-900">
-                <MapPin className="mb-3 text-orange-500" />
-                <p className="text-xs text-gray-400 dark:text-zinc-500">Country</p>
-                <p className="font-semibold text-zinc-900 dark:text-white">{log.country}</p>
-              </div>
-            )}
+          {/* Description — now leads, right after the title.
+              Falls back to a generic line when the admin didn't write one. */}
+          <p className="text-sm leading-7 text-zinc-600 dark:text-zinc-400">
+            {log.description ?? "Premium aged account."}
+          </p>
 
-            <div className="rounded-2xl bg-zinc-100 p-4 dark:bg-zinc-900">
-              <Calendar className="mb-3 text-orange-500" />
-              <p className="text-xs text-gray-400 dark:text-zinc-500">Age</p>
-              <p className="font-semibold text-zinc-900 dark:text-white">{log.age} mo</p>
-            </div>
-
-            {hasFollowers && (
-              <div className="rounded-2xl bg-zinc-100 p-4 dark:bg-zinc-900">
-                <Users className="mb-3 text-orange-500" />
-                <p className="text-xs text-gray-400 dark:text-zinc-500">Followers</p>
-                <p className="font-semibold text-zinc-900 dark:text-white">{log.followers!.toLocaleString()}</p>
-              </div>
-            )}
-          </div>
-
-          {/* Features */}
+          {/* Full details toggle — stats + feature badges are collapsed
+              behind this so the description is what people see first. */}
           <div>
-            <h3 className="mb-4 text-lg font-semibold text-zinc-900 dark:text-white">Account Features</h3>
-            <div className="grid gap-3 md:grid-cols-2">
-              <Feature label="Email Attached" value={log.emailAttached} />
-              <Feature label="Phone Attached" value={log.phoneAttached} />
-              <Feature label="2FA Enabled" value={log.twoFactor} />
-              <Feature label="Original Email" value={log.ogEmail} />
-              <Feature label="Verified" value={log.verified} />
-            </div>
-          </div>
+            <button
+              type="button"
+              onClick={() => setShowFullDetails((v) => !v)}
+              className="flex w-full items-center justify-between rounded-2xl border border-zinc-200 bg-zinc-50 px-5 py-3.5 text-sm font-semibold text-zinc-700 transition hover:border-orange-300 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-200 dark:hover:border-orange-500"
+            >
+              <span>{showFullDetails ? "Hide full details" : "View full details"}</span>
+              {showFullDetails ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
+            </button>
 
-          {/* Description */}
-          {log.description && (
-            <div>
-              <h3 className="mb-3 text-lg font-semibold text-zinc-900 dark:text-white">Description</h3>
-              <div className="rounded-2xl border border-zinc-200 bg-zinc-50 p-5 text-sm leading-7 text-zinc-600 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-300">
-                {log.description}
+            {showFullDetails && (
+              <div className="mt-4 space-y-6">
+                {/* Stats — only shown when meaningful for this category */}
+                <div className={`grid gap-4 ${statGridClass}`}>
+                  {hasCountry && (
+                    <div className="rounded-2xl bg-zinc-100 p-4 dark:bg-zinc-900">
+                      <MapPin className="mb-3 text-orange-500" />
+                      <p className="text-xs text-gray-400 dark:text-zinc-500">Country</p>
+                      <p className="font-semibold text-zinc-900 dark:text-white">{log.country}</p>
+                    </div>
+                  )}
+
+                  <div className="rounded-2xl bg-zinc-100 p-4 dark:bg-zinc-900">
+                    <Calendar className="mb-3 text-orange-500" />
+                    <p className="text-xs text-gray-400 dark:text-zinc-500">Age</p>
+                    <p className="font-semibold text-zinc-900 dark:text-white">{log.age} mo</p>
+                  </div>
+
+                  {hasFollowers && (
+                    <div className="rounded-2xl bg-zinc-100 p-4 dark:bg-zinc-900">
+                      <Users className="mb-3 text-orange-500" />
+                      <p className="text-xs text-gray-400 dark:text-zinc-500">Followers</p>
+                      <p className="font-semibold text-zinc-900 dark:text-white">
+                        {log.followers!.toLocaleString()}
+                      </p>
+                    </div>
+                  )}
+                </div>
+
+                {/* Features */}
+                <div>
+                  <h3 className="mb-4 text-lg font-semibold text-zinc-900 dark:text-white">Account Features</h3>
+                  <div className="grid gap-3 md:grid-cols-2">
+                    <Feature label="Email Attached" value={log.emailAttached} />
+                    <Feature label="Phone Attached" value={log.phoneAttached} />
+                    <Feature label="2FA Enabled" value={log.twoFactor} />
+                    <Feature label="Original Email" value={log.ogEmail} />
+                    <Feature label="Verified" value={log.verified} />
+                  </div>
+                </div>
               </div>
-            </div>
-          )}
+            )}
+          </div>
 
           {/* Quantity selector */}
           <div className="rounded-2xl border border-zinc-200 bg-zinc-50 p-5 dark:border-zinc-800 dark:bg-zinc-900">
