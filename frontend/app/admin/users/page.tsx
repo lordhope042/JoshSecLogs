@@ -30,7 +30,7 @@ interface User {
   role?: string | null;
   isActive?: boolean | null;
   wallet?: {
-    balance?: number | null;
+    balance?: number | string | null;
   } | null;
   createdAt?: string | null;
   updatedAt?: string | null;
@@ -109,8 +109,16 @@ function getStatus(isActive: boolean | null | undefined): boolean {
   return isActive === true;
 }
 
-function getBalance(wallet: { balance?: number | null } | null | undefined): number {
-  return wallet?.balance ?? 0;
+// FIX: coerce string balances (e.g. from a decimal/bigint API field serialized
+// as a string) to a real number. Previously `wallet?.balance ?? 0` could return
+// a string, and `sum + getBalance(...)` in the stats reducer would then do
+// string concatenation instead of numeric addition, producing a garbled
+// mega-digit "total balance" (e.g. "₦000200000217600000000000093701000").
+function getBalance(wallet: { balance?: number | string | null } | null | undefined): number {
+  const raw = wallet?.balance;
+  if (raw === null || raw === undefined) return 0;
+  const num = typeof raw === "string" ? parseFloat(raw) : raw;
+  return typeof num === "number" && !isNaN(num) ? num : 0;
 }
 
 // Read the logged-in admin's own id from wherever your auth stores it.
@@ -271,7 +279,10 @@ export default function AdminUsersPage() {
         email: u.email || null,
         role: u.role || "USER",
         isActive: u.isActive ?? true,
-        wallet: u.wallet ? { balance: u.wallet.balance ?? 0 } : null,
+        // FIX: run raw balance through getBalance so a string value from the
+        // API (e.g. "50000") is stored as a real number, not a string that
+        // later gets string-concatenated instead of summed.
+        wallet: u.wallet ? { balance: getBalance(u.wallet) } : null,
         createdAt: u.createdAt || null,
         updatedAt: u.updatedAt || null,
         _count: {
