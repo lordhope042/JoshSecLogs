@@ -552,6 +552,12 @@ export default function AdminWalletPage() {
       .filter((t) => t.direction === "refund")
       .reduce((sum, t) => sum + t.displayAmount, 0);
 
+    // Strictly type === "DEPOSIT" only — never includes REFUND, ADJUSTMENT,
+    // or anything else that happens to move balance the same direction.
+    const totalDeposited = successful
+      .filter((t) => t.type === "DEPOSIT")
+      .reduce((sum, t) => sum + t.displayAmount, 0);
+
     const netFlow = totalIn + totalRefunded - totalOut;
     const pending = transactions.filter((t) => t.status === "PENDING").length;
     const deposits = successful.filter((t) => t.type === "DEPOSIT").length;
@@ -564,6 +570,7 @@ export default function AdminWalletPage() {
       totalIn,
       totalOut,
       totalRefunded,
+      totalDeposited,
       netFlow,
       pending,
       deposits,
@@ -614,7 +621,14 @@ export default function AdminWalletPage() {
         />
       </div>
 
-      <div className="grid gap-6 sm:grid-cols-2">
+      <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+        <StatCard
+          title="Total Deposited"
+          value={formatCurrency(stats.totalDeposited)}
+          icon={<DollarSign size={24} />}
+          color="green"
+          subtitle="Deposits only — refunds excluded"
+        />
         <StatCard
           title="Net Flow"
           value={formatCurrency(stats.netFlow)}
