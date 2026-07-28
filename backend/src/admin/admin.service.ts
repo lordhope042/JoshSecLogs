@@ -8,9 +8,7 @@ import { AdminRepository } from "./admin.repository";
 
 @Injectable()
 export class AdminService {
-  constructor(
-    private readonly repository: AdminRepository,
-  ) {}
+  constructor(private readonly repository: AdminRepository) {}
 
   /*
   =====================================
@@ -102,6 +100,26 @@ export class AdminService {
     return this.repository.orders();
   }
 
+  async refundOrder(id: string) {
+    const order = await this.repository.orderById(id);
+
+    if (!order) {
+      throw new NotFoundException("Order not found.");
+    }
+
+    if (order.refundedAt) {
+      throw new BadRequestException("This order has already been refunded.");
+    }
+
+    if (!order.user.wallet) {
+      throw new BadRequestException(
+        "This user has no wallet to refund into.",
+      );
+    }
+
+    return this.repository.refundOrder(order);
+  }
+
   /*
   =====================================
       PAYMENTS
@@ -120,5 +138,39 @@ export class AdminService {
 
   transactions() {
     return this.repository.transactions();
+  }
+
+  async refundTransaction(id: string) {
+    const transaction = await this.repository.transactionById(id);
+
+    if (!transaction) {
+      throw new NotFoundException("Transaction not found.");
+    }
+
+    if (transaction.refundedAt) {
+      throw new BadRequestException(
+        "This transaction has already been refunded.",
+      );
+    }
+
+    if (transaction.type !== "PURCHASE") {
+      throw new BadRequestException(
+        "Only purchase transactions can be refunded.",
+      );
+    }
+
+    if (transaction.status !== "SUCCESS") {
+      throw new BadRequestException(
+        "Only successful transactions can be refunded.",
+      );
+    }
+
+    if (!transaction.user.wallet) {
+      throw new BadRequestException(
+        "This user has no wallet to refund into.",
+      );
+    }
+
+    return this.repository.refundTransaction(transaction);
   }
 }

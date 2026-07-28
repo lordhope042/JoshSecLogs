@@ -139,6 +139,14 @@ function resolveDisplayAmount(t: RawTransaction): number {
   return delta > 0 ? delta : Math.abs(t.amount ?? 0);
 }
 
+// A transaction is refund-eligible if it's a completed purchase-type debit.
+// Deposits, withdrawals, adjustments, and anything already refunded are excluded.
+// NOTE: adjust this if the backend's real enum surfaces other refundable types
+// (e.g. WITHDRAWAL) — see the open question on the Prisma enum.
+function isRefundable(t: Transaction): boolean {
+  return t.status === "SUCCESS" && (t.type === "VIRTUAL_NUMBER" || t.type === "SOCIAL_LOG");
+}
+
 /* ───────────────────────────────────────────
    Helpers
    ─────────────────────────────────────────── */
@@ -303,9 +311,13 @@ function StatCard({
 function TransactionDetailsModal({
   transaction,
   onClose,
+  onRefundRequest,
+  refundingId,
 }: {
   transaction: Transaction | null;
   onClose: () => void;
+  onRefundRequest: (t: Transaction) => void;
+  refundingId: string | null;
 }) {
   if (!transaction) return null;
 
@@ -313,6 +325,8 @@ function TransactionDetailsModal({
   const userEmail = transaction.user?.email || "No email";
   const amountColor = getAmountColor(transaction.direction, transaction.status);
   const sign = getAmountSign(transaction.direction, transaction.status);
+  const refundable = isRefundable(transaction);
+  const isRefundingThis = refundingId === transaction.id;
 
   return (
     <div
@@ -394,6 +408,75 @@ function TransactionDetailsModal({
               </div>
             )}
           </div>
+
+          {refundable && (
+            <button
+              onClick={() => onRefundRequest(transaction)}
+              disabled={isRefundingThis}
+              className="flex w-full items-center justify-center gap-2 rounded-xl border border-sky-500/20 bg-sky-600/10 px-4 py-2.5 text-sm font-medium text-sky-400 transition hover:bg-sky-600/20 disabled:opacity-50"
+            >
+              {isRefundingThis ? <Loader2 size={16} className="animate-spin" /> : <RotateCcw size={16} />}
+              {isRefundingThis ? "Refunding..." : "Refund Transaction"}
+            </button>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ───────────────────────────────────────────
+   Confirm Refund Modal
+   ─────────────────────────────────────────── */
+function ConfirmRefundModal({
+  transaction,
+  isRefunding,
+  onConfirm,
+  onClose,
+}: {
+  transaction: Transaction | null;
+  isRefunding: boolean;
+  onConfirm: () => void;
+  onClose: () => void;
+}) {
+  if (!transaction) return null;
+
+  return (
+    <div
+      className="fixed inset-0 z-[60] flex items-center justify-center bg-black/70 p-6 backdrop-blur-sm"
+      onClick={() => !isRefunding && onClose()}
+    >
+      <div
+        onClick={(e) => e.stopPropagation()}
+        className="w-full max-w-sm rounded-2xl border border-gray-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-6"
+      >
+        <div className="flex h-12 w-12 items-center justify-center rounded-xl border border-sky-500/20 bg-sky-500/10 text-sky-400">
+          <RotateCcw size={20} />
+        </div>
+        <h3 className="mt-4 text-lg font-semibold text-gray-900 dark:text-white">Refund this transaction?</h3>
+        <p className="mt-2 text-sm text-gray-500 dark:text-zinc-400">
+          {formatCurrency(transaction.displayAmount)} will be refunded to{" "}
+          <span className="font-medium text-gray-700 dark:text-zinc-300">
+            {getDisplayName(transaction.user?.name)}
+          </span>
+          . This action cannot be undone.
+        </p>
+        <div className="mt-6 flex justify-end gap-3">
+          <button
+            onClick={onClose}
+            disabled={isRefunding}
+            className="rounded-xl px-4 py-2 text-sm font-medium text-gray-500 dark:text-zinc-400 transition hover:bg-gray-100 dark:hover:bg-zinc-800 disabled:opacity-50"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={onConfirm}
+            disabled={isRefunding}
+            className="flex items-center gap-2 rounded-xl bg-sky-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-sky-500 disabled:opacity-50"
+          >
+            {isRefunding && <Loader2 size={14} className="animate-spin" />}
+            {isRefunding ? "Refunding..." : "Confirm Refund"}
+          </button>
         </div>
       </div>
     </div>
@@ -414,6 +497,8 @@ export default function AdminWalletPage() {
   const [limit] = useState(15);
   const [selectedTransaction, setSelectedTransaction] = useState<Transaction | null>(null);
   const [dateRange, setDateRange] = useState<{ from: string; to: string }>({ from: "", to: "" });
+  const [confirmRefundTxn, setConfirmRefundTxn] = useState<Transaction | null>(null);
+  const [refundingId, setRefundingId] = useState<string | null>(null);
 
   const loadTransactions = useCallback(async () => {
     try {
@@ -461,6 +546,28 @@ export default function AdminWalletPage() {
   useEffect(() => {
     loadTransactions();
   }, [loadTransactions]);
+
+  // Refund a transaction — reloads the list afterward rather than mutating
+  // local state in place, since the backend may create a new REFUND ledger
+  // entry rather than rewriting the original transaction.
+  const handleRefund = useCallback(
+    async (id: string) => {
+      setRefundingId(id);
+      try {
+        await api.post(`/admin/transactions/${id}/refund`);
+        toast.success("Transaction refunded successfully");
+        setConfirmRefundTxn(null);
+        setSelectedTransaction(null);
+        await loadTransactions();
+      } catch (err: any) {
+        const msg = err?.response?.data?.message || "Failed to refund transaction";
+        toast.error(msg);
+      } finally {
+        setRefundingId(null);
+      }
+    },
+    [loadTransactions],
+  );
 
   // Filter & Sort
   const filteredTransactions = useMemo(() => {
@@ -780,6 +887,8 @@ export default function AdminWalletPage() {
                   const userName = getDisplayName(txn.user?.name);
                   const amountColor = getAmountColor(txn.direction, txn.status);
                   const sign = getAmountSign(txn.direction, txn.status);
+                  const refundable = isRefundable(txn);
+                  const isRefundingThis = refundingId === txn.id;
 
                   return (
                     <tr key={txn.id} className="transition hover:bg-gray-100/30 dark:hover:bg-zinc-800/30">
@@ -827,7 +936,17 @@ export default function AdminWalletPage() {
                         </div>
                       </td>
                       <td className="px-6 py-4">
-                        <div className="flex items-center justify-end">
+                        <div className="flex items-center justify-end gap-1">
+                          {refundable && (
+                            <button
+                              onClick={() => setConfirmRefundTxn(txn)}
+                              disabled={isRefundingThis}
+                              className="rounded-lg p-2 text-gray-500 dark:text-zinc-400 transition hover:bg-sky-500/10 hover:text-sky-400 disabled:opacity-50"
+                              title="Refund Transaction"
+                            >
+                              {isRefundingThis ? <Loader2 size={16} className="animate-spin" /> : <RotateCcw size={16} />}
+                            </button>
+                          )}
                           <button
                             onClick={() => setSelectedTransaction(txn)}
                             className="rounded-lg p-2 text-gray-500 dark:text-zinc-400 transition hover:bg-gray-100 dark:hover:bg-zinc-800 hover:text-gray-900 dark:hover:text-white"
@@ -886,7 +1005,20 @@ export default function AdminWalletPage() {
       </div>
 
       {/* Transaction Details Modal */}
-      <TransactionDetailsModal transaction={selectedTransaction} onClose={() => setSelectedTransaction(null)} />
+      <TransactionDetailsModal
+        transaction={selectedTransaction}
+        onClose={() => setSelectedTransaction(null)}
+        onRefundRequest={(t) => setConfirmRefundTxn(t)}
+        refundingId={refundingId}
+      />
+
+      {/* Confirm Refund Modal */}
+      <ConfirmRefundModal
+        transaction={confirmRefundTxn}
+        isRefunding={refundingId === confirmRefundTxn?.id}
+        onConfirm={() => confirmRefundTxn && handleRefund(confirmRefundTxn.id)}
+        onClose={() => setConfirmRefundTxn(null)}
+      />
     </div>
   );
 }
