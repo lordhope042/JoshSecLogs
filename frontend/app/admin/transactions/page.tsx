@@ -142,17 +142,21 @@ function resolveDisplayAmount(t: RawTransaction): number {
   return delta > 0 ? delta : Math.abs(t.amount ?? 0);
 }
 
-// A row is refund-eligible using the same ground truth the backend now
-// checks: did the wallet balance actually go down? Type and status labels
-// (PURCHASE vs DEBIT, SUCCESS vs FAILED) are not trustworthy on their own —
-// a transaction can be marked FAILED yet still have debited the wallet
-// before the failure was detected, and that money is still owed back.
+// Eligible if the balance actually changed in either direction and it
+// hasn't already been reversed. A REFUND-type entry is excluded so a
+// refund can't itself be reversed.
 function isRefundEligible(t: Transaction): boolean {
   return (
     !t.refundedAt &&
     t.rawType !== "REFUND" &&
-    t.balanceBefore > t.balanceAfter
+    t.balanceBefore !== t.balanceAfter
   );
+}
+
+// True when the original transaction added money (a credit) — reversing
+// it will DEDUCT from the user's wallet, the opposite of a normal refund.
+function isCreditReversal(t: Transaction): boolean {
+  return t.balanceAfter > t.balanceBefore;
 }
 
 /* ───────────────────────────────────────────
@@ -370,7 +374,7 @@ function TransactionDetailsModal({
             </span>
             {transaction.refundedAt && (
               <p className="mt-2 text-xs text-sky-400">
-                Refunded on {formatDate(transaction.refundedAt)}
+                {isCreditReversal(transaction) ? "Reversed" : "Refunded"} on {formatDate(transaction.refundedAt)}
               </p>
             )}
           </div>
@@ -425,14 +429,18 @@ function TransactionDetailsModal({
             <button
               onClick={() => onRefund(transaction)}
               disabled={refunding}
-              className="flex w-full items-center justify-center gap-2 rounded-xl bg-sky-500/10 py-3 text-sm font-medium text-sky-400 transition hover:bg-sky-500/20 disabled:cursor-not-allowed disabled:opacity-50"
+              className={`flex w-full items-center justify-center gap-2 rounded-xl py-3 text-sm font-medium transition disabled:cursor-not-allowed disabled:opacity-50 ${
+                isCreditReversal(transaction)
+                  ? "bg-red-500/10 text-red-400 hover:bg-red-500/20"
+                  : "bg-sky-500/10 text-sky-400 hover:bg-sky-500/20"
+              }`}
             >
               {refunding ? (
                 <Loader2 size={16} className="animate-spin" />
               ) : (
                 <RotateCcw size={16} />
               )}
-              Refund this transaction
+              {isCreditReversal(transaction) ? "Reverse this credit (deducts funds)" : "Refund this transaction"}
             </button>
           )}
         </div>
@@ -508,23 +516,26 @@ export default function AdminWalletPage() {
 
   const handleRefund = async (txn: Transaction) => {
     const userName = getDisplayName(txn.user?.name);
+    const deducting = isCreditReversal(txn);
 
-    if (
-      !window.confirm(
-        `Refund ${formatCurrency(txn.displayAmount)} to ${userName}'s wallet? This can't be undone.`,
-      )
-    ) {
-      return;
-    }
+    const confirmMessage = deducting
+      ? `Reverse this credit? This will DEDUCT ${formatCurrency(txn.displayAmount)} from ${userName}'s wallet. This can't be undone.`
+      : `Refund ${formatCurrency(txn.displayAmount)} to ${userName}'s wallet? This can't be undone.`;
+
+    if (!window.confirm(confirmMessage)) return;
 
     try {
       setRefundingId(txn.id);
       await api.post(`/admin/transactions/${txn.id}/refund`);
-      toast.success(`Refunded ${formatCurrency(txn.displayAmount)} to ${userName}`);
+      toast.success(
+        deducting
+          ? `Deducted ${formatCurrency(txn.displayAmount)} from ${userName}`
+          : `Refunded ${formatCurrency(txn.displayAmount)} to ${userName}`,
+      );
       setSelectedTransaction(null);
       await loadTransactions();
     } catch (err: any) {
-      toast.error(err?.response?.data?.message || "Failed to process refund");
+      toast.error(err?.response?.data?.message || "Failed to process reversal");
     } finally {
       setRefundingId(null);
     }
@@ -884,7 +895,9 @@ export default function AdminWalletPage() {
                           {formatCurrency(txn.displayAmount)}
                         </p>
                         {txn.refundedAt && (
-                          <p className="mt-0.5 text-xs text-sky-400">Refunded</p>
+                          <p className="mt-0.5 text-xs text-sky-400">
+                            {isCreditReversal(txn) ? "Reversed" : "Refunded"}
+                          </p>
                         )}
                       </td>
                       <td className="px-6 py-4">
@@ -913,8 +926,12 @@ export default function AdminWalletPage() {
                             <button
                               onClick={() => handleRefund(txn)}
                               disabled={refundingId !== null}
-                              className="rounded-lg p-2 text-gray-500 dark:text-zinc-400 transition hover:bg-sky-500/10 hover:text-sky-400 disabled:cursor-not-allowed disabled:opacity-40"
-                              title="Refund this transaction"
+                              className={`rounded-lg p-2 text-gray-500 dark:text-zinc-400 transition disabled:cursor-not-allowed disabled:opacity-40 ${
+                                isCreditReversal(txn)
+                                  ? "hover:bg-red-500/10 hover:text-red-400"
+                                  : "hover:bg-sky-500/10 hover:text-sky-400"
+                              }`}
+                              title={isCreditReversal(txn) ? "Reverse this credit (deducts funds)" : "Refund this transaction"}
                             >
                               {isRefundingThisRow ? (
                                 <Loader2 size={16} className="animate-spin" />
