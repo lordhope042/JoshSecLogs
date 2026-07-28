@@ -53,6 +53,7 @@ model WalletTransaction {
   balanceBefore Decimal?          @db.Decimal(18, 2)
   metadata      Json?
   status        TransactionStatus @default(PENDING)
+  refundedAt      DateTime?    // <-- ADD THIS LINE. Null = not refunded.
   user          User              @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
@@ -116,6 +117,7 @@ model Order {
   updatedAt       DateTime     @updatedAt
   activationType  String
   provider        String       @default("FIVESIM")
+  refundedAt      DateTime?    // <-- ADD THIS LINE. Null = not refunded.
   user            User         @relation(fields: [userId], references: [id], onDelete: Cascade)
   smsMessages     SmsMessage[]
 

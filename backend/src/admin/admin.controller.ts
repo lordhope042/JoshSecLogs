@@ -1,6 +1,7 @@
 import {
   Controller,
   Get,
+  Post,
   Patch,
   Param,
   Body,
@@ -8,63 +9,40 @@ import {
   ParseEnumPipe,
   ParseUUIDPipe,
 } from "@nestjs/common";
-
 import { JwtAuthGuard } from "../auth/guards/jwt-auth.guard";
 import { RolesGuard } from "../auth/guards/roles.guard";
 import { Roles } from "../auth/decorators/roles.decorator";
-
 import { AdminService } from "./admin.service";
 
 @Controller("admin")
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Roles("ADMIN")
 export class AdminController {
-  constructor(
-    private readonly adminService: AdminService,
-  ) {}
+  constructor(private readonly adminService: AdminService) {}
 
-  /*
-  =====================================
-      DASHBOARD
-  =====================================
-  */
-
+  /* ==================== DASHBOARD ==================== */
   @Get("dashboard")
   dashboard() {
     return this.adminService.dashboard();
   }
 
-  /*
-  =====================================
-      USERS
-  =====================================
-  */
-
+  /* ==================== USERS ==================== */
   @Get("users")
   users() {
     return this.adminService.users();
   }
 
   @Get("users/:id")
-  user(
-    @Param("id", ParseUUIDPipe) id: string,
-  ) {
+  user(@Param("id", ParseUUIDPipe) id: string) {
     return this.adminService.user(id);
   }
 
   @Patch("users/:id/role")
   updateRole(
     @Param("id", ParseUUIDPipe) id: string,
-    @Body(
-      "role",
-      new ParseEnumPipe(["USER", "ADMIN"]),
-    )
-    role: "USER" | "ADMIN",
+    @Body("role", new ParseEnumPipe(["USER", "ADMIN"])) role: "USER" | "ADMIN",
   ) {
-    return this.adminService.updateUserRole(
-      id,
-      role,
-    );
+    return this.adminService.updateUserRole(id, role);
   }
 
   @Patch("users/:id/status")
@@ -72,42 +50,34 @@ export class AdminController {
     @Param("id", ParseUUIDPipe) id: string,
     @Body("isActive") isActive: boolean,
   ) {
-    return this.adminService.updateUserStatus(
-      id,
-      isActive,
-    );
+    return this.adminService.updateUserStatus(id, isActive);
   }
 
-  /*
-  =====================================
-      ORDERS
-  =====================================
-  */
-
+  /* ==================== ORDERS ==================== */
   @Get("orders")
   orders() {
     return this.adminService.orders();
   }
 
-  /*
-  =====================================
-      PAYMENTS
-  =====================================
-  */
+  @Post("orders/:id/refund")
+  refundOrder(@Param("id", ParseUUIDPipe) id: string) {
+    return this.adminService.refundOrder(id);
+  }
 
+  /* ==================== PAYMENTS ==================== */
   @Get("payments")
   payments() {
     return this.adminService.payments();
   }
 
-  /*
-  =====================================
-      TRANSACTIONS
-  =====================================
-  */
-
+  /* ==================== TRANSACTIONS ==================== */
   @Get("transactions")
   transactions() {
     return this.adminService.transactions();
+  }
+
+  @Post("transactions/:id/refund")
+  refundTransaction(@Param("id", ParseUUIDPipe) id: string) {
+    return this.adminService.refundTransaction(id);
   }
 }
