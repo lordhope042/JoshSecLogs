@@ -1,6 +1,29 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import {
+  Wallet as WalletIcon,
+  ArrowDownLeft,
+  ArrowUpRight,
+  RotateCcw,
+  ShoppingBag,
+  Search,
+  Calendar,
+  ChevronLeft,
+  ChevronRight,
+  Loader2,
+  Plus,
+  RefreshCw,
+  CheckCircle,
+  XCircle,
+  Clock,
+  Copy,
+  X,
+  SlidersHorizontal,
+  TrendingUp,
+  TrendingDown,
+  Activity,
+} from "lucide-react";
 import { toast } from "sonner";
 import axios, { AxiosResponse } from "axios";
 
@@ -103,7 +126,106 @@ const initializeDepositApi = (amount: number): Promise<DepositResponse> =>
 // UTILITIES (inline)
 // =====================================
 const formatCurrency = (amount: number, currency = "₦") =>
-  `${currency} ${Number(amount).toLocaleString("en-NG", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  `${currency}${Number(amount).toLocaleString("en-NG", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+
+function formatDate(date: string | null | undefined): string {
+  if (!date) return "N/A";
+  try {
+    return new Date(date).toLocaleDateString("en-NG", {
+      day: "numeric",
+      month: "short",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+  } catch {
+    return "N/A";
+  }
+}
+
+// =====================================
+// STATUS & TYPE CONFIGS — same visual language as the admin build
+// =====================================
+const statusConfig: Record<
+  TransactionStatus,
+  { label: string; badge: string; icon: React.ReactNode }
+> = {
+  success: { label: "Success", badge: "bg-green-500/10 text-green-400", icon: <CheckCircle size={14} /> },
+  pending: { label: "Pending", badge: "bg-yellow-500/10 text-yellow-400", icon: <Clock size={14} /> },
+  failed: { label: "Failed", badge: "bg-red-500/10 text-red-400", icon: <XCircle size={14} /> },
+  cancelled: { label: "Cancelled", badge: "bg-zinc-500/10 text-zinc-400", icon: <XCircle size={14} /> },
+};
+
+const typeConfig: Record<
+  TransactionType,
+  { color: string; badge: string; sign: string; icon: React.ReactNode }
+> = {
+  credit: {
+    color: "text-emerald-400",
+    badge: "bg-emerald-500/10 text-emerald-400 border-emerald-500/20",
+    sign: "+",
+    icon: <ArrowDownLeft size={18} />,
+  },
+  debit: {
+    color: "text-red-400",
+    badge: "bg-red-500/10 text-red-400 border-red-500/20",
+    sign: "-",
+    icon: <ArrowUpRight size={18} />,
+  },
+  refund: {
+    color: "text-sky-400",
+    badge: "bg-sky-500/10 text-sky-400 border-sky-500/20",
+    sign: "+",
+    icon: <RotateCcw size={18} />,
+  },
+  purchase: {
+    color: "text-purple-400",
+    badge: "bg-purple-500/10 text-purple-400 border-purple-500/20",
+    sign: "-",
+    icon: <ShoppingBag size={18} />,
+  },
+};
+
+/* ───────────────────────────────────────────
+   Stat Card — matches the admin build's StatCard
+   ─────────────────────────────────────────── */
+function StatCard({
+  title,
+  value,
+  icon,
+  color,
+  subtitle,
+}: {
+  title: string;
+  value: string | number;
+  icon: React.ReactNode;
+  color: string;
+  subtitle?: string;
+}) {
+  const colorMap: Record<string, string> = {
+    blue: "bg-blue-500/10 text-blue-400 border-blue-500/20",
+    green: "bg-green-500/10 text-green-400 border-green-500/20",
+    orange: "bg-orange-500/10 text-orange-400 border-orange-500/20",
+    red: "bg-red-500/10 text-red-400 border-red-500/20",
+    emerald: "bg-emerald-500/10 text-emerald-400 border-emerald-500/20",
+  };
+
+  return (
+    <div className="rounded-2xl border border-gray-200 dark:border-zinc-800 bg-white/80 dark:bg-zinc-900/80 p-5">
+      <div className="flex items-start justify-between">
+        <div>
+          <p className="text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-zinc-400">{title}</p>
+          <p className="mt-2 text-xl font-bold text-gray-900 dark:text-white">{value}</p>
+          {subtitle && <p className="mt-1 text-xs text-gray-400 dark:text-zinc-500">{subtitle}</p>}
+        </div>
+        <div className={`flex h-10 w-10 items-center justify-center rounded-xl border ${colorMap[color]}`}>
+          {icon}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // =====================================
 // MAIN PAGE
 // =====================================
@@ -128,21 +250,6 @@ export default function TransactionsPage() {
 
   const loadInFlight = useRef(false);
   const pendingTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  // ---- STATUS & TYPE CONFIGS ----
-  const statusConfig: Record<string, { color: string; bg: string; border: string; label: string; iconPath: string }> = {
-    success: { color: "text-emerald-700", bg: "bg-emerald-50", border: "border-emerald-200", label: "Success", iconPath: "M5 13l4 4L19 7" },
-    pending: { color: "text-amber-700", bg: "bg-amber-50", border: "border-amber-200", label: "Pending", iconPath: "M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" },
-    failed: { color: "text-red-700", bg: "bg-red-50", border: "border-red-200", label: "Failed", iconPath: "M6 18L18 6M6 6l12 12" },
-    cancelled: { color: "text-gray-600", bg: "bg-gray-50", border: "border-gray-200", label: "Cancelled", iconPath: "M6 18L18 6M6 6l12 12" },
-  };
-
-  const typeConfig: Record<string, { color: string; bg: string; sign: string; iconPath: string }> = {
-    credit: { color: "text-emerald-600", bg: "bg-emerald-50", sign: "+", iconPath: "M7 11l5-5m0 0l5 5m-5-5v12" },
-    debit: { color: "text-red-600", bg: "bg-red-50", sign: "-", iconPath: "M17 13l-5 5m0 0l-5-5m5 5V6" },
-    refund: { color: "text-blue-600", bg: "bg-blue-50", sign: "+", iconPath: "M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" },
-    purchase: { color: "text-gray-700", bg: "bg-gray-50", sign: "-", iconPath: "M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" },
-  };
 
   // ---- DATA LOADING ----
   const loadTransactions = useCallback(async (page = 1) => {
@@ -279,6 +386,10 @@ export default function TransactionsPage() {
   }
 
   // ---- STATS ----
+  // NOTE: these totals only reflect the currently loaded page (the backend
+  // paginates /wallet/transactions), not the user's lifetime totals — hence
+  // "This Page" in the subtitle. Swap in a real aggregate endpoint if one
+  // becomes available; don't silently relabel this as a lifetime total.
   const totalIn = transactions
     .filter((t) => t.type === "credit" || t.type === "refund")
     .reduce((s, t) => s + t.amount, 0);
@@ -290,33 +401,31 @@ export default function TransactionsPage() {
 
   // ---- RENDER ----
   return (
-    <div className="min-h-screen bg-gray-50 p-4 md:p-8">
+    <div className="min-h-screen bg-gray-50 dark:bg-zinc-950 p-4 md:p-8">
       <div className="max-w-5xl mx-auto space-y-6">
 
         {/* HEADER */}
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">Transactions</h1>
-            <p className="text-sm text-gray-500 mt-1">Manage your balance and view transaction history</p>
+            <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Transactions</h1>
+            <p className="text-sm text-gray-500 dark:text-zinc-400 mt-1">Manage your balance and view transaction history</p>
           </div>
           <button
             onClick={handleRefresh}
             disabled={refreshing || loading}
-            className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-all active:scale-95 disabled:opacity-50"
+            className="flex items-center gap-2 rounded-xl border border-gray-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-4 py-2 text-sm font-medium text-gray-700 dark:text-zinc-300 transition hover:bg-gray-50 dark:hover:bg-zinc-800 disabled:opacity-50"
           >
-            <svg className={`w-4 h-4 ${refreshing ? "animate-spin" : ""}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-            </svg>
+            <RefreshCw size={16} className={refreshing ? "animate-spin" : ""} />
             Refresh
           </button>
         </div>
 
         {/* WALLET BALANCE CARD */}
-        <div className="bg-gradient-to-br from-blue-600 to-indigo-700 rounded-2xl p-6 md:p-8 text-gray-900 dark:text-white shadow-xl relative overflow-hidden">
-          <div className="absolute top-0 right-0 w-64 h-64 bg-white/5 rounded-full -translate-y-1/2 translate-x-1/2" />
-          <div className="absolute bottom-0 left-0 w-48 h-48 bg-white/5 rounded-full translate-y-1/2 -translate-x-1/2" />
+        <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-orange-600 to-amber-600 p-6 md:p-8 text-white shadow-xl">
+          <div className="absolute top-0 right-0 h-64 w-64 -translate-y-1/2 translate-x-1/2 rounded-full bg-white/5" />
+          <div className="absolute bottom-0 left-0 h-48 w-48 translate-y-1/2 -translate-x-1/2 rounded-full bg-white/5" />
           <div className="relative z-10">
-            <p className="text-blue-100 text-sm font-medium mb-1">Available Balance</p>
+            <p className="mb-1 text-sm font-medium text-orange-100">Available Balance</p>
             <div className="flex items-baseline gap-1">
               <span className="text-3xl md:text-4xl font-bold">{wallet?.currency ?? "₦"}</span>
               <span className="text-3xl md:text-4xl font-bold">
@@ -326,11 +435,9 @@ export default function TransactionsPage() {
             <div className="mt-6 flex flex-wrap gap-3">
               <button
                 onClick={() => setDepositOpen(true)}
-                className="px-5 py-2.5 bg-white text-blue-700 font-semibold rounded-xl hover:bg-blue-50 transition-all active:scale-95 shadow-lg flex items-center gap-2"
+                className="flex items-center gap-2 rounded-xl bg-white px-5 py-2.5 font-semibold text-orange-700 shadow-lg transition active:scale-95 hover:bg-orange-50"
               >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                </svg>
+                <Plus size={16} />
                 Deposit
               </button>
             </div>
@@ -338,95 +445,71 @@ export default function TransactionsPage() {
         </div>
 
         {/* QUICK STATS */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div className="bg-white rounded-xl p-5 border border-gray-100 shadow-sm">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-xs font-medium text-gray-500 uppercase tracking-wider">Total In</p>
-                <p className="text-xl font-bold text-emerald-600 mt-1">{formatCurrency(totalIn)}</p>
-              </div>
-              <div className="w-10 h-10 rounded-full bg-emerald-50 flex items-center justify-center">
-                <svg className="w-5 h-5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 11l5-5m0 0l5 5m-5-5v12" />
-                </svg>
-              </div>
-            </div>
-          </div>
-          <div className="bg-white rounded-xl p-5 border border-gray-100 shadow-sm">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-xs font-medium text-gray-500 uppercase tracking-wider">Total Out</p>
-                <p className="text-xl font-bold text-red-600 mt-1">{formatCurrency(totalOut)}</p>
-              </div>
-              <div className="w-10 h-10 rounded-full bg-red-50 flex items-center justify-center">
-                <svg className="w-5 h-5 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 13l-5 5m0 0l-5-5m5 5V6" />
-                </svg>
-              </div>
-            </div>
-          </div>
-          <div className="bg-white rounded-xl p-5 border border-gray-100 shadow-sm">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-xs font-medium text-gray-500 uppercase tracking-wider">Transactions</p>
-                <p className="text-xl font-bold text-gray-900 mt-1">{pagination.total}</p>
-              </div>
-              <div className="w-10 h-10 rounded-full bg-blue-50 flex items-center justify-center">
-                <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-                </svg>
-              </div>
-            </div>
-          </div>
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+          <StatCard
+            title="Total In"
+            value={formatCurrency(totalIn)}
+            icon={<TrendingUp size={20} />}
+            color="emerald"
+            subtitle="This page"
+          />
+          <StatCard
+            title="Total Out"
+            value={formatCurrency(totalOut)}
+            icon={<TrendingDown size={20} />}
+            color="red"
+            subtitle="This page"
+          />
+          <StatCard
+            title="Transactions"
+            value={pagination.total}
+            icon={<Activity size={20} />}
+            color="blue"
+            subtitle="All time"
+          />
         </div>
 
         {/* TRANSACTION HISTORY */}
-        <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
+        <div className="overflow-hidden rounded-2xl border border-gray-200 dark:border-zinc-800 bg-white/80 dark:bg-zinc-900/80">
           {/* Section Header */}
-          <div className="px-6 py-5 border-b border-gray-100 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="flex flex-col gap-4 border-b border-gray-100 dark:border-zinc-800 px-6 py-5 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-lg bg-gray-900 flex items-center justify-center">
-                <svg className="w-4 h-4 text-gray-900 dark:text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
+              <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-orange-500/10 text-orange-500">
+                <Activity size={16} />
               </div>
               <div>
-                <h2 className="text-lg font-semibold text-gray-900">Transaction History</h2>
-                <p className="text-xs text-gray-500">View and manage all your transactions</p>
+                <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Transaction History</h2>
+                <p className="text-xs text-gray-500 dark:text-zinc-400">View and manage all your transactions</p>
               </div>
             </div>
             <button
               onClick={() => setShowFilters(!showFilters)}
-              className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-gray-700 bg-gray-50 border border-gray-200 rounded-lg hover:bg-gray-100 transition-colors"
+              className="flex items-center gap-2 rounded-lg border border-gray-200 dark:border-zinc-700 bg-gray-50 dark:bg-zinc-800 px-3 py-2 text-sm font-medium text-gray-700 dark:text-zinc-300 transition hover:bg-gray-100 dark:hover:bg-zinc-700"
             >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
-              </svg>
+              <SlidersHorizontal size={16} />
               Filters
             </button>
           </div>
 
           {/* Filters Panel */}
           {showFilters && (
-            <div className="px-6 py-4 bg-gray-50/80 border-b border-gray-100 space-y-3">
-              <div className="flex flex-col sm:flex-row gap-3">
+            <div className="space-y-3 border-b border-gray-100 dark:border-zinc-800 bg-gray-50/80 dark:bg-zinc-800/50 px-6 py-4">
+              <div className="flex flex-col gap-3 sm:flex-row">
                 <div className="relative flex-1">
-                  <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                  </svg>
+                  <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400 dark:text-zinc-500" />
                   <input
                     type="text"
                     placeholder="Search by reference or description..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                     onKeyDown={(e) => e.key === "Enter" && applyFilters()}
-                    className="w-full pl-10 pr-4 py-2.5 text-sm bg-white border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+                    className="w-full rounded-lg border border-gray-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 py-2.5 pl-10 pr-4 text-sm text-gray-900 dark:text-white outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-500/20"
                   />
                 </div>
                 <select
                   value={typeFilter}
                   onChange={(e) => { setTypeFilter(e.target.value); applyFilters(); }}
-                  className="px-4 py-2.5 text-sm bg-white border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+                  className="rounded-lg border border-gray-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-4 py-2.5 text-sm text-gray-900 dark:text-white outline-none focus:border-orange-500"
                 >
                   <option value="">All Types</option>
                   <option value="credit">Credit</option>
@@ -437,7 +520,7 @@ export default function TransactionsPage() {
                 <select
                   value={statusFilter}
                   onChange={(e) => { setStatusFilter(e.target.value); applyFilters(); }}
-                  className="px-4 py-2.5 text-sm bg-white border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+                  className="rounded-lg border border-gray-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-4 py-2.5 text-sm text-gray-900 dark:text-white outline-none focus:border-orange-500"
                 >
                   <option value="">All Status</option>
                   <option value="success">Success</option>
@@ -448,7 +531,7 @@ export default function TransactionsPage() {
                 {hasActiveFilters && (
                   <button
                     onClick={clearFilters}
-                    className="px-4 py-2.5 text-sm font-medium text-red-600 bg-red-50 border border-red-200 rounded-lg hover:bg-red-100 transition-colors"
+                    className="rounded-lg border border-red-200 dark:border-red-500/20 bg-red-50 dark:bg-red-500/10 px-4 py-2.5 text-sm font-medium text-red-600 dark:text-red-400 transition hover:bg-red-100 dark:hover:bg-red-500/20"
                   >
                     Clear
                   </button>
@@ -458,68 +541,58 @@ export default function TransactionsPage() {
           )}
 
           {/* Transaction List */}
-          <div className="divide-y divide-gray-50">
+          <div className="divide-y divide-gray-50 dark:divide-zinc-800">
             {loading && transactions.length === 0 ? (
               // Skeleton Loading
-              <div className="p-6 space-y-4">
+              <div className="space-y-4 p-6">
                 {[...Array(4)].map((_, i) => (
-                  <div key={i} className="flex items-center gap-4 animate-pulse">
-                    <div className="w-10 h-10 rounded-full bg-gray-200" />
+                  <div key={i} className="flex animate-pulse items-center gap-4">
+                    <div className="h-10 w-10 rounded-full bg-gray-200 dark:bg-zinc-800" />
                     <div className="flex-1 space-y-2">
-                      <div className="h-4 bg-gray-200 rounded w-3/4" />
-                      <div className="h-3 bg-gray-200 rounded w-1/2" />
+                      <div className="h-4 w-3/4 rounded bg-gray-200 dark:bg-zinc-800" />
+                      <div className="h-3 w-1/2 rounded bg-gray-200 dark:bg-zinc-800" />
                     </div>
-                    <div className="h-4 bg-gray-200 rounded w-20" />
+                    <div className="h-4 w-20 rounded bg-gray-200 dark:bg-zinc-800" />
                   </div>
                 ))}
               </div>
             ) : transactions.length === 0 ? (
               // Empty State
-              <div className="flex flex-col items-center justify-center py-16 text-gray-400">
-                <svg className="w-16 h-16 mb-4 text-gray-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-                </svg>
-                <p className="text-sm font-medium text-gray-500">No transactions found</p>
-                <p className="text-xs text-gray-400 mt-1">Try adjusting your filters or make a deposit</p>
+              <div className="flex flex-col items-center justify-center py-16 text-gray-400 dark:text-zinc-600">
+                <WalletIcon size={56} className="mb-4 text-gray-200 dark:text-zinc-800" />
+                <p className="text-sm font-medium text-gray-500 dark:text-zinc-400">No transactions found</p>
+                <p className="mt-1 text-xs text-gray-400 dark:text-zinc-600">Try adjusting your filters or make a deposit</p>
               </div>
             ) : (
               // Transaction Items
               transactions.map((tx) => {
-                const sCfg = statusConfig[tx.status];
-                const tCfg = typeConfig[tx.type] || typeConfig.purchase;
+                const sCfg = statusConfig[tx.status] ?? statusConfig.pending;
+                const tCfg = typeConfig[tx.type] ?? typeConfig.purchase;
                 return (
                   <button
                     key={tx.id}
                     onClick={() => handleViewDetails(tx.reference)}
-                    className="w-full flex items-center gap-4 p-4 hover:bg-gray-50 transition-colors text-left group"
+                    className="group flex w-full items-center gap-4 p-4 text-left transition hover:bg-gray-50 dark:hover:bg-zinc-800/50"
                   >
-                    <div className={`flex-shrink-0 w-10 h-10 rounded-full ${tCfg.bg} flex items-center justify-center group-hover:scale-110 transition-transform`}>
-                      <svg className={`w-5 h-5 ${tCfg.color}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={tCfg.iconPath} />
-                      </svg>
+                    <div className={`flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl border transition group-hover:scale-110 ${tCfg.badge}`}>
+                      {tCfg.icon}
                     </div>
-                    <div className="flex-1 min-w-0">
+                    <div className="min-w-0 flex-1">
                       <div className="flex items-center justify-between gap-2">
-                        <p className="text-sm font-medium text-gray-900 truncate">{tx.description}</p>
-                        <span className={`text-sm font-semibold flex-shrink-0 ${tCfg.color}`}>
+                        <p className="truncate text-sm font-medium text-gray-900 dark:text-white">{tx.description}</p>
+                        <span className={`flex-shrink-0 text-sm font-semibold ${tCfg.color}`}>
                           {tCfg.sign}{tx.amount.toLocaleString("en-NG", { minimumFractionDigits: 2 })}
                         </span>
                       </div>
-                      <div className="flex items-center justify-between gap-2 mt-1">
-                        <div className="flex items-center gap-2">
-                          <span className={`inline-flex items-center gap-1 px-2 py-0.5 text-xs font-medium rounded-full border ${sCfg.bg} ${sCfg.color} ${sCfg.border}`}>
-                            <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={sCfg.iconPath} />
-                            </svg>
-                            {sCfg.label}
-                          </span>
-                        </div>
-                        <span className="text-xs text-gray-400 font-mono">{tx.reference.slice(0, 10)}...</span>
+                      <div className="mt-1 flex items-center justify-between gap-2">
+                        <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium ${sCfg.badge}`}>
+                          {sCfg.icon}
+                          {sCfg.label}
+                        </span>
+                        <span className="font-mono text-xs text-gray-400 dark:text-zinc-500">{tx.reference.slice(0, 10)}...</span>
                       </div>
                     </div>
-                    <svg className="w-4 h-4 text-gray-300 group-hover:text-gray-500 transition-colors flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                    </svg>
+                    <ChevronRight size={16} className="flex-shrink-0 text-gray-300 dark:text-zinc-700 transition group-hover:text-gray-500 dark:group-hover:text-zinc-400" />
                   </button>
                 );
               })
@@ -528,31 +601,27 @@ export default function TransactionsPage() {
 
           {/* Pagination */}
           {pagination.totalPages > 1 && (
-            <div className="px-6 py-4 border-t border-gray-100 bg-gray-50/50 flex items-center justify-between">
-              <p className="text-xs text-gray-500">
+            <div className="flex items-center justify-between border-t border-gray-100 dark:border-zinc-800 bg-gray-50/50 dark:bg-zinc-900/50 px-6 py-4">
+              <p className="text-xs text-gray-500 dark:text-zinc-400">
                 Showing {((pagination.page - 1) * 10) + 1} - {Math.min(pagination.page * 10, pagination.total)} of {pagination.total}
               </p>
               <div className="flex items-center gap-2">
                 <button
                   onClick={() => handlePageChange(pagination.page - 1)}
                   disabled={pagination.page <= 1 || loading}
-                  className="p-2 rounded-lg border border-gray-300 bg-white text-gray-600 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                  className="rounded-lg border border-gray-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 p-2 text-gray-600 dark:text-zinc-400 transition hover:bg-gray-50 dark:hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-40"
                 >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-                  </svg>
+                  <ChevronLeft size={16} />
                 </button>
-                <span className="text-xs font-medium text-gray-700 px-3">
+                <span className="px-3 text-xs font-medium text-gray-700 dark:text-zinc-300">
                   Page {pagination.page} of {pagination.totalPages}
                 </span>
                 <button
                   onClick={() => handlePageChange(pagination.page + 1)}
                   disabled={pagination.page >= pagination.totalPages || loading}
-                  className="p-2 rounded-lg border border-gray-300 bg-white text-gray-600 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                  className="rounded-lg border border-gray-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 p-2 text-gray-600 dark:text-zinc-400 transition hover:bg-gray-50 dark:hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-40"
                 >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                  </svg>
+                  <ChevronRight size={16} />
                 </button>
               </div>
             </div>
@@ -562,21 +631,22 @@ export default function TransactionsPage() {
 
       {/* DEPOSIT MODAL */}
       {depositOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm" onClick={(e) => e.target === e.currentTarget && setDepositOpen(false)}>
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden animate-in">
-            <div className="px-6 py-5 border-b border-gray-100 flex items-center justify-between">
-              <h3 className="text-lg font-semibold text-gray-900">Deposit Funds</h3>
-              <button onClick={() => setDepositOpen(false)} className="p-1.5 rounded-lg hover:bg-gray-100 transition-colors">
-                <svg className="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                </svg>
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm"
+          onClick={(e) => e.target === e.currentTarget && setDepositOpen(false)}
+        >
+          <div className="w-full max-w-md overflow-hidden rounded-2xl bg-white dark:bg-zinc-900 shadow-2xl">
+            <div className="flex items-center justify-between border-b border-gray-100 dark:border-zinc-800 px-6 py-5">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Deposit Funds</h3>
+              <button onClick={() => setDepositOpen(false)} className="rounded-lg p-1.5 text-gray-500 dark:text-zinc-400 transition hover:bg-gray-100 dark:hover:bg-zinc-800">
+                <X size={18} />
               </button>
             </div>
-            <div className="p-6 space-y-4">
+            <div className="space-y-4 p-6">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Amount (₦)</label>
+                <label className="mb-2 block text-sm font-medium text-gray-700 dark:text-zinc-300">Amount (₦)</label>
                 <div className="relative">
-                  <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 font-medium">₦</span>
+                  <span className="absolute left-4 top-1/2 -translate-y-1/2 font-medium text-gray-500 dark:text-zinc-400">₦</span>
                   <input
                     type="number"
                     min={100}
@@ -584,17 +654,17 @@ export default function TransactionsPage() {
                     onChange={(e) => setDepositAmount(e.target.value)}
                     placeholder="Enter amount"
                     autoFocus
-                    className="w-full pl-10 pr-4 py-3 text-lg font-semibold bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+                    className="w-full rounded-xl border border-gray-200 dark:border-zinc-700 bg-gray-50 dark:bg-zinc-800 py-3 pl-10 pr-4 text-lg font-semibold text-gray-900 dark:text-white outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-500/20"
                   />
                 </div>
-                <p className="text-xs text-gray-400 mt-2">Minimum deposit: ₦100</p>
+                <p className="mt-2 text-xs text-gray-400 dark:text-zinc-500">Minimum deposit: ₦100</p>
               </div>
               <div className="grid grid-cols-3 gap-2">
                 {[500, 1000, 5000].map((amt) => (
                   <button
                     key={amt}
                     onClick={() => setDepositAmount(String(amt))}
-                    className="px-3 py-2 text-sm font-medium text-gray-700 bg-gray-50 border border-gray-200 rounded-lg hover:bg-gray-100 transition-colors"
+                    className="rounded-lg border border-gray-200 dark:border-zinc-700 bg-gray-50 dark:bg-zinc-800 px-3 py-2 text-sm font-medium text-gray-700 dark:text-zinc-300 transition hover:bg-gray-100 dark:hover:bg-zinc-700"
                   >
                     ₦{amt.toLocaleString()}
                   </button>
@@ -607,14 +677,11 @@ export default function TransactionsPage() {
                   handleDeposit(amt);
                 }}
                 disabled={funding}
-                className="w-full py-3 bg-blue-600 text-white font-semibold rounded-xl hover:bg-blue-700 transition-all active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                className="flex w-full items-center justify-center gap-2 rounded-xl bg-orange-600 py-3 font-semibold text-white transition active:scale-[0.98] hover:bg-orange-700 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 {funding ? (
                   <>
-                    <svg className="w-5 h-5 animate-spin" fill="none" viewBox="0 0 24 24">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-                    </svg>
+                    <Loader2 size={18} className="animate-spin" />
                     Processing...
                   </>
                 ) : (
@@ -628,79 +695,84 @@ export default function TransactionsPage() {
 
       {/* TRANSACTION DETAIL MODAL */}
       {detailOpen && selectedTx && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm" onClick={(e) => e.target === e.currentTarget && setDetailOpen(false)}>
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden animate-in">
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm"
+          onClick={(e) => e.target === e.currentTarget && setDetailOpen(false)}
+        >
+          <div className="w-full max-w-md overflow-hidden rounded-2xl bg-white dark:bg-zinc-900 shadow-2xl">
             {(() => {
-              const sCfg = statusConfig[selectedTx.status];
-              const tCfg = typeConfig[selectedTx.type] || typeConfig.purchase;
+              const sCfg = statusConfig[selectedTx.status] ?? statusConfig.pending;
+              const tCfg = typeConfig[selectedTx.type] ?? typeConfig.purchase;
               return (
                 <>
-                  <div className={`px-6 py-8 text-center ${sCfg.bg} border-b ${sCfg.border} relative`}>
-                    <button onClick={() => setDetailOpen(false)} className="absolute top-4 right-4 p-1.5 rounded-full hover:bg-black/5 transition-colors">
-                      <svg className="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                      </svg>
+                  <div className={`relative border-b px-6 py-8 text-center ${sCfg.badge} border-current/20`}>
+                    <button
+                      onClick={() => setDetailOpen(false)}
+                      className="absolute right-4 top-4 rounded-full p-1.5 text-gray-500 dark:text-zinc-400 transition hover:bg-black/5 dark:hover:bg-white/5"
+                    >
+                      <X size={18} />
                     </button>
-                    <div className={`w-16 h-16 mx-auto rounded-full ${sCfg.bg} border-2 ${sCfg.border} flex items-center justify-center mb-3`}>
-                      <svg className={`w-8 h-8 ${sCfg.color}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={sCfg.iconPath} />
-                      </svg>
+                    <div className={`mx-auto mb-3 flex h-16 w-16 items-center justify-center rounded-full border-2 ${sCfg.badge}`}>
+                      {sCfg.icon}
                     </div>
-                    <h3 className={`text-2xl font-bold ${sCfg.color}`}>
+                    <h3 className={`text-2xl font-bold ${tCfg.color}`}>
                       {tCfg.sign}₦{selectedTx.amount.toLocaleString("en-NG", { minimumFractionDigits: 2 })}
                     </h3>
-                    <p className="text-sm text-gray-600 mt-1 capitalize">{selectedTx.type}</p>
+                    <p className="mt-1 text-sm capitalize text-gray-600 dark:text-zinc-400">{selectedTx.type}</p>
                   </div>
-                  <div className="p-6 space-y-4">
+                  <div className="space-y-4 p-6">
                     <div className="flex items-start justify-between gap-4">
-                      <span className="text-sm text-gray-500 flex-shrink-0">Reference</span>
+                      <span className="flex-shrink-0 text-sm text-gray-500 dark:text-zinc-400">Reference</span>
                       <div className="flex items-center gap-2 text-right">
-                        <span className="text-sm font-medium text-gray-900 font-mono">{selectedTx.reference}</span>
+                        <span className="font-mono text-sm font-medium text-gray-900 dark:text-white">{selectedTx.reference}</span>
                         <button
                           onClick={() => { navigator.clipboard.writeText(selectedTx.reference); toast.success("Reference copied!"); }}
-                          className="p-1 rounded-md hover:bg-gray-100 transition-colors"
+                          className="rounded-md p-1 transition hover:bg-gray-100 dark:hover:bg-zinc-800"
                         >
-                          <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
-                          </svg>
+                          <Copy size={14} className="text-gray-400 dark:text-zinc-500" />
                         </button>
                       </div>
                     </div>
                     <div className="flex items-start justify-between gap-4">
-                      <span className="text-sm text-gray-500 flex-shrink-0">Description</span>
-                      <span className="text-sm font-medium text-gray-900 text-right">{selectedTx.description}</span>
+                      <span className="flex-shrink-0 text-sm text-gray-500 dark:text-zinc-400">Description</span>
+                      <span className="text-right text-sm font-medium text-gray-900 dark:text-white">{selectedTx.description}</span>
                     </div>
                     <div className="flex items-start justify-between gap-4">
-                      <span className="text-sm text-gray-500 flex-shrink-0">Status</span>
-                      <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium ${sCfg.bg} ${sCfg.color} border ${sCfg.border}`}>
-                        <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={sCfg.iconPath} />
-                        </svg>
+                      <span className="flex-shrink-0 text-sm text-gray-500 dark:text-zinc-400">Status</span>
+                      <span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium ${sCfg.badge}`}>
+                        {sCfg.icon}
                         {sCfg.label}
                       </span>
                     </div>
+                    {/* FIX: these two rows previously showed only the label
+                        with no value — the date spans were never added. */}
                     <div className="flex items-start justify-between gap-4">
-                      <span className="text-sm text-gray-500 flex-shrink-0">Date</span>
+                      <span className="flex-shrink-0 text-sm text-gray-500 dark:text-zinc-400">Date</span>
+                      <span className="text-right text-sm font-medium text-gray-900 dark:text-white">{formatDate(selectedTx.createdAt)}</span>
                     </div>
                     <div className="flex items-start justify-between gap-4">
-                      <span className="text-sm text-gray-500 flex-shrink-0">Updated</span>
+                      <span className="flex-shrink-0 text-sm text-gray-500 dark:text-zinc-400">Updated</span>
+                      <span className="text-right text-sm font-medium text-gray-900 dark:text-white">{formatDate(selectedTx.updatedAt)}</span>
                     </div>
                     {selectedTx.metadata && Object.keys(selectedTx.metadata).length > 0 && (
-                      <div className="pt-4 border-t border-gray-100">
-                        <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Additional Info</p>
+                      <div className="border-t border-gray-100 dark:border-zinc-800 pt-4">
+                        <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-zinc-400">Additional Info</p>
                         <div className="space-y-2">
                           {Object.entries(selectedTx.metadata).map(([key, value]) => (
                             <div key={key} className="flex items-start justify-between gap-4">
-                              <span className="text-sm text-gray-500 capitalize">{key.replace(/_/g, " ")}</span>
-                              <span className="text-sm font-medium text-gray-900 text-right">{String(value)}</span>
+                              <span className="text-sm capitalize text-gray-500 dark:text-zinc-400">{key.replace(/_/g, " ")}</span>
+                              <span className="text-right text-sm font-medium text-gray-900 dark:text-white">{String(value)}</span>
                             </div>
                           ))}
                         </div>
                       </div>
                     )}
                   </div>
-                  <div className="px-6 py-4 bg-gray-50 border-t border-gray-100">
-                    <button onClick={() => setDetailOpen(false)} className="w-full py-2.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
+                  <div className="border-t border-gray-100 dark:border-zinc-800 bg-gray-50 dark:bg-zinc-800/50 px-6 py-4">
+                    <button
+                      onClick={() => setDetailOpen(false)}
+                      className="w-full rounded-lg border border-gray-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 py-2.5 text-sm font-medium text-gray-700 dark:text-zinc-300 transition hover:bg-gray-50 dark:hover:bg-zinc-800"
+                    >
                       Close
                     </button>
                   </div>
