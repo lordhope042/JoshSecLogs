@@ -244,36 +244,42 @@ export class AdminRepository {
     });
   }
 
-  // Credits the user's wallet with the exact amount that was actually
-  // debited (balanceBefore - balanceAfter, computed by the service layer)
-  // and marks that transaction as refunded, in a single DB transaction.
+  // Reverses whatever direction the original transaction moved money in.
+  // isCreditReversal=true means the original was a credit (deposit/adjustment
+  // that added funds) and this DEBITS the wallet back down. false means the
+  // original was a debit (purchase) and this CREDITS the wallet back up.
   refundTransaction(
     transaction: TransactionWithUserWallet,
     amount: Prisma.Decimal,
+    isCreditReversal: boolean,
   ) {
     const balanceBefore = transaction.user.wallet!.balance;
-    const balanceAfter = balanceBefore.plus(amount);
+    const balanceAfter = isCreditReversal
+      ? balanceBefore.minus(amount)
+      : balanceBefore.plus(amount);
 
     return this.prisma.$transaction(async (tx) => {
       const wallet = await tx.wallet.update({
         where: { userId: transaction.userId },
         data: {
-          balance: { increment: amount },
+          balance: isCreditReversal ? { decrement: amount } : { increment: amount },
         },
       });
 
-      const refund = await tx.walletTransaction.create({
+      const reversal = await tx.walletTransaction.create({
         data: {
           userId: transaction.userId,
-          type: "REFUND",
+          type: isCreditReversal ? "DEBIT" : "REFUND",
           amount,
-          description: `Refund for transaction ${transaction.reference}`,
-          reference: `refund_txn_${transaction.id}`,
+          description: isCreditReversal
+            ? `Reversal of credit ${transaction.reference}`
+            : `Refund for transaction ${transaction.reference}`,
+          reference: `reversal_txn_${transaction.id}`,
           status: "SUCCESS",
           balanceBefore,
           balanceAfter,
           metadata: {
-            source: "TRANSACTION_REFUND",
+            source: isCreditReversal ? "CREDIT_REVERSAL" : "TRANSACTION_REFUND",
             originalTransactionId: transaction.id,
           },
         },
@@ -284,7 +290,7 @@ export class AdminRepository {
         data: { refundedAt: new Date() },
       });
 
-      return { transaction: updatedTransaction, wallet, refund };
+      return { transaction: updatedTransaction, wallet, reversal };
     });
   }
 }

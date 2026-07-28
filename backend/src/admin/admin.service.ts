@@ -149,40 +149,49 @@ export class AdminService {
 
     if (transaction.refundedAt) {
       throw new BadRequestException(
-        "This transaction has already been refunded.",
+        "This transaction has already been reversed.",
       );
     }
 
     if (transaction.type === "REFUND") {
       throw new BadRequestException(
-        "A refund transaction cannot itself be refunded.",
+        "A refund transaction cannot itself be reversed.",
       );
     }
 
     if (!transaction.user.wallet) {
       throw new BadRequestException(
-        "This user has no wallet to refund into.",
+        "This user has no wallet to adjust.",
       );
     }
 
     if (transaction.balanceBefore === null || transaction.balanceAfter === null) {
       throw new BadRequestException(
-        "This transaction has no recorded balance change to refund.",
+        "This transaction has no recorded balance change to reverse.",
       );
     }
 
     // Ground truth is the balance delta, not the type/status label — a
-    // transaction can be marked FAILED yet still have actually debited the
-    // wallet (money left before the failure was detected). Whatever the
-    // label says, if the balance went down, it's refundable.
-    const debited = transaction.balanceBefore.minus(transaction.balanceAfter);
+    // transaction can be marked FAILED yet still have actually moved money
+    // before the failure was detected. Whatever the label says, if the
+    // balance changed, it's reversible in the opposite direction.
+    const delta = transaction.balanceAfter.minus(transaction.balanceBefore);
 
-    if (debited.lessThanOrEqualTo(0)) {
+    if (delta.equals(0)) {
       throw new BadRequestException(
-        "This transaction did not debit the wallet, so there's nothing to refund.",
+        "This transaction did not change the wallet balance, so there's nothing to reverse.",
       );
     }
 
-    return this.repository.refundTransaction(transaction, debited);
+    const isCreditReversal = delta.greaterThan(0);
+    const amount = delta.abs();
+
+    if (isCreditReversal && transaction.user.wallet.balance.lessThan(amount)) {
+      throw new BadRequestException(
+        "User's current wallet balance is lower than this credit — reversing it would take the balance negative.",
+      );
+    }
+
+    return this.repository.refundTransaction(transaction, amount, isCreditReversal);
   }
 }
