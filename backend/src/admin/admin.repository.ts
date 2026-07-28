@@ -244,10 +244,13 @@ export class AdminRepository {
     });
   }
 
-  // Credits the user's wallet with the exact original transaction amount
+  // Credits the user's wallet with the exact amount that was actually
+  // debited (balanceBefore - balanceAfter, computed by the service layer)
   // and marks that transaction as refunded, in a single DB transaction.
-  refundTransaction(transaction: TransactionWithUserWallet) {
-    const amount = transaction.amount;
+  refundTransaction(
+    transaction: TransactionWithUserWallet,
+    amount: Prisma.Decimal,
+  ) {
     const balanceBefore = transaction.user.wallet!.balance;
     const balanceAfter = balanceBefore.plus(amount);
 

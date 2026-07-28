@@ -153,15 +153,9 @@ export class AdminService {
       );
     }
 
-    if (transaction.type !== "PURCHASE") {
+    if (transaction.type === "REFUND") {
       throw new BadRequestException(
-        "Only purchase transactions can be refunded.",
-      );
-    }
-
-    if (transaction.status !== "SUCCESS") {
-      throw new BadRequestException(
-        "Only successful transactions can be refunded.",
+        "A refund transaction cannot itself be refunded.",
       );
     }
 
@@ -171,6 +165,24 @@ export class AdminService {
       );
     }
 
-    return this.repository.refundTransaction(transaction);
+    if (transaction.balanceBefore === null || transaction.balanceAfter === null) {
+      throw new BadRequestException(
+        "This transaction has no recorded balance change to refund.",
+      );
+    }
+
+    // Ground truth is the balance delta, not the type/status label — a
+    // transaction can be marked FAILED yet still have actually debited the
+    // wallet (money left before the failure was detected). Whatever the
+    // label says, if the balance went down, it's refundable.
+    const debited = transaction.balanceBefore.minus(transaction.balanceAfter);
+
+    if (debited.lessThanOrEqualTo(0)) {
+      throw new BadRequestException(
+        "This transaction did not debit the wallet, so there's nothing to refund.",
+      );
+    }
+
+    return this.repository.refundTransaction(transaction, debited);
   }
 }
