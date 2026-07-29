@@ -81,16 +81,21 @@ export class AuthService {
       referredBy: dto.referralCode,
     });
 
-    const accessToken = await this.jwt.signAsync({
-      sub: user.id,
-      email: user.email,
-      role: user.role,
-    });
+    // FIX: no longer issuing an access token on registration. Handing back
+    // a working session the instant an account is created means anyone
+    // could register with someone else's email address and get instant
+    // authenticated access, with no verification step at all. The client
+    // must now call /auth/login separately after registering.
+
+    // FIX: never return passwordHash to the client, even if it's still
+    // present on the object returned by createUser(). This strip is
+    // defensive — it holds even if UsersService's select clause changes
+    // later and starts including it again.
+    const { passwordHash: _omit, ...safeUser } = user as any;
 
     return {
-      message: 'Registration successful',
-      accessToken,
-      user,
+      message: 'Registration successful. Please log in to continue.',
+      user: safeUser,
     };
   }
 
@@ -113,15 +118,21 @@ export class AuthService {
       role: user.role,
     });
 
+    // FIX: same passwordHash strip as register() above.
+    const { passwordHash: _omit, ...safeUser } = user as any;
+
     return {
       message: 'Login successful',
       accessToken,
-      user,
+      user: safeUser,
     };
   }
 
   async me(id: string) {
-    return this.users.findById(id);
+    const user = await this.users.findById(id);
+    if (!user) return null;
+    const { passwordHash: _omit, ...safeUser } = user as any;
+    return safeUser;
   }
 
   /**

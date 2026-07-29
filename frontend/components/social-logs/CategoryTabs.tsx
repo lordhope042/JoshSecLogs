@@ -4,15 +4,15 @@ import { useState } from "react";
 
 import {
   FaFacebook,
-  FaTelegramPlane,
   FaTiktok,
   FaShieldAlt,
+  FaGraduationCap,
 } from "react-icons/fa";
 
 import { FaCommentSms, FaXTwitter } from "react-icons/fa6";
 
 import { FaInstagram } from "react-icons/fa";
-import { MdOutlineMail } from "react-icons/md";
+import { MdOutlineLaptopMac } from "react-icons/md";
 
 import { IconType } from "react-icons";
 import { Search, X } from "lucide-react";
@@ -37,11 +37,11 @@ const labels: Record<SocialLogCategoryValue, string> = {
   TWITTER_FOLLOWERS: "Twitter — Followers",
   INSTAGRAM_FOLLOWERS: "Instagram — Followers",
   VPN: "VPN",
-  TEXTPLUS_NEXTPLUS: "Textplus & Nextplus",
-  TELEGRAM_ACCOUNT: "Telegram",
+  TEXTPLUS_NEXTPLUS: "Texting App",
+  TUTORIAL: "Tutorial",
   TIKTOK_COUNTRY: "TikTok — By Country",
   TIKTOK_FOLLOWERS: "TikTok — Followers",
-  MAIL: "Mail",
+  WEBSITE_CREATION: "Website Creation",
 };
 
 const icons: Record<SocialLogCategoryValue, IconType> = {
@@ -51,10 +51,10 @@ const icons: Record<SocialLogCategoryValue, IconType> = {
   INSTAGRAM_FOLLOWERS: FaInstagram,
   VPN: FaShieldAlt,
   TEXTPLUS_NEXTPLUS: FaCommentSms,
-  TELEGRAM_ACCOUNT: FaTelegramPlane,
+  TUTORIAL: FaGraduationCap,
   TIKTOK_COUNTRY: FaTiktok,
   TIKTOK_FOLLOWERS: FaTiktok,
-  MAIL: MdOutlineMail,
+  WEBSITE_CREATION: MdOutlineLaptopMac,
 };
 
 export const ALL_CATEGORIES = Object.keys(labels) as SocialLogCategoryValue[];

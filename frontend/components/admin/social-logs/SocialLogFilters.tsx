@@ -40,11 +40,11 @@ const categories: { value: SocialLogCategoryValue; label: string }[] = [
   { value: "TWITTER_FOLLOWERS", label: "Twitter — Followers" },
   { value: "INSTAGRAM_FOLLOWERS", label: "Instagram — Followers" },
   { value: "VPN", label: "VPN" },
-  { value: "TEXTPLUS_NEXTPLUS", label: "Textplus & Nextplus" },
-  { value: "TELEGRAM_ACCOUNT", label: "Telegram" },
+  { value: "TEXTPLUS_NEXTPLUS", label: "Texting App" },
+  { value: "TUTORIAL", label: "Tutorial" },
   { value: "TIKTOK_COUNTRY", label: "TikTok — By Country" },
   { value: "TIKTOK_FOLLOWERS", label: "TikTok — Followers" },
-  { value: "MAIL", label: "Mail" },
+  { value: "WEBSITE_CREATION", label: "Website Creation" },
 ];
 
 const statuses: SocialLogStatus[] = [

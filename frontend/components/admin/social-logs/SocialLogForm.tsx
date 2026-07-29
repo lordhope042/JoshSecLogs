@@ -8,6 +8,10 @@ import type {
   SocialPlatform,
   SocialLogCategoryValue,
   SocialLogPageType,
+  InstagramSubType,
+  VpnType,
+  TutorialType,
+  WebsiteType,
 } from "@/types/social-log";
 
 interface FormValues {
@@ -18,6 +22,10 @@ interface FormValues {
   username: string;
   age: number | "";
   followers?: number | "";
+  instagramSubType?: InstagramSubType | "";
+  vpnType?: VpnType | "";
+  tutorialType?: TutorialType | "";
+  websiteType?: WebsiteType | "";
   price: number | "";
   emailAttached: boolean;
   phoneAttached: boolean;
@@ -67,42 +75,82 @@ const CATEGORIES: { value: SocialLogCategoryValue; label: string }[] = [
   { value: "TWITTER_FOLLOWERS", label: "Twitter — Followers" },
   { value: "INSTAGRAM_FOLLOWERS", label: "Instagram — Followers" },
   { value: "VPN", label: "VPN" },
-  { value: "TEXTPLUS_NEXTPLUS", label: "Textplus & Nextplus" },
-  { value: "TELEGRAM_ACCOUNT", label: "Telegram" },
+  { value: "TEXTPLUS_NEXTPLUS", label: "Texting App" },
+  { value: "TUTORIAL", label: "Tutorial" },
   { value: "TIKTOK_COUNTRY", label: "TikTok — By Country" },
   { value: "TIKTOK_FOLLOWERS", label: "TikTok — Followers" },
-  { value: "MAIL", label: "Mail" },
+  { value: "WEBSITE_CREATION", label: "Website Creation" },
 ];
 
 const PAGE_TYPES: { value: SocialLogPageType; label: string }[] = [
-  { value: "CREATE_PAGE", label: "Create Page" },
-  { value: "CREATED_PAGE", label: "Created Page" },
-  { value: "MULTI_PAGE", label: "2+ Pages" },
-  { value: "PAGE_WITH_FOLLOWERS", label: "Page with Followers" },
+  { value: "CREATE_PAGE", label: "Create Page Facebook" },
+  { value: "CREATED_PAGE", label: "Created Page Facebook" },
+  { value: "MULTI_PAGE", label: "2 Created Page Facebook" },
+  { value: "PAGE_WITH_FOLLOWERS", label: "Created Page with 1K+ Followers" },
+];
+
+const INSTAGRAM_SUB_TYPES: { value: InstagramSubType; label: string; followers: number }[] = [
+  { value: "MONTHS_OLD", label: "Months Old", followers: 0 },
+  { value: "EMPTY_AGED", label: "Empty Aged", followers: 0 },
+  { value: "AGED_500", label: "Aged with 500+", followers: 500 },
+  { value: "AGED_1K", label: "Aged with 1K+", followers: 1000 },
+];
+
+const VPN_TYPES: { value: VpnType; label: string }[] = [
+  { value: "PIA_7D", label: "7 Days PIA VPN" },
+  { value: "EXPRESS_1M", label: "Express VPN One Month" },
+  { value: "HMA_1M", label: "HMA VPN One Month" },
+  { value: "NORD_1M", label: "Nord VPN One Month" },
+];
+
+const TUTORIAL_TYPES: { value: TutorialType; label: string }[] = [
+  { value: "FACEBOOK_ADS", label: "Facebook Ads Tutorial" },
+  { value: "INSTAGRAM_ADS", label: "Instagram Ads Tutorial" },
+  { value: "TIKTOK_ADS", label: "TikTok Ads Tutorial" },
+  { value: "TWITTER_ADS", label: "Twitter Ads Tutorial" },
+];
+
+const WEBSITE_TYPES: { value: WebsiteType; label: string }[] = [
+  { value: "LOGS_WEBSITE", label: "Logs Website" },
+  { value: "SMS_WEBSITE", label: "SMS Website" },
+  { value: "BOTH_WEBSITE", label: "Both Logs and SMS Website" },
+  { value: "BOOSTING_WEBSITE", label: "Boosting Website" },
+];
+
+// Fixed country lists for the *_COUNTRY categories — quick-pick buttons.
+const FACEBOOK_COUNTRIES: { value: string; label: string; followers: number }[] = [
+  { value: "USA", label: "USA", followers: 200 },
+  { value: "CANADA", label: "Canada", followers: 100 },
+  { value: "SPAIN", label: "Spain", followers: 100 },
+  { value: "AUSTRALIA", label: "Australia", followers: 100 },
+  { value: "NETHERLANDS", label: "Netherlands", followers: 100 },
+  { value: "BELGIUM", label: "Belgium", followers: 100 },
+];
+
+const TIKTOK_COUNTRIES: { value: string; label: string }[] = [
+  { value: "USA", label: "USA" },
+  { value: "UK", label: "UK" },
+  { value: "CANADA", label: "Canada" },
+  { value: "GERMANY", label: "Germany" },
+  { value: "RANDOM", label: "Random Country" },
 ];
 
 // Tier thresholds shown as quick-pick buttons when the category needs
 // a followers tier. Values match what's stored on the `followers`
-// column — 0 doubles as "empty" for Instagram.
+// column — 0 doubles as "Empty Aged" for Twitter/TikTok.
 const FOLLOWER_TIERS: Record<string, { value: number; label: string }[]> = {
   TWITTER_FOLLOWERS: [
+    { value: 0, label: "Empty Aged" },
     { value: 100, label: "100+" },
     { value: 200, label: "200+" },
     { value: 500, label: "500+" },
-    { value: 1000, label: "1k+" },
+    { value: 1000, label: "1K+" },
   ],
-  INSTAGRAM_FOLLOWERS: [
-    { value: 0, label: "Empty" },
-    { value: 500, label: "500+" },
-    { value: 1000, label: "1k+" },
-  ],
-  // No tier list was given for this one — reusing Twitter's tiers as a
-  // starting point. Tell me the real tiers and I'll swap these.
   TIKTOK_FOLLOWERS: [
     { value: 100, label: "100+" },
     { value: 200, label: "200+" },
     { value: 500, label: "500+" },
-    { value: 1000, label: "1k+" },
+    { value: 1000, label: "1K+" },
   ],
 };
 
@@ -113,9 +161,14 @@ const COUNTRY_CATEGORIES = new Set<SocialLogCategoryValue>([
 
 const FOLLOWER_CATEGORIES = new Set<SocialLogCategoryValue>([
   "TWITTER_FOLLOWERS",
-  "INSTAGRAM_FOLLOWERS",
   "TIKTOK_FOLLOWERS",
 ]);
+
+const FACEBOOK_COUNTRY_CATEGORY = "FACEBOOK_COUNTRY";
+const INSTAGRAM_CATEGORY = "INSTAGRAM_FOLLOWERS";
+const VPN_CATEGORY = "VPN";
+const TUTORIAL_CATEGORY = "TUTORIAL";
+const WEBSITE_CATEGORY = "WEBSITE_CREATION";
 
 const EMPTY_FORM: FormValues = {
   platform: "",
@@ -125,6 +178,10 @@ const EMPTY_FORM: FormValues = {
   username: "",
   age: "",
   followers: "",
+  instagramSubType: "",
+  vpnType: "",
+  tutorialType: "",
+  websiteType: "",
   price: "",
   emailAttached: false,
   phoneAttached: false,
@@ -165,6 +222,12 @@ export default function SocialLogForm({
   const needsCountry = values.category ? COUNTRY_CATEGORIES.has(values.category) : false;
   const needsFollowers = values.category ? FOLLOWER_CATEGORIES.has(values.category) : false;
   const needsPageType = values.category === "FACEBOOK_PAGE";
+  const needsInstagramSubType = values.category === INSTAGRAM_CATEGORY;
+  const needsVpnType = values.category === VPN_CATEGORY;
+  const needsTutorialType = values.category === TUTORIAL_CATEGORY;
+  const needsWebsiteType = values.category === WEBSITE_CATEGORY;
+  const needsFacebookCountry = values.category === FACEBOOK_COUNTRY_CATEGORY;
+  const needsTiktokCountry = values.category === "TIKTOK_COUNTRY";
   const tierOptions = values.category ? FOLLOWER_TIERS[values.category] : undefined;
 
   function update<K extends keyof FormValues>(key: K, value: FormValues[K]) {
@@ -174,14 +237,18 @@ export default function SocialLogForm({
 
   function updateCategory(category: SocialLogCategoryValue | "") {
     // Clear whichever conditional fields no longer apply so a stray
-    // country/pageType/followers value from a previous category can't
-    // sneak through on submit.
+    // country/pageType/followers/sub-type value from a previous
+    // category can't sneak through on submit.
     setValues((prev) => ({
       ...prev,
       category,
       country: category && COUNTRY_CATEGORIES.has(category) ? prev.country : "",
-      followers: category && FOLLOWER_CATEGORIES.has(category) ? prev.followers : "",
+      followers: category && (FOLLOWER_CATEGORIES.has(category) || category === FACEBOOK_COUNTRY_CATEGORY) ? prev.followers : "",
       pageType: category === "FACEBOOK_PAGE" ? prev.pageType : "",
+      instagramSubType: category === INSTAGRAM_CATEGORY ? prev.instagramSubType : "",
+      vpnType: category === VPN_CATEGORY ? prev.vpnType : "",
+      tutorialType: category === TUTORIAL_CATEGORY ? prev.tutorialType : "",
+      websiteType: category === WEBSITE_CATEGORY ? prev.websiteType : "",
     }));
     setErrors((prev) => ({ ...prev, category: undefined }));
   }
@@ -205,6 +272,18 @@ export default function SocialLogForm({
 
     if (needsPageType && !values.pageType)
       next.pageType = "Select a page type.";
+
+    if (needsInstagramSubType && !values.instagramSubType)
+      next.instagramSubType = "Select an Instagram sub-type.";
+
+    if (needsVpnType && !values.vpnType)
+      next.vpnType = "Select a VPN variant.";
+
+    if (needsTutorialType && !values.tutorialType)
+      next.tutorialType = "Select a tutorial platform.";
+
+    if (needsWebsiteType && !values.websiteType)
+      next.websiteType = "Select a website service.";
 
     if (values.image?.trim() && !URL_PATTERN.test(values.image.trim()))
       next.image = "Must be a valid URL starting with http:// or https://";
@@ -252,8 +331,26 @@ export default function SocialLogForm({
         username: values.username.trim(),
         age: Number(values.age),
         followers:
-          needsFollowers && values.followers !== "" && values.followers !== undefined
+          (needsFollowers || needsFacebookCountry) && values.followers !== "" && values.followers !== undefined
             ? Number(values.followers)
+            : needsFacebookCountry
+              ? 200 // default follower floor for Facebook-by-country
+              : undefined,
+        instagramSubType:
+          needsInstagramSubType && values.instagramSubType
+            ? (values.instagramSubType as InstagramSubType)
+            : undefined,
+        vpnType:
+          needsVpnType && values.vpnType
+            ? (values.vpnType as VpnType)
+            : undefined,
+        tutorialType:
+          needsTutorialType && values.tutorialType
+            ? (values.tutorialType as TutorialType)
+            : undefined,
+        websiteType:
+          needsWebsiteType && values.websiteType
+            ? (values.websiteType as WebsiteType)
             : undefined,
         price: Number(values.price),
         emailAttached: values.emailAttached,
@@ -369,13 +466,143 @@ export default function SocialLogForm({
           {/* Conditional: only for *_COUNTRY categories */}
           {needsCountry && (
             <Field label="Country" error={errors.country}>
-              <input
-                type="text"
-                value={values.country}
-                onChange={(e) => update("country", e.target.value)}
-                placeholder="e.g. Nigeria"
-                className={inputClass(!!errors.country)}
-              />
+              {needsFacebookCountry ? (
+                <div className="flex flex-wrap gap-2">
+                  {FACEBOOK_COUNTRIES.map((c) => (
+                    <button
+                      key={c.value}
+                      type="button"
+                      onClick={() => {
+                        update("country", c.value);
+                        update("followers", c.followers);
+                      }}
+                      className={`rounded-xl border px-4 py-2.5 text-sm font-medium transition ${
+                        values.country === c.value
+                          ? "border-orange-500 bg-orange-500/10 text-orange-400"
+                          : "border-gray-300 dark:border-zinc-700 bg-gray-100 dark:bg-zinc-800 text-gray-500 dark:text-zinc-400 hover:border-zinc-600"
+                      }`}
+                    >
+                      {c.label} ({c.followers}+)
+                    </button>
+                  ))}
+                </div>
+              ) : needsTiktokCountry ? (
+                <div className="flex flex-wrap gap-2">
+                  {TIKTOK_COUNTRIES.map((c) => (
+                    <button
+                      key={c.value}
+                      type="button"
+                      onClick={() => update("country", c.value)}
+                      className={`rounded-xl border px-4 py-2.5 text-sm font-medium transition ${
+                        values.country === c.value
+                          ? "border-orange-500 bg-orange-500/10 text-orange-400"
+                          : "border-gray-300 dark:border-zinc-700 bg-gray-100 dark:bg-zinc-800 text-gray-500 dark:text-zinc-400 hover:border-zinc-600"
+                      }`}
+                    >
+                      {c.label}
+                    </button>
+                  ))}
+                </div>
+              ) : (
+                <input
+                  type="text"
+                  value={values.country}
+                  onChange={(e) => update("country", e.target.value)}
+                  placeholder="e.g. Nigeria"
+                  className={inputClass(!!errors.country)}
+                />
+              )}
+            </Field>
+          )}
+
+          {/* Conditional: only for INSTAGRAM_FOLLOWERS */}
+          {needsInstagramSubType && (
+            <Field label="Instagram Sub-Type" error={errors.instagramSubType}>
+              <div className="flex flex-wrap gap-2">
+                {INSTAGRAM_SUB_TYPES.map((st) => (
+                  <button
+                    key={st.value}
+                    type="button"
+                    onClick={() => {
+                      update("instagramSubType", st.value);
+                      update("followers", st.followers);
+                    }}
+                    className={`rounded-xl border px-4 py-2.5 text-sm font-medium transition ${
+                      values.instagramSubType === st.value
+                        ? "border-orange-500 bg-orange-500/10 text-orange-400"
+                        : "border-gray-300 dark:border-zinc-700 bg-gray-100 dark:bg-zinc-800 text-gray-500 dark:text-zinc-400 hover:border-zinc-600"
+                    }`}
+                  >
+                    {st.label}
+                  </button>
+                ))}
+              </div>
+            </Field>
+          )}
+
+          {/* Conditional: only for VPN */}
+          {needsVpnType && (
+            <Field label="VPN Variant" error={errors.vpnType}>
+              <div className="flex flex-wrap gap-2">
+                {VPN_TYPES.map((v) => (
+                  <button
+                    key={v.value}
+                    type="button"
+                    onClick={() => update("vpnType", v.value)}
+                    className={`rounded-xl border px-4 py-2.5 text-sm font-medium transition ${
+                      values.vpnType === v.value
+                        ? "border-orange-500 bg-orange-500/10 text-orange-400"
+                        : "border-gray-300 dark:border-zinc-700 bg-gray-100 dark:bg-zinc-800 text-gray-500 dark:text-zinc-400 hover:border-zinc-600"
+                    }`}
+                  >
+                    {v.label}
+                  </button>
+                ))}
+              </div>
+            </Field>
+          )}
+
+          {/* Conditional: only for TUTORIAL */}
+          {needsTutorialType && (
+            <Field label="Tutorial Platform" error={errors.tutorialType}>
+              <div className="flex flex-wrap gap-2">
+                {TUTORIAL_TYPES.map((t) => (
+                  <button
+                    key={t.value}
+                    type="button"
+                    onClick={() => update("tutorialType", t.value)}
+                    className={`rounded-xl border px-4 py-2.5 text-sm font-medium transition ${
+                      values.tutorialType === t.value
+                        ? "border-orange-500 bg-orange-500/10 text-orange-400"
+                        : "border-gray-300 dark:border-zinc-700 bg-gray-100 dark:bg-zinc-800 text-gray-500 dark:text-zinc-400 hover:border-zinc-600"
+                    }`}
+                  >
+                    {t.label}
+                  </button>
+                ))}
+              </div>
+            </Field>
+          )}
+
+          {/* Conditional: only for WEBSITE_CREATION */}
+          {needsWebsiteType && (
+            <Field label="Website Service" error={errors.websiteType}>
+              <div className="flex flex-wrap gap-2">
+                {WEBSITE_TYPES.map((w) => (
+                  <button
+                    key={w.value}
+                    type="button"
+                    onClick={() => update("websiteType", w.value)}
+                    className={`rounded-xl border px-4 py-2.5 text-sm font-medium transition ${
+                      values.websiteType === w.value
+                        ? "border-orange-500 bg-orange-500/10 text-orange-400"
+                        : "border-gray-300 dark:border-zinc-700 bg-gray-100 dark:bg-zinc-800 text-gray-500 dark:text-zinc-400 hover:border-zinc-600"
+                    }`}
+                  >
+                    {w.label}
+                  </button>
+                ))}
+              </div>
             </Field>
           )}
 

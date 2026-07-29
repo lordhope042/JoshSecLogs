@@ -19,7 +19,13 @@ import {
 
 import { SocialLog } from "@/types/social-log";
 import PurchaseButton from "./PurchaseButton";
-import { CATEGORY_LABELS } from "./SocialLogCard";
+import {
+  CATEGORY_LABELS,
+  INSTAGRAM_SUBTYPE_LABELS,
+  VPN_TYPE_LABELS,
+  TUTORIAL_TYPE_LABELS,
+  WEBSITE_TYPE_LABELS,
+} from "./SocialLogCard";
 
 interface Props {
   log: SocialLog | null;
@@ -72,6 +78,17 @@ export default function SocialLogDetails({
   const categoryLabel = CATEGORY_LABELS[log.category] ?? log.platform;
   const hasCountry = !!log.country;
   const hasFollowers = typeof log.followers === "number" && log.followers > 0;
+
+  // Sub-type line — surfaces the specific variant within the heading.
+  const subTypeLabel =
+    log.instagramSubType ? INSTAGRAM_SUBTYPE_LABELS[log.instagramSubType]
+    : log.vpnType ? VPN_TYPE_LABELS[log.vpnType]
+    : log.tutorialType ? TUTORIAL_TYPE_LABELS[log.tutorialType]
+    : log.websiteType ? WEBSITE_TYPE_LABELS[log.websiteType]
+    : log.pageType ? null  // page type shown elsewhere
+    : log.platform === "TEXTPLUS" ? "TextPlus"
+    : log.platform === "NEXTPLUS" ? "NextPlus"
+    : null;
 
   const statCount = 1 + (hasCountry ? 1 : 0) + (hasFollowers ? 1 : 0);
   const statGridClass =
@@ -126,6 +143,9 @@ export default function SocialLogDetails({
             <div>
               <p className="text-sm uppercase tracking-widest text-orange-500">{categoryLabel}</p>
               <h2 className="mt-1 text-3xl font-bold text-zinc-900 dark:text-white">{log.username}</h2>
+              {subTypeLabel && (
+                <p className="mt-1 text-sm font-medium text-zinc-500 dark:text-zinc-400">{subTypeLabel}</p>
+              )}
             </div>
 
             {log.verified && (

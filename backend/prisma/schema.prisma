@@ -213,6 +213,7 @@ enum TransactionStatus {
   PENDING
   SUCCESS
   FAILED
+  CANCELLED 
 }
 
 enum PaymentStatus {

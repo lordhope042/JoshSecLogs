@@ -19,6 +19,9 @@ export interface SocialLogStockGroup {
   category: string;
   pageType: string | null;
   country: string | null;
+  /** Instagram sub-type label, VPN variant label, tutorial label, or
+      website-service label — surfaces as the card's sub-line. */
+  subType: string | null;
   logs: SocialLog[];
 }
 
@@ -26,7 +29,7 @@ export function groupLogsIntoStock(logs: SocialLog[]): SocialLogStockGroup[] {
   const groups = new Map<string, SocialLog[]>();
 
   for (const log of logs) {
-    const key = `${log.platform}|${log.category}|${log.pageType ?? ""}|${log.country ?? ""}`;
+    const key = `${log.platform}|${log.category}|${log.pageType ?? ""}|${log.country ?? ""}|${log.instagramSubType ?? ""}|${log.vpnType ?? ""}|${log.tutorialType ?? ""}|${log.websiteType ?? ""}|${log.followers ?? ""}`;
     const existing = groups.get(key);
     if (existing) existing.push(log);
     else groups.set(key, [log]);
@@ -43,6 +46,7 @@ export function groupLogsIntoStock(logs: SocialLog[]): SocialLogStockGroup[] {
       category: first.category,
       pageType: first.pageType,
       country: first.country,
+      subType: subTypeLabel(first),
       logs: sorted,
     };
   });
@@ -52,47 +56,119 @@ export function groupLogsIntoStock(logs: SocialLog[]): SocialLogStockGroup[] {
 =====================================
 STATIC LISTING TYPES
 The fixed set of "sellable types" that should always render a card,
-whether or not an admin has actually added stock for it yet:
+whether or not an admin has actually added stock for it yet.
+
+This encodes the full JoshSecLogs.com catalogue — 10 headings,
+40+ enumerated sub-categories — so every product the platform sells
+shows up in the grid even at zero stock.
+
   - FACEBOOK_PAGE splits into its 4 known page types
-  - FACEBOOK_COUNTRY / TIKTOK_COUNTRY have no fixed sub-list (country
-    is free text) — collapsed into a single aggregate "By Country"
-    card per category rather than one card per country
-  - everything else is one flat card per category
+  - FACEBOOK_COUNTRY renders one card per fixed country (6)
+  - TWITTER_FOLLOWERS renders one card per follower tier (5, incl. Empty Aged)
+  - INSTAGRAM_FOLLOWERS renders one card per Instagram sub-type (4)
+  - VPN renders one card per provider/duration variant (4)
+  - TEXTPLUS_NEXTPLUS renders one card per app (2)
+  - TIKTOK_FOLLOWERS renders one card per follower tier (4)
+  - TIKTOK_COUNTRY renders one card per fixed country (5)
+  - TUTORIAL renders one card per ad-platform tutorial (4)
+  - WEBSITE_CREATION renders one card per website service (4)
+
 This is purely for what the CARD GRID displays. Actual purchase logic
 still runs against groupLogsIntoStock() per exact log, so a buyer
-grabbing units from an aggregated "By Country" card still only ever
-receives units matching the specific country they opened in Details —
-never a mix of countries just because the card lumped the count.
+grabbing units from a card only ever receives units matching the
+exact variant they opened in Details — never a mix.
 =====================================
 */
 
 interface StaticListingType {
   category: SocialLogCategoryValue;
   pageType?: SocialLogPageType;
-  aggregateCountry?: boolean;
+  country?: string;
+  /** Follower tier for *_FOLLOWERS categories (0 = Empty Aged) */
+  followers?: number;
+  platform?: string;
+  instagramSubType?: string;
+  vpnType?: string;
+  tutorialType?: string;
+  websiteType?: string;
 }
 
 const STATIC_LISTING_TYPES: StaticListingType[] = [
+  // 1. FACEBOOK_PAGE — 4 page types
   { category: "FACEBOOK_PAGE", pageType: "CREATE_PAGE" },
   { category: "FACEBOOK_PAGE", pageType: "CREATED_PAGE" },
   { category: "FACEBOOK_PAGE", pageType: "MULTI_PAGE" },
   { category: "FACEBOOK_PAGE", pageType: "PAGE_WITH_FOLLOWERS" },
-  { category: "FACEBOOK_COUNTRY", aggregateCountry: true },
-  { category: "TWITTER_FOLLOWERS" },
-  { category: "INSTAGRAM_FOLLOWERS" },
-  { category: "VPN" },
-  { category: "TEXTPLUS_NEXTPLUS" },
-  { category: "TELEGRAM_ACCOUNT" },
-  { category: "TIKTOK_COUNTRY", aggregateCountry: true },
-  { category: "TIKTOK_FOLLOWERS" },
-  { category: "MAIL" },
+
+  // 2. FACEBOOK_COUNTRY — 6 fixed countries
+  { category: "FACEBOOK_COUNTRY", country: "USA" },
+  { category: "FACEBOOK_COUNTRY", country: "CANADA" },
+  { category: "FACEBOOK_COUNTRY", country: "SPAIN" },
+  { category: "FACEBOOK_COUNTRY", country: "AUSTRALIA" },
+  { category: "FACEBOOK_COUNTRY", country: "NETHERLANDS" },
+  { category: "FACEBOOK_COUNTRY", country: "BELGIUM" },
+
+  // 3. TWITTER_FOLLOWERS — 5 tiers (Empty Aged = 0)
+  { category: "TWITTER_FOLLOWERS", followers: 0 },
+  { category: "TWITTER_FOLLOWERS", followers: 100 },
+  { category: "TWITTER_FOLLOWERS", followers: 200 },
+  { category: "TWITTER_FOLLOWERS", followers: 500 },
+  { category: "TWITTER_FOLLOWERS", followers: 1000 },
+
+  // 4. INSTAGRAM_FOLLOWERS — 4 sub-types
+  { category: "INSTAGRAM_FOLLOWERS", instagramSubType: "MONTHS_OLD" },
+  { category: "INSTAGRAM_FOLLOWERS", instagramSubType: "EMPTY_AGED" },
+  { category: "INSTAGRAM_FOLLOWERS", instagramSubType: "AGED_500" },
+  { category: "INSTAGRAM_FOLLOWERS", instagramSubType: "AGED_1K" },
+
+  // 5. VPN — 4 provider/duration variants
+  { category: "VPN", vpnType: "PIA_7D" },
+  { category: "VPN", vpnType: "EXPRESS_1M" },
+  { category: "VPN", vpnType: "HMA_1M" },
+  { category: "VPN", vpnType: "NORD_1M" },
+
+  // 6. TEXTPLUS_NEXTPLUS — 2 apps (distinguished by platform)
+  { category: "TEXTPLUS_NEXTPLUS", platform: "TEXTPLUS" },
+  { category: "TEXTPLUS_NEXTPLUS", platform: "NEXTPLUS" },
+
+  // 7. TIKTOK_FOLLOWERS — 4 tiers
+  { category: "TIKTOK_FOLLOWERS", followers: 100 },
+  { category: "TIKTOK_FOLLOWERS", followers: 200 },
+  { category: "TIKTOK_FOLLOWERS", followers: 500 },
+  { category: "TIKTOK_FOLLOWERS", followers: 1000 },
+
+  // 8. TIKTOK_COUNTRY — 5 fixed countries (aged TikTok)
+  { category: "TIKTOK_COUNTRY", country: "USA" },
+  { category: "TIKTOK_COUNTRY", country: "UK" },
+  { category: "TIKTOK_COUNTRY", country: "CANADA" },
+  { category: "TIKTOK_COUNTRY", country: "GERMANY" },
+  { category: "TIKTOK_COUNTRY", country: "RANDOM" },
+
+  // 9. TUTORIAL — 4 ad-platform tutorials
+  { category: "TUTORIAL", tutorialType: "FACEBOOK_ADS" },
+  { category: "TUTORIAL", tutorialType: "INSTAGRAM_ADS" },
+  { category: "TUTORIAL", tutorialType: "TIKTOK_ADS" },
+  { category: "TUTORIAL", tutorialType: "TWITTER_ADS" },
+
+  // 10. WEBSITE_CREATION — 4 website services
+  { category: "WEBSITE_CREATION", websiteType: "LOGS_WEBSITE" },
+  { category: "WEBSITE_CREATION", websiteType: "SMS_WEBSITE" },
+  { category: "WEBSITE_CREATION", websiteType: "BOTH_WEBSITE" },
+  { category: "WEBSITE_CREATION", websiteType: "BOOSTING_WEBSITE" },
 ];
 
 export function buildStaticStockGroups(logs: SocialLog[]): SocialLogStockGroup[] {
   return STATIC_LISTING_TYPES.map((type) => {
     const matching = logs.filter((l) => {
       if (l.category !== type.category) return false;
-      if (type.pageType) return l.pageType === type.pageType;
+      if (type.pageType && l.pageType !== type.pageType) return false;
+      if (type.country && l.country !== type.country) return false;
+      if (type.platform && l.platform !== type.platform) return false;
+      if (type.instagramSubType && l.instagramSubType !== type.instagramSubType) return false;
+      if (type.vpnType && l.vpnType !== type.vpnType) return false;
+      if (type.tutorialType && l.tutorialType !== type.tutorialType) return false;
+      if (type.websiteType && l.websiteType !== type.websiteType) return false;
+      if (type.followers !== undefined && l.followers !== type.followers) return false;
       return true;
     });
 
@@ -103,11 +179,12 @@ export function buildStaticStockGroups(logs: SocialLog[]): SocialLogStockGroup[]
     const first = sorted[0];
 
     return {
-      key: `${type.category}|${type.pageType ?? ""}`,
-      platform: first?.platform ?? type.category,
+      key: `${type.category}|${type.pageType ?? ""}|${type.country ?? ""}|${type.platform ?? ""}|${type.instagramSubType ?? ""}|${type.vpnType ?? ""}|${type.tutorialType ?? ""}|${type.websiteType ?? ""}|${type.followers ?? ""}`,
+      platform: first?.platform ?? type.platform ?? type.category,
       category: type.category,
       pageType: type.pageType ?? null,
-      country: type.aggregateCountry ? "By Country" : first?.country ?? null,
+      country: type.country ?? first?.country ?? null,
+      subType: staticSubTypeLabel(type),
       logs: sorted,
     };
   });
@@ -143,18 +220,95 @@ export const CATEGORY_LABELS: Record<string, string> = {
   INSTAGRAM_FOLLOWERS: "Instagram",
   VPN: "VPN",
   TEXTPLUS_NEXTPLUS: "Texting App",
-  TELEGRAM_ACCOUNT: "Telegram",
+  TUTORIAL: "Tutorial",
   TIKTOK_COUNTRY: "TikTok",
   TIKTOK_FOLLOWERS: "TikTok",
-  MAIL: "Mail",
+  WEBSITE_CREATION: "Website Creation",
 };
 
 export const PAGE_TYPE_LABELS: Record<string, string> = {
   CREATE_PAGE: "Create Page",
   CREATED_PAGE: "Created Page",
-  MULTI_PAGE: "2x Created",
-  PAGE_WITH_FOLLOWERS: "Page with Followers",
+  MULTI_PAGE: "2 Created Page",
+  PAGE_WITH_FOLLOWERS: "Created Page with 1K+ Followers",
 };
+
+export const INSTAGRAM_SUBTYPE_LABELS: Record<string, string> = {
+  MONTHS_OLD: "Months Old Instagram",
+  EMPTY_AGED: "Empty Aged Instagram",
+  AGED_500: "Aged Instagram with 500+",
+  AGED_1K: "Aged Instagram with 1K+",
+};
+
+export const VPN_TYPE_LABELS: Record<string, string> = {
+  PIA_7D: "7 Days PIA VPN",
+  EXPRESS_1M: "Express VPN One Month",
+  HMA_1M: "HMA VPN One Month",
+  NORD_1M: "Nord VPN One Month",
+};
+
+export const TUTORIAL_TYPE_LABELS: Record<string, string> = {
+  FACEBOOK_ADS: "Facebook Ads Tutorial",
+  INSTAGRAM_ADS: "Instagram Ads Tutorial",
+  TIKTOK_ADS: "TikTok Ads Tutorial",
+  TWITTER_ADS: "Twitter Ads Tutorial",
+};
+
+export const WEBSITE_TYPE_LABELS: Record<string, string> = {
+  LOGS_WEBSITE: "Logs Website",
+  SMS_WEBSITE: "SMS Website",
+  BOTH_WEBSITE: "Both Logs and SMS Website",
+  BOOSTING_WEBSITE: "Boosting Website",
+};
+
+export const COUNTRY_LABELS: Record<string, string> = {
+  USA: "USA",
+  CANADA: "Canada",
+  SPAIN: "Spain",
+  AUSTRALIA: "Australia",
+  NETHERLANDS: "Netherlands",
+  BELGIUM: "Belgium",
+  UK: "UK",
+  GERMANY: "Germany",
+  RANDOM: "Random Country",
+};
+
+/** Renders a follower tier the way it's picked in the form — "100+",
+ *  "1k+", "Empty" for the 0 tier. */
+export function formatFollowersTier(value: number): string {
+  if (value === 0) return "Empty Aged";
+  if (value >= 1000) return `${(value / 1000).toString().replace(/\.0$/, "")}K+`;
+  return `${value}+`;
+}
+
+/** Sub-line label for a live (non-static) stock group, derived from
+ *  whichever sub-type axis its first log populates. */
+function subTypeLabel(log: SocialLog): string | null {
+  if (log.pageType) return PAGE_TYPE_LABELS[log.pageType] ?? log.pageType;
+  if (log.instagramSubType) return INSTAGRAM_SUBTYPE_LABELS[log.instagramSubType] ?? log.instagramSubType;
+  if (log.vpnType) return VPN_TYPE_LABELS[log.vpnType] ?? log.vpnType;
+  if (log.tutorialType) return TUTORIAL_TYPE_LABELS[log.tutorialType] ?? log.tutorialType;
+  if (log.websiteType) return WEBSITE_TYPE_LABELS[log.websiteType] ?? log.websiteType;
+  if (log.country) return COUNTRY_LABELS[log.country] ?? log.country;
+  if (typeof log.followers === "number" && log.followers >= 0) return formatFollowersTier(log.followers);
+  if (log.platform === "TEXTPLUS") return "TextPlus";
+  if (log.platform === "NEXTPLUS") return "NextPlus";
+  return null;
+}
+
+/** Sub-line label for a static (zero-stock) listing type. */
+function staticSubTypeLabel(type: StaticListingType): string | null {
+  if (type.pageType) return PAGE_TYPE_LABELS[type.pageType] ?? type.pageType;
+  if (type.instagramSubType) return INSTAGRAM_SUBTYPE_LABELS[type.instagramSubType] ?? type.instagramSubType;
+  if (type.vpnType) return VPN_TYPE_LABELS[type.vpnType] ?? type.vpnType;
+  if (type.tutorialType) return TUTORIAL_TYPE_LABELS[type.tutorialType] ?? type.tutorialType;
+  if (type.websiteType) return WEBSITE_TYPE_LABELS[type.websiteType] ?? type.websiteType;
+  if (type.country) return COUNTRY_LABELS[type.country] ?? type.country;
+  if (type.followers !== undefined) return formatFollowersTier(type.followers);
+  if (type.platform === "TEXTPLUS") return "TextPlus";
+  if (type.platform === "NEXTPLUS") return "NextPlus";
+  return null;
+}
 
 export default function SocialLogCard({ group, onView, searchQuery }: Props) {
   const representative = group.logs[0];
@@ -164,7 +318,7 @@ export default function SocialLogCard({ group, onView, searchQuery }: Props) {
   const hasFollowers = typeof representative?.followers === "number" && (representative.followers ?? 0) > 0;
 
   const categoryLabel = CATEGORY_LABELS[group.category] ?? group.platform;
-  const subLabel = group.pageType ? PAGE_TYPE_LABELS[group.pageType] ?? group.pageType : group.country ?? undefined;
+  const subLabel = group.subType ?? (group.pageType ? PAGE_TYPE_LABELS[group.pageType] ?? group.pageType : group.country ?? undefined);
 
   const prices = group.logs.map((l) => Number(l.price) || 0);
   const hasPrices = prices.length > 0;
