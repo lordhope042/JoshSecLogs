@@ -14,7 +14,6 @@ import {
   Calendar,
   ImageIcon,
   Lock,
-  ChevronDown,
   ChevronUp,
   Package,
   Tag,
@@ -58,18 +57,45 @@ const CATEGORY_LABELS: Record<SocialLogCategoryValue, string> = {
   TWITTER_FOLLOWERS: "Twitter — Followers",
   INSTAGRAM_FOLLOWERS: "Instagram — Followers",
   VPN: "VPN",
-  TEXTPLUS_NEXTPLUS: "Textplus & Nextplus",
-  TELEGRAM_ACCOUNT: "Telegram",
+  TEXTPLUS_NEXTPLUS: "Texting App",
+  TUTORIAL: "Tutorial",
   TIKTOK_COUNTRY: "TikTok — By Country",
   TIKTOK_FOLLOWERS: "TikTok — Followers",
-  MAIL: "Mail",
+  WEBSITE_CREATION: "Website Creation",
 };
 
 const PAGE_TYPE_LABELS: Record<string, string> = {
-  CREATE_PAGE: "Create Page",
-  CREATED_PAGE: "Created Page",
-  MULTI_PAGE: "2+ Pages",
-  PAGE_WITH_FOLLOWERS: "Page with Followers",
+  CREATE_PAGE: "Create Page Facebook",
+  CREATED_PAGE: "Created Page Facebook",
+  MULTI_PAGE: "2 Created Page Facebook",
+  PAGE_WITH_FOLLOWERS: "Created Page w/ 1K+ Followers",
+};
+
+const SUB_TYPE_LABELS: Record<string, Record<string, string>> = {
+  INSTAGRAM_FOLLOWERS: {
+    MONTHS_OLD: "Months Old",
+    EMPTY_AGED: "Empty Aged",
+    AGED_500: "Aged 500+",
+    AGED_1K: "Aged 1K+",
+  },
+  VPN: {
+    PIA_7D: "7 Days PIA VPN",
+    EXPRESS_1M: "Express VPN One Month",
+    HMA_1M: "HMA VPN One Month",
+    NORD_1M: "Nord VPN One Month",
+  },
+  TUTORIAL: {
+    FACEBOOK_ADS: "Facebook Ads",
+    INSTAGRAM_ADS: "Instagram Ads",
+    TIKTOK_ADS: "TikTok Ads",
+    TWITTER_ADS: "Twitter Ads",
+  },
+  WEBSITE_CREATION: {
+    LOGS_WEBSITE: "Logs Website",
+    SMS_WEBSITE: "SMS Website",
+    BOTH_WEBSITE: "Both Logs & SMS",
+    BOOSTING_WEBSITE: "Boosting Website",
+  },
 };
 
 const statusConfig = {
@@ -91,12 +117,22 @@ const statusConfig = {
 };
 
 // Followers is a bare tier threshold on the model (0/100/200/500/1000).
-// This renders it the way it's picked in the form — "100+", "1k+",
-// "Empty" for Instagram's 0 tier.
+// This renders it the way it's picked in the form — "100+", "1K+",
+// "Empty Aged" for the 0 tier.
 function formatFollowersTier(value: number): string {
-  if (value === 0) return "Empty";
-  if (value >= 1000) return `${(value / 1000).toString().replace(/\.0$/, "")}k+`;
+  if (value === 0) return "Empty Aged";
+  if (value >= 1000) return `${(value / 1000).toString().replace(/\.0$/, "")}K+`;
   return `${value}+`;
+}
+
+// Resolve a sub-type tag for a log (Instagram / VPN / Tutorial / Website),
+// or null if the category doesn't use a sub-type axis.
+function subTypeTag(log: SocialLog): string | null {
+  if (log.instagramSubType) return SUB_TYPE_LABELS.INSTAGRAM_FOLLOWERS[log.instagramSubType] ?? log.instagramSubType;
+  if (log.vpnType) return SUB_TYPE_LABELS.VPN[log.vpnType] ?? log.vpnType;
+  if (log.tutorialType) return SUB_TYPE_LABELS.TUTORIAL[log.tutorialType] ?? log.tutorialType;
+  if (log.websiteType) return SUB_TYPE_LABELS.WEBSITE_CREATION[log.websiteType] ?? log.websiteType;
+  return null;
 }
 
 export default function SocialLogsTable({
@@ -215,6 +251,12 @@ export default function SocialLogsTable({
                       {PAGE_TYPE_LABELS[log.pageType] ?? log.pageType}
                     </span>
                   )}
+                  {subTypeTag(log) && (
+                    <span className="inline-flex items-center gap-1">
+                      <Tag size={11} />
+                      {subTypeTag(log)}
+                    </span>
+                  )}
                   {log.followers !== null && log.followers !== undefined && (
                     <span className="inline-flex items-center gap-1">
                       <Users size={11} />
@@ -300,6 +342,13 @@ export default function SocialLogsTable({
                           icon={<Tag size={14} />}
                           label="Page Type"
                           value={PAGE_TYPE_LABELS[log.pageType] ?? log.pageType}
+                        />
+                      )}
+                      {subTypeTag(log) && (
+                        <DetailItem
+                          icon={<Tag size={14} />}
+                          label="Sub-Type"
+                          value={subTypeTag(log) as string}
                         />
                       )}
                       {log.followers !== null && log.followers !== undefined && (

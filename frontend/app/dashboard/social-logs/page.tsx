@@ -46,7 +46,7 @@ export default function SocialLogsPage() {
     const q = searchQuery.trim().toLowerCase();
     return categoryFilteredGroups.filter((g) => {
       const categoryLabel = CATEGORY_LABELS[g.category] ?? g.platform;
-      const subLabel = g.pageType ? PAGE_TYPE_LABELS[g.pageType] ?? g.pageType : g.country ?? "";
+      const subLabel = g.subType ?? (g.pageType ? PAGE_TYPE_LABELS[g.pageType] ?? g.pageType : g.country ?? "");
       return (
         categoryLabel.toLowerCase().includes(q) ||
         subLabel.toLowerCase().includes(q) ||

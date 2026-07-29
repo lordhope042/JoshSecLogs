@@ -5,7 +5,15 @@ import { X, ChevronLeft } from "lucide-react";
 import { toast } from "sonner";
 
 import { createSocialLog } from "@/services/socialLogs";
-import type { CreateSocialLogDto, SocialLogPageType, SocialPlatform } from "@/types/social-log";
+import type {
+  CreateSocialLogDto,
+  SocialLogPageType,
+  SocialPlatform,
+  InstagramSubType,
+  VpnType,
+  TutorialType,
+  WebsiteType,
+} from "@/types/social-log";
 import { WIZARD_GROUPS, getGroup, type WizardGroup } from "@/shared/category-tree";
 
 type WizardStep = 1 | 2 | 3 | 4;
@@ -16,6 +24,8 @@ interface WizardState {
   group?: WizardGroup;
   selectedPageTypes: SocialLogPageType[];
   selectedPlatforms: SocialPlatform[];
+  selectedSubTypes: string[];
+  selectedCountries: string[];
   includeFollowerTier: boolean;
   country?: string;
   followers?: number;
@@ -26,6 +36,8 @@ interface WizardState {
 const initialWizardState: WizardState = {
   selectedPageTypes: [],
   selectedPlatforms: [],
+  selectedSubTypes: [],
+  selectedCountries: [],
   includeFollowerTier: false,
   details: {},
 };
@@ -35,6 +47,11 @@ interface Submission {
   category: string;
   pageType?: SocialLogPageType;
   country?: string;
+  followers?: number;
+  instagramSubType?: InstagramSubType;
+  vpnType?: VpnType;
+  tutorialType?: TutorialType;
+  websiteType?: WebsiteType;
   label: string;
 }
 
@@ -50,60 +67,145 @@ export default function AddSocialLogModal({ open, onClose, onCreated }: AddSocia
   const [submitting, setSubmitting] = useState(false);
 
   const group = wizard.group ? getGroup(wizard.group) : undefined;
-  const needsPlatformChoice = (group?.platforms.length ?? 0) > 1 && group?.value !== "FACEBOOK";
+  const needsPlatformChoice =
+    (group?.platforms.length ?? 0) > 1 &&
+    group?.value !== "FACEBOOK" &&
+    group?.value !== "TUTORIAL" &&
+    group?.value !== "WEBSITE";
 
   const submissions: Submission[] = useMemo(() => {
     if (!group) return [];
 
+    // FACEBOOK — page types + multi-country
     if (group.value === "FACEBOOK") {
       const subs: Submission[] = wizard.selectedPageTypes.map((pt) => ({
         platform: "FACEBOOK",
         category: "FACEBOOK_PAGE",
         pageType: pt,
+        followers: pt === "PAGE_WITH_FOLLOWERS" ? (wizard.followers ?? 1000) : undefined,
         label: group.pageTypes?.find((p) => p.value === pt)?.label ?? pt,
       }));
-      if (wizard.country?.trim()) {
+      for (const c of wizard.selectedCountries) {
+        const cfg = group.countries?.find((x) => x.value === c);
+        const range = cfg?.followerRange ?? "";
+        const minFollowers = parseInt(range, 10) || 100;
         subs.push({
           platform: "FACEBOOK",
           category: "FACEBOOK_COUNTRY",
-          country: wizard.country.trim(),
-          label: `By Country — ${wizard.country.trim()}`,
+          country: c,
+          followers: minFollowers,
+          label: `${cfg?.label ?? c}${range ? ` (${range})` : ""}`,
         });
       }
       return subs;
     }
 
+    // TIKTOK — follower tier + multi-country
     if (group.value === "TIKTOK") {
       const subs: Submission[] = [];
       if (wizard.includeFollowerTier) {
-        subs.push({ platform: "TIKTOK", category: "TIKTOK_FOLLOWERS", label: "Follower Tier" });
+        subs.push({
+          platform: "TIKTOK",
+          category: "TIKTOK_FOLLOWERS",
+          followers: wizard.followers ?? 100,
+          label: "Follower Tier",
+        });
       }
-      if (wizard.country?.trim()) {
+      for (const c of wizard.selectedCountries) {
+        const cfg = group.countries?.find((x) => x.value === c);
         subs.push({
           platform: "TIKTOK",
           category: "TIKTOK_COUNTRY",
-          country: wizard.country.trim(),
-          label: `By Country — ${wizard.country.trim()}`,
+          country: c,
+          label: `${cfg?.label ?? c} Aged TikTok`,
         });
       }
       return subs;
     }
 
+    // INSTAGRAM — sub-types (each maps to a followers value)
+    if (group.value === "INSTAGRAM" && group.instagramSubTypes) {
+      return wizard.selectedSubTypes.map((st) => {
+        const cfg = group.instagramSubTypes?.find((x) => x.value === st);
+        return {
+          platform: "INSTAGRAM" as SocialPlatform,
+          category: "INSTAGRAM_FOLLOWERS",
+          instagramSubType: st as InstagramSubType,
+          followers: cfg?.followers,
+          label: cfg?.label ?? st,
+        };
+      });
+    }
+
+    // VPN — provider / duration variants
+    if (group.value === "VPN" && group.vpnTypes) {
+      return wizard.selectedSubTypes.map((st) => {
+        const cfg = group.vpnTypes?.find((x) => x.value === st);
+        return {
+          platform: "VPN" as SocialPlatform,
+          category: "VPN",
+          vpnType: st as VpnType,
+          label: cfg?.label ?? st,
+        };
+      });
+    }
+
+    // TUTORIAL — ad-platform tutorial variants (no platform choice needed)
+    if (group.value === "TUTORIAL" && group.tutorialTypes) {
+      return wizard.selectedSubTypes.map((st) => {
+        const cfg = group.tutorialTypes?.find((x) => x.value === st);
+        // Map tutorial type → platform for storage
+        const platformMap: Record<TutorialType, SocialPlatform> = {
+          FACEBOOK_ADS: "FACEBOOK",
+          INSTAGRAM_ADS: "INSTAGRAM",
+          TIKTOK_ADS: "TIKTOK",
+          TWITTER_ADS: "X",
+        };
+        return {
+          platform: platformMap[st as TutorialType],
+          category: "TUTORIAL",
+          tutorialType: st as TutorialType,
+          label: cfg?.label ?? st,
+        };
+      });
+    }
+
+    // WEBSITE — website build service variants
+    if (group.value === "WEBSITE" && group.websiteTypes) {
+      return wizard.selectedSubTypes.map((st) => {
+        const cfg = group.websiteTypes?.find((x) => x.value === st);
+        return {
+          platform: "VPN" as SocialPlatform,
+          category: "WEBSITE_CREATION",
+          websiteType: st as WebsiteType,
+          label: cfg?.label ?? st,
+        };
+      });
+    }
+
+    // TEXTING_APP — platform choice (TextPlus / NextPlus)
     if (needsPlatformChoice) {
       return wizard.selectedPlatforms.map((p) => ({
         platform: p,
         category: group.category as string,
-        label: p,
+        label: p === "TEXTPLUS" ? "TextPlus" : p === "NEXTPLUS" ? "NextPlus" : p,
       }));
     }
 
     return [{ platform: group.platforms[0], category: group.category as string, label: group.label }];
   }, [group, needsPlatformChoice, wizard]);
 
+  const needsSubTypeChoice = !!(group?.instagramSubTypes || group?.vpnTypes || group?.tutorialTypes || group?.websiteTypes);
+
   const showFollowers =
     group?.value === "TWITTER" ||
-    group?.value === "INSTAGRAM" ||
-    submissions.some((s) => s.category === "TIKTOK_FOLLOWERS" || (s.category === "FACEBOOK_PAGE" && s.pageType === "PAGE_WITH_FOLLOWERS"));
+    (group?.value === "INSTAGRAM" &&
+      wizard.selectedSubTypes.some((st) => {
+        const cfg = group?.instagramSubTypes?.find((x) => x.value === st);
+        return cfg?.followers !== undefined && cfg.followers > 0;
+      })) ||
+    (group?.value === "FACEBOOK" && wizard.selectedPageTypes.includes("PAGE_WITH_FOLLOWERS")) ||
+    (group?.value === "TIKTOK" && wizard.includeFollowerTier);
 
   const step2Complete = submissions.length > 0;
 
@@ -145,29 +247,44 @@ export default function AddSocialLogModal({ open, onClose, onCreated }: AddSocia
     }));
   }
 
+  function toggleSubType(st: string) {
+    setWizard((s) => ({
+      ...s,
+      selectedSubTypes: s.selectedSubTypes.includes(st)
+        ? s.selectedSubTypes.filter((v) => v !== st)
+        : [...s.selectedSubTypes, st],
+    }));
+  }
+
+  function toggleCountry(c: string) {
+    setWizard((s) => ({
+      ...s,
+      selectedCountries: s.selectedCountries.includes(c)
+        ? s.selectedCountries.filter((v) => v !== c)
+        : [...s.selectedCountries, c],
+    }));
+  }
+
   async function handleSubmit() {
     if (submissions.length === 0) return;
     setSubmitting(true);
     try {
       for (const sub of submissions) {
-  const submissionUsesFollowers =
-    sub.category === "TIKTOK_FOLLOWERS" ||
-    sub.category === "TWITTER_FOLLOWERS" ||
-    sub.category === "INSTAGRAM_FOLLOWERS" ||
-    (sub.category === "FACEBOOK_PAGE" && sub.pageType === "PAGE_WITH_FOLLOWERS");
+        const payload = {
+          platform: sub.platform,
+          category: sub.category as any,
+          pageType: sub.pageType,
+          country: sub.country,
+          followers: sub.followers,
+          instagramSubType: sub.instagramSubType,
+          vpnType: sub.vpnType,
+          tutorialType: sub.tutorialType,
+          websiteType: sub.websiteType,
+          age: wizard.age ?? 0,
+          ...wizard.details,
+        } as CreateSocialLogDto;
 
-  const payload = {
-    platform: sub.platform,
-    category: sub.category as any,
-    pageType: sub.pageType,
-    country: sub.country,
-    followers: submissionUsesFollowers ? wizard.followers : undefined,
-    age: wizard.age ?? 0,
-    ...wizard.details,
-  } as CreateSocialLogDto;
-
-  await createSocialLog(payload);
-
+        await createSocialLog(payload);
       }
       toast.success(
         submissions.length > 1 ? `Added ${submissions.length} listings to stock.` : "Added to stock.",
@@ -278,14 +395,38 @@ export default function AddSocialLogModal({ open, onClose, onCreated }: AddSocia
 
                   <div>
                     <label className="mb-2 block text-sm font-medium text-gray-700 dark:text-zinc-300">
-                      Country (optional) — adds a Facebook-by-Country listing alongside any page types above
+                      Countries — adds a Facebook-by-Country listing for each selected country
                     </label>
-                    <input
-                      placeholder="e.g. Nigeria"
-                      value={wizard.country ?? ""}
-                      onChange={(e) => setWizard((s) => ({ ...s, country: e.target.value }))}
-                      className="w-full rounded-xl border border-gray-300 dark:border-zinc-700 bg-gray-100 dark:bg-zinc-800 px-4 py-3 text-gray-900 dark:text-white"
-                    />
+                    <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+                      {group.countries?.map((c) => {
+                        const checked = wizard.selectedCountries.includes(c.value);
+                        return (
+                          <button
+                            key={c.value}
+                            onClick={() => toggleCountry(c.value)}
+                            className={`flex items-center justify-between rounded-xl border px-4 py-3 text-left text-sm font-medium transition ${
+                              checked
+                                ? "border-orange-500 bg-gray-100 dark:bg-zinc-800 text-gray-900 dark:text-white"
+                                : "border-gray-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-gray-700 dark:text-zinc-300 hover:border-zinc-500"
+                            }`}
+                          >
+                            <span>
+                              {c.label}
+                              {c.followerRange && (
+                                <span className="ml-1 text-xs text-gray-400 dark:text-zinc-500">{c.followerRange}</span>
+                              )}
+                            </span>
+                            <span
+                              className={`flex h-4 w-4 shrink-0 items-center justify-center rounded border ${
+                                checked ? "border-orange-500 bg-orange-500" : "border-zinc-600"
+                              }`}
+                            >
+                              {checked && <span className="h-2 w-2 rounded-sm bg-white" />}
+                            </span>
+                          </button>
+                        );
+                      })}
+                    </div>
                   </div>
                 </>
               )}
@@ -303,16 +444,159 @@ export default function AddSocialLogModal({ open, onClose, onCreated }: AddSocia
 
                   <div>
                     <label className="mb-2 block text-sm font-medium text-gray-700 dark:text-zinc-300">
-                      Country (optional) — adds a TikTok-by-Country listing alongside the follower tier above
+                      Countries — adds a TikTok-by-Country listing for each selected country
                     </label>
-                    <input
-                      placeholder="e.g. Nigeria"
-                      value={wizard.country ?? ""}
-                      onChange={(e) => setWizard((s) => ({ ...s, country: e.target.value }))}
-                      className="w-full rounded-xl border border-gray-300 dark:border-zinc-700 bg-gray-100 dark:bg-zinc-800 px-4 py-3 text-gray-900 dark:text-white"
-                    />
+                    <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+                      {group.countries?.map((c) => {
+                        const checked = wizard.selectedCountries.includes(c.value);
+                        return (
+                          <button
+                            key={c.value}
+                            onClick={() => toggleCountry(c.value)}
+                            className={`flex items-center justify-between rounded-xl border px-4 py-3 text-left text-sm font-medium transition ${
+                              checked
+                                ? "border-orange-500 bg-gray-100 dark:bg-zinc-800 text-gray-900 dark:text-white"
+                                : "border-gray-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-gray-700 dark:text-zinc-300 hover:border-zinc-500"
+                            }`}
+                          >
+                            {c.label}
+                            <span
+                              className={`flex h-4 w-4 shrink-0 items-center justify-center rounded border ${
+                                checked ? "border-orange-500 bg-orange-500" : "border-zinc-600"
+                              }`}
+                            >
+                              {checked && <span className="h-2 w-2 rounded-sm bg-white" />}
+                            </span>
+                          </button>
+                        );
+                      })}
+                    </div>
                   </div>
                 </>
+              )}
+
+              {needsSubTypeChoice && group.instagramSubTypes && (
+                <div>
+                  <p className="mb-2 text-sm font-medium text-gray-700 dark:text-zinc-300">Instagram Sub-Types — select any that apply</p>
+                  <div className="grid grid-cols-2 gap-3">
+                    {group.instagramSubTypes.map((st) => {
+                      const checked = wizard.selectedSubTypes.includes(st.value);
+                      return (
+                        <button
+                          key={st.value}
+                          onClick={() => toggleSubType(st.value)}
+                          className={`flex items-center justify-between rounded-xl border px-4 py-4 text-left text-sm font-medium transition ${
+                            checked
+                              ? "border-orange-500 bg-gray-100 dark:bg-zinc-800 text-gray-900 dark:text-white"
+                              : "border-gray-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-gray-700 dark:text-zinc-300 hover:border-zinc-500"
+                          }`}
+                        >
+                          {st.label}
+                          <span
+                            className={`flex h-4 w-4 shrink-0 items-center justify-center rounded border ${
+                              checked ? "border-orange-500 bg-orange-500" : "border-zinc-600"
+                            }`}
+                          >
+                            {checked && <span className="h-2 w-2 rounded-sm bg-white" />}
+                          </span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {needsSubTypeChoice && group.vpnTypes && (
+                <div>
+                  <p className="mb-2 text-sm font-medium text-gray-700 dark:text-zinc-300">VPN Variants — select any that apply</p>
+                  <div className="grid grid-cols-2 gap-3">
+                    {group.vpnTypes.map((st) => {
+                      const checked = wizard.selectedSubTypes.includes(st.value);
+                      return (
+                        <button
+                          key={st.value}
+                          onClick={() => toggleSubType(st.value)}
+                          className={`flex items-center justify-between rounded-xl border px-4 py-4 text-left text-sm font-medium transition ${
+                            checked
+                              ? "border-orange-500 bg-gray-100 dark:bg-zinc-800 text-gray-900 dark:text-white"
+                              : "border-gray-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-gray-700 dark:text-zinc-300 hover:border-zinc-500"
+                          }`}
+                        >
+                          {st.label}
+                          <span
+                            className={`flex h-4 w-4 shrink-0 items-center justify-center rounded border ${
+                              checked ? "border-orange-500 bg-orange-500" : "border-zinc-600"
+                            }`}
+                          >
+                            {checked && <span className="h-2 w-2 rounded-sm bg-white" />}
+                          </span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {needsSubTypeChoice && group.tutorialTypes && (
+                <div>
+                  <p className="mb-2 text-sm font-medium text-gray-700 dark:text-zinc-300">Tutorial Types — select any that apply</p>
+                  <div className="grid grid-cols-2 gap-3">
+                    {group.tutorialTypes.map((st) => {
+                      const checked = wizard.selectedSubTypes.includes(st.value);
+                      return (
+                        <button
+                          key={st.value}
+                          onClick={() => toggleSubType(st.value)}
+                          className={`flex items-center justify-between rounded-xl border px-4 py-4 text-left text-sm font-medium transition ${
+                            checked
+                              ? "border-orange-500 bg-gray-100 dark:bg-zinc-800 text-gray-900 dark:text-white"
+                              : "border-gray-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-gray-700 dark:text-zinc-300 hover:border-zinc-500"
+                          }`}
+                        >
+                          {st.label}
+                          <span
+                            className={`flex h-4 w-4 shrink-0 items-center justify-center rounded border ${
+                              checked ? "border-orange-500 bg-orange-500" : "border-zinc-600"
+                            }`}
+                          >
+                            {checked && <span className="h-2 w-2 rounded-sm bg-white" />}
+                          </span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {needsSubTypeChoice && group.websiteTypes && (
+                <div>
+                  <p className="mb-2 text-sm font-medium text-gray-700 dark:text-zinc-300">Website Services — select any that apply</p>
+                  <div className="grid grid-cols-2 gap-3">
+                    {group.websiteTypes.map((st) => {
+                      const checked = wizard.selectedSubTypes.includes(st.value);
+                      return (
+                        <button
+                          key={st.value}
+                          onClick={() => toggleSubType(st.value)}
+                          className={`flex items-center justify-between rounded-xl border px-4 py-4 text-left text-sm font-medium transition ${
+                            checked
+                              ? "border-orange-500 bg-gray-100 dark:bg-zinc-800 text-gray-900 dark:text-white"
+                              : "border-gray-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-gray-700 dark:text-zinc-300 hover:border-zinc-500"
+                          }`}
+                        >
+                          {st.label}
+                          <span
+                            className={`flex h-4 w-4 shrink-0 items-center justify-center rounded border ${
+                              checked ? "border-orange-500 bg-orange-500" : "border-zinc-600"
+                            }`}
+                          >
+                            {checked && <span className="h-2 w-2 rounded-sm bg-white" />}
+                          </span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
               )}
 
               {needsPlatformChoice && (

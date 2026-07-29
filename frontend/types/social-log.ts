@@ -38,10 +38,10 @@ export type SocialLogCategoryValue =
   | "INSTAGRAM_FOLLOWERS"
   | "VPN"
   | "TEXTPLUS_NEXTPLUS"
-  | "TELEGRAM_ACCOUNT"
+  | "TUTORIAL"
   | "TIKTOK_COUNTRY"
   | "TIKTOK_FOLLOWERS"
-  | "MAIL";
+  | "WEBSITE_CREATION";
 
 // Only meaningful when category = FACEBOOK_PAGE
 export type SocialLogPageType =
@@ -49,6 +49,63 @@ export type SocialLogPageType =
   | "CREATED_PAGE"
   | "MULTI_PAGE"
   | "PAGE_WITH_FOLLOWERS";
+
+/*
+========================================================
+SUB-TYPE ENUMS
+Each sells a fixed, enumerated set of variants within a
+single heading. These drive the admin form's quick-pick
+buttons and the buyer card grid's one-card-per-variant
+behaviour (STATIC_LISTING_TYPES in SocialLogCard).
+========================================================
+*/
+
+// INSTAGRAM_FOLLOWERS — the 4 Instagram sub-categories.
+export type InstagramSubType =
+  | "MONTHS_OLD"
+  | "EMPTY_AGED"
+  | "AGED_500"
+  | "AGED_1K";
+
+// VPN — the 4 VPN provider / duration variants.
+export type VpnType =
+  | "PIA_7D"
+  | "EXPRESS_1M"
+  | "HMA_1M"
+  | "NORD_1M";
+
+// TUTORIAL — the 4 ad-platform tutorial variants.
+export type TutorialType =
+  | "FACEBOOK_ADS"
+  | "INSTAGRAM_ADS"
+  | "TIKTOK_ADS"
+  | "TWITTER_ADS";
+
+// WEBSITE_CREATION — the 4 website-build service variants.
+export type WebsiteType =
+  | "LOGS_WEBSITE"
+  | "SMS_WEBSITE"
+  | "BOTH_WEBSITE"
+  | "BOOSTING_WEBSITE";
+
+// FACEBOOK_COUNTRY — the 6 fixed countries, each tied to a
+// follower range. Used by the admin form's country picker
+// and the card grid so every country always renders.
+export type FacebookCountry =
+  | "USA"
+  | "CANADA"
+  | "SPAIN"
+  | "AUSTRALIA"
+  | "NETHERLANDS"
+  | "BELGIUM";
+
+// TIKTOK_COUNTRY — the 5 fixed countries for aged TikTok.
+export type TiktokCountry =
+  | "USA"
+  | "UK"
+  | "CANADA"
+  | "GERMANY"
+  | "RANDOM";
 
 /*
 ========================================================
@@ -103,6 +160,18 @@ export interface SocialLog {
 
   // Only populated for FACEBOOK_PAGE
   pageType: SocialLogPageType | null;
+
+  // INSTAGRAM_FOLLOWERS sub-category (Months Old / Empty Aged / Aged 500+ / Aged 1K+)
+  instagramSubType: InstagramSubType | null;
+
+  // VPN provider / duration variant
+  vpnType: VpnType | null;
+
+  // TUTORIAL variant (which platform's ads tutorial)
+  tutorialType: TutorialType | null;
+
+  // WEBSITE_CREATION variant (which website build service)
+  websiteType: WebsiteType | null;
 
   username: string;
 
@@ -162,6 +231,14 @@ export interface PurchasedSocialLog {
 
   pageType: SocialLogPageType | null;
 
+  instagramSubType: InstagramSubType | null;
+
+  vpnType: VpnType | null;
+
+  tutorialType: TutorialType | null;
+
+  websiteType: WebsiteType | null;
+
   followers: number | null;
 
   username: string;
@@ -207,6 +284,18 @@ export interface CreateSocialLogDto {
 
   // Only meaningful for FACEBOOK_PAGE
   pageType?: SocialLogPageType;
+
+  // INSTAGRAM_FOLLOWERS sub-category
+  instagramSubType?: InstagramSubType;
+
+  // VPN provider / duration variant
+  vpnType?: VpnType;
+
+  // TUTORIAL variant
+  tutorialType?: TutorialType;
+
+  // WEBSITE_CREATION variant
+  websiteType?: WebsiteType;
 
   username: string;
 
