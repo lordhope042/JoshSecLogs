@@ -253,6 +253,8 @@ export interface PurchasedSocialLog {
 
   loginEmail: string | null;
 
+  emailPassword: string | null;
+
   loginPhone: string | null;
 
   password: string | null;
