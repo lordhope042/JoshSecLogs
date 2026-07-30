@@ -16,7 +16,15 @@ import {
   Min,
 } from "class-validator";
 
-import { SocialPlatform, SocialLogCategory, SocialLogPageType } from "@prisma/client";
+import {
+  SocialPlatform,
+  SocialLogCategory,
+  SocialLogPageType,
+  InstagramSubType,
+  VpnType,
+  TutorialType,
+  WebsiteType,
+} from "@prisma/client";
 
 export class CreateSocialLogDto {
   /*
@@ -104,6 +112,29 @@ export class CreateSocialLogDto {
   PRIVATE LOGIN DETAILS
   =====================================
   */
+
+  // Private login username — shown to the buyer on the My Purchases
+  // page (distinct from the public listing `username`).
+  @IsOptional()
+  @IsString()
+  loginUsername?: string;
+
+  // Sub-type selectors — only meaningful for their respective category.
+  @IsOptional()
+  @IsEnum(InstagramSubType)
+  instagramSubType?: InstagramSubType;
+
+  @IsOptional()
+  @IsEnum(VpnType)
+  vpnType?: VpnType;
+
+  @IsOptional()
+  @IsEnum(TutorialType)
+  tutorialType?: TutorialType;
+
+  @IsOptional()
+  @IsEnum(WebsiteType)
+  websiteType?: WebsiteType;
 
   @IsOptional()
   @IsEmail()

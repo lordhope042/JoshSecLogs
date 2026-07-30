@@ -31,6 +31,7 @@ const PURCHASED_SELECT = {
   price: true,
   status: true,
   purchasedAt: true,
+  loginUsername: true,
   loginEmail: true,
   emailPassword: true,   // add this line
   loginPhone: true,
@@ -40,6 +41,10 @@ const PURCHASED_SELECT = {
   backupCodes: true,
   cookies: true,
   notes: true,
+  instagramSubType: true,
+  vpnType: true,
+  tutorialType: true,
+  websiteType: true,
 } as Prisma.SocialLogSelect;
 
 @Injectable()
@@ -420,6 +425,10 @@ export class SocialLogRepository {
         status: true,
         purchasedAt: true,
         updatedAt: true,
+        instagramSubType: true,
+        vpnType: true,
+        tutorialType: true,
+        websiteType: true,
       },
     });
   }

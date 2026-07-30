@@ -94,12 +94,21 @@ model SocialLog {
   purchasedAt     DateTime?
   category        SocialLogCategory
   pageType        SocialLogPageType?
+  loginUsername   String?
+  instagramSubType InstagramSubType?
+  vpnType         VpnType?
+  tutorialType    TutorialType?
+  websiteType     WebsiteType?
   buyer           User?              @relation("PurchasedSocialLogs", fields: [buyerId], references: [id])
 
   @@index([buyerId])
   @@index([status])
   @@index([platform])
   @@index([category])
+  @@index([vpnType])
+  @@index([instagramSubType])
+  @@index([tutorialType])
+  @@index([websiteType])
 }
 
 model Order {
@@ -248,10 +257,10 @@ enum SocialLogCategory {
   INSTAGRAM_FOLLOWERS
   VPN
   TEXTPLUS_NEXTPLUS
-  TELEGRAM_ACCOUNT
   TIKTOK_COUNTRY
   TIKTOK_FOLLOWERS
-  MAIL
+  TUTORIAL
+  WEBSITE_CREATION
 }
 
 enum SocialLogPageType {
@@ -259,6 +268,34 @@ enum SocialLogPageType {
   CREATED_PAGE
   MULTI_PAGE
   PAGE_WITH_FOLLOWERS
+}
+
+enum InstagramSubType {
+  MONTHS_OLD
+  EMPTY_AGED
+  AGED_500
+  AGED_1K
+}
+
+enum VpnType {
+  PIA_7D
+  EXPRESS_1M
+  HMA_1M
+  NORD_1M
+}
+
+enum TutorialType {
+  FACEBOOK_ADS
+  INSTAGRAM_ADS
+  TIKTOK_ADS
+  TWITTER_ADS
+}
+
+enum WebsiteType {
+  LOGS_WEBSITE
+  SMS_WEBSITE
+  BOTH_WEBSITE
+  BOOSTING_WEBSITE
 }
 
 enum SocialLogStatus {
