@@ -19,6 +19,7 @@ export interface SocialLogStockGroup {
   category: string;
   pageType: string | null;
   country: string | null;
+  vpnType: string | null;
   /** Instagram sub-type label, VPN variant label, tutorial label, or
       website-service label — surfaces as the card's sub-line. */
   subType: string | null;
@@ -46,6 +47,7 @@ export function groupLogsIntoStock(logs: SocialLog[]): SocialLogStockGroup[] {
       category: first.category,
       pageType: first.pageType,
       country: first.country,
+      vpnType: first.vpnType,
       subType: subTypeLabel(first),
       logs: sorted,
     };
@@ -184,6 +186,7 @@ export function buildStaticStockGroups(logs: SocialLog[]): SocialLogStockGroup[]
       category: type.category,
       pageType: type.pageType ?? null,
       country: type.country ?? first?.country ?? null,
+      vpnType: type.vpnType ?? first?.vpnType ?? null,
       subType: staticSubTypeLabel(type),
       logs: sorted,
     };
@@ -245,6 +248,14 @@ export const VPN_TYPE_LABELS: Record<string, string> = {
   EXPRESS_1M: "Express VPN One Month",
   HMA_1M: "HMA VPN One Month",
   NORD_1M: "Nord VPN One Month",
+};
+
+/** VPN brand name used as the card heading (e.g. "Express VPN"). */
+export const VPN_HEADING_LABELS: Record<string, string> = {
+  PIA_7D: "PIA VPN",
+  EXPRESS_1M: "Express VPN",
+  HMA_1M: "HMA VPN",
+  NORD_1M: "Nord VPN",
 };
 
 export const TUTORIAL_TYPE_LABELS: Record<string, string> = {
@@ -320,6 +331,31 @@ export default function SocialLogCard({ group, onView, searchQuery }: Props) {
   const categoryLabel = CATEGORY_LABELS[group.category] ?? group.platform;
   const subLabel = group.subType ?? (group.pageType ? PAGE_TYPE_LABELS[group.pageType] ?? group.pageType : group.country ?? undefined);
 
+  /*
+  Card heading — the specific, distinguishable name for the listing.
+  For most categories this is the same as the category label, but for
+  three categories we override it so cards under the same tab aren't
+  all titled identically:
+    • VPN            → brand name (Express VPN, HMA VPN, …)
+    • TIKTOK_COUNTRY → "Country TikTok" (USA TikTok, UK TikTok, …)
+    • TEXTPLUS_NEXTPLUS → app name (TextPlus / NextPlus)
+  The badge on the cover always keeps the generic category label.
+  */
+  const heading = (() => {
+    if (group.category === "VPN" && group.vpnType) {
+      return VPN_HEADING_LABELS[group.vpnType] ?? categoryLabel;
+    }
+    if (group.category === "TIKTOK_COUNTRY" && group.country) {
+      const countryName = COUNTRY_LABELS[group.country] ?? group.country;
+      return `${countryName} TikTok`;
+    }
+    if (group.category === "TEXTPLUS_NEXTPLUS") {
+      if (group.platform === "TEXTPLUS") return "TextPlus";
+      if (group.platform === "NEXTPLUS") return "NextPlus";
+    }
+    return categoryLabel;
+  })();
+
   const prices = group.logs.map((l) => Number(l.price) || 0);
   const hasPrices = prices.length > 0;
   const minPrice = hasPrices ? Math.min(...prices) : 0;
@@ -386,7 +422,7 @@ export default function SocialLogCard({ group, onView, searchQuery }: Props) {
       <div className="space-y-5 p-5">
         <div>
           <h3 className="truncate text-xl font-bold text-zinc-900 dark:text-white">
-            <HighlightedText text={categoryLabel} query={searchQuery} />
+            <HighlightedText text={heading} query={searchQuery} />
           </h3>
           {subLabel && (
             <p className="mt-1 text-sm text-gray-400 dark:text-zinc-500">
