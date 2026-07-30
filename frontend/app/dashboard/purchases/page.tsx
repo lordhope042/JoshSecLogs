@@ -28,31 +28,51 @@ import type { SocialLog, PurchasedSocialLog } from "@/types/social-log";
 const money = (price?: string | number) =>
   `₦${Number(price ?? 0).toLocaleString()}`;
 
-// Builds the single "Label: value || Label: value || ..." description
-// string the owner wants, instead of separate rows per field. Only
-// fields that actually have a value get included.
-function buildLogDescription(log: PurchasedSocialLog): string {
-  const parts: string[] = [];
+/*
+A credential row shown in the purchased-log detail modal. Each field
+is optional — only rows whose `value` is non-empty are rendered, so
+the admin is free to leave any private detail blank.
+*/
+interface CredentialRow {
+  label: string;
+  value: string;
+}
 
-  if (log.loginEmail) parts.push(`Email: ${log.loginEmail}`);
-  if (log.loginPhone) parts.push(`Phone: ${log.loginPhone}`);
-  if (log.password) parts.push(`Password: ${log.password}`);
-  if (log.twoFactorSecret) parts.push(`2FA: ${log.twoFactorSecret}`);
-  if (log.recoveryEmail) parts.push(`Recovery Email: ${log.recoveryEmail}`);
+// Builds the ordered list of credential rows the buyer sees after
+// purchasing an account. Fields with no value are skipped so the UI
+// only shows what the admin actually filled in.
+function buildCredentialRows(log: PurchasedSocialLog): CredentialRow[] {
+  const rows: CredentialRow[] = [];
 
-  if (log.backupCodes && log.backupCodes.length > 0) {
-    parts.push(`Backup Codes: ${log.backupCodes.join(", ")}`);
-  }
+  if (log.username) rows.push({ label: "Username", value: log.username });
+
+  if (log.password) rows.push({ label: "Password", value: log.password });
+
+  if (log.twoFactorSecret)
+    rows.push({ label: "2FA", value: log.twoFactorSecret });
+
+  if (log.loginEmail) rows.push({ label: "Mail", value: log.loginEmail });
+
+  if (log.emailPassword)
+    rows.push({ label: "Mail Password", value: log.emailPassword });
+
+  if (log.recoveryEmail)
+    rows.push({ label: "Recovery Mail", value: log.recoveryEmail });
+
+  if (log.loginPhone) rows.push({ label: "Phone", value: log.loginPhone });
+
+  if (log.backupCodes && log.backupCodes.length > 0)
+    rows.push({ label: "Backup Codes", value: log.backupCodes.join(", ") });
 
   if (log.cookies) {
     const cookieStr =
       typeof log.cookies === "string"
         ? log.cookies
         : JSON.stringify(log.cookies);
-    parts.push(`Cookies: ${cookieStr}`);
+    rows.push({ label: "Cookies", value: cookieStr });
   }
 
-  return parts.join(" || ");
+  return rows;
 }
 
 /*
@@ -140,7 +160,7 @@ export default function MyPurchasesPage() {
   const [detailLoading, setDetailLoading] = useState(false);
   const [selected, setSelected] = useState<PurchasedSocialLog | null>(null);
   const [revealed, setRevealed] = useState(false);
-  const [copied, setCopied] = useState(false);
+  const [copiedLabel, setCopiedLabel] = useState<string | null>(null);
 
   /* ===============================
           BATCH PICKER MODAL
@@ -172,6 +192,7 @@ export default function MyPurchasesPage() {
     setDetailLoading(true);
     setSelected(null);
     setRevealed(false);
+    setCopiedLabel(null);
 
     try {
       const data = await getPurchasedSocialLog(id);
@@ -199,10 +220,17 @@ export default function MyPurchasesPage() {
     setActiveBatch(null);
   }
 
-  async function copyDescription(value: string) {
+  async function copyValue(label: string, value: string) {
     await navigator.clipboard.writeText(value);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 1500);
+    setCopiedLabel(label);
+    setTimeout(() => setCopiedLabel(null), 1500);
+  }
+
+  async function copyAll(rows: CredentialRow[]) {
+    const text = rows.map((r) => `${r.label}: ${r.value}`).join("\n");
+    await navigator.clipboard.writeText(text);
+    setCopiedLabel("ALL");
+    setTimeout(() => setCopiedLabel(null), 1500);
   }
 
   if (loading) {
@@ -375,7 +403,7 @@ export default function MyPurchasesPage() {
         </div>
       )}
 
-      {/* DETAIL / CREDENTIALS MODAL — single description-style block, unchanged */}
+      {/* DETAIL / CREDENTIALS MODAL — individual credential rows */}
 
       {detailOpen && (
         <div
@@ -420,9 +448,9 @@ export default function MyPurchasesPage() {
 
                 <div className="mt-5">
                   {(() => {
-                    const description = buildLogDescription(selected);
+                    const rows = buildCredentialRows(selected);
 
-                    if (!description) {
+                    if (rows.length === 0) {
                       return (
                         <p className="py-6 text-center text-sm text-gray-400 dark:text-zinc-500">
                           No credentials found for this account. Contact
@@ -433,7 +461,7 @@ export default function MyPurchasesPage() {
 
                     return (
                       <div className="rounded-xl border border-gray-200 dark:border-zinc-800 bg-white/60 dark:bg-zinc-900/60 p-4">
-                        <div className="mb-2 flex items-center justify-between">
+                        <div className="mb-3 flex items-center justify-between">
                           <p className="text-xs font-medium text-gray-400 dark:text-zinc-500">
                             Account Details
                           </p>
@@ -441,7 +469,7 @@ export default function MyPurchasesPage() {
                           <div className="flex items-center gap-1">
                             <button
                               onClick={() => setRevealed((r) => !r)}
-                              title={revealed ? "Hide" : "Show"}
+                              title={revealed ? "Hide all" : "Show all"}
                               className="rounded-lg p-2 text-gray-500 dark:text-zinc-400 transition hover:bg-gray-100 dark:hover:bg-zinc-800 hover:text-gray-900 dark:hover:text-white"
                             >
                               {revealed ? (
@@ -452,11 +480,11 @@ export default function MyPurchasesPage() {
                             </button>
 
                             <button
-                              onClick={() => copyDescription(description)}
+                              onClick={() => copyAll(rows)}
                               title="Copy all"
                               className="rounded-lg p-2 text-gray-500 dark:text-zinc-400 transition hover:bg-gray-100 dark:hover:bg-zinc-800 hover:text-gray-900 dark:hover:text-white"
                             >
-                              {copied ? (
+                              {copiedLabel === "ALL" ? (
                                 <Check size={15} className="text-green-400" />
                               ) : (
                                 <Copy size={15} />
@@ -465,11 +493,43 @@ export default function MyPurchasesPage() {
                           </div>
                         </div>
 
-                        <p className="whitespace-pre-wrap break-all font-mono text-sm leading-6 text-gray-800 dark:text-zinc-200">
-                          {revealed
-                            ? description
-                            : "•".repeat(Math.min(description.length, 80))}
-                        </p>
+                        <div className="space-y-2">
+                          {rows.map((row) => {
+                            const hidden = !revealed;
+                            const masked = "•".repeat(
+                              Math.min(row.value.length, 32)
+                            );
+
+                            return (
+                              <div
+                                key={row.label}
+                                className="flex items-center gap-3 rounded-lg border border-gray-200 dark:border-zinc-800 bg-gray-50 dark:bg-zinc-800/50 px-3 py-2.5"
+                              >
+                                <div className="w-28 shrink-0">
+                                  <p className="text-xs font-medium text-gray-500 dark:text-zinc-400">
+                                    {row.label}
+                                  </p>
+                                </div>
+
+                                <p className="flex-1 break-all font-mono text-sm leading-5 text-gray-800 dark:text-zinc-200">
+                                  {hidden ? masked : row.value}
+                                </p>
+
+                                <button
+                                  onClick={() => copyValue(row.label, row.value)}
+                                  title={`Copy ${row.label}`}
+                                  className="shrink-0 rounded-lg p-1.5 text-gray-400 dark:text-zinc-500 transition hover:bg-gray-200 dark:hover:bg-zinc-700 hover:text-gray-900 dark:hover:text-white"
+                                >
+                                  {copiedLabel === row.label ? (
+                                    <Check size={14} className="text-green-400" />
+                                  ) : (
+                                    <Copy size={14} />
+                                  )}
+                                </button>
+                              </div>
+                            );
+                          })}
+                        </div>
                       </div>
                     );
                   })()}

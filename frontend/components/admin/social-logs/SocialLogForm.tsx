@@ -288,17 +288,11 @@ export default function SocialLogForm({
     if (values.image?.trim() && !URL_PATTERN.test(values.image.trim()))
       next.image = "Must be a valid URL starting with http:// or https://";
 
-    if (!values.loginEmail?.trim())
-      next.loginEmail = "Login email is required.";
-
     if (values.loginEmail?.trim() && !EMAIL_PATTERN.test(values.loginEmail.trim()))
       next.loginEmail = "Enter a valid email address.";
 
     if (values.recoveryEmail?.trim() && !EMAIL_PATTERN.test(values.recoveryEmail.trim()))
       next.recoveryEmail = "Enter a valid email address.";
-
-    if (!values.accountPassword?.trim())
-      next.accountPassword = "Password is required to deliver the account.";
 
     if (values.cookies?.trim()) {
       try {
