@@ -223,10 +223,12 @@ export const CATEGORY_LABELS: Record<string, string> = {
   INSTAGRAM_FOLLOWERS: "Instagram",
   VPN: "VPN",
   TEXTPLUS_NEXTPLUS: "Texting App",
+  TELEGRAM_ACCOUNT: "Telegram",
   TUTORIAL: "Tutorial",
   TIKTOK_COUNTRY: "TikTok",
   TIKTOK_FOLLOWERS: "TikTok",
   WEBSITE_CREATION: "Website Creation",
+  MAIL: "Mail",
 };
 
 export const PAGE_TYPE_LABELS: Record<string, string> = {

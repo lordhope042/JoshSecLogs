@@ -58,10 +58,12 @@ const CATEGORY_LABELS: Record<SocialLogCategoryValue, string> = {
   INSTAGRAM_FOLLOWERS: "Instagram — Followers",
   VPN: "VPN",
   TEXTPLUS_NEXTPLUS: "Texting App",
+  TELEGRAM_ACCOUNT: "Telegram",
   TUTORIAL: "Tutorial",
   TIKTOK_COUNTRY: "TikTok — By Country",
   TIKTOK_FOLLOWERS: "TikTok — Followers",
   WEBSITE_CREATION: "Website Creation",
+  MAIL: "Mail",
 };
 
 const PAGE_TYPE_LABELS: Record<string, string> = {

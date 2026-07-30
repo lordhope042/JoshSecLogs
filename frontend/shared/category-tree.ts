@@ -30,8 +30,10 @@ export type WizardGroup =
   | "TIKTOK"
   | "VPN"
   | "TEXTING_APP"
+  | "TELEGRAM"
   | "TUTORIAL"
-  | "WEBSITE";
+  | "WEBSITE"
+  | "MAIL";
 
 export interface PageTypeOption {
   value: SocialLogPageType;
@@ -138,6 +140,12 @@ export const WIZARD_GROUPS: GroupConfig[] = [
     category: "TEXTPLUS_NEXTPLUS",
   },
   {
+    value: "TELEGRAM",
+    label: "Telegram",
+    platforms: ["TELEGRAM"],
+    category: "TELEGRAM_ACCOUNT",
+  },
+  {
     value: "TUTORIAL",
     label: "Tutorial",
     platforms: ["INSTAGRAM", "FACEBOOK", "TIKTOK", "X"],
@@ -160,6 +168,12 @@ export const WIZARD_GROUPS: GroupConfig[] = [
       { value: "BOTH_WEBSITE", label: "Both Logs and SMS Website" },
       { value: "BOOSTING_WEBSITE", label: "Boosting Website" },
     ],
+  },
+  {
+    value: "MAIL",
+    label: "Mail",
+    platforms: ["GMAIL", "OUTLOOK", "MAIL"],
+    category: "MAIL",
   },
 ];
 
