@@ -44,7 +44,8 @@ interface CredentialRow {
 function buildCredentialRows(log: PurchasedSocialLog): CredentialRow[] {
   const rows: CredentialRow[] = [];
 
-  if (log.username) rows.push({ label: "Username", value: log.username });
+  const usernameValue = log.loginUsername ?? log.username;
+  if (usernameValue) rows.push({ label: "Username", value: usernameValue });
 
   if (log.password) rows.push({ label: "Password", value: log.password });
 
@@ -493,7 +494,7 @@ export default function MyPurchasesPage() {
                           </div>
                         </div>
 
-                        <div className="space-y-2">
+                        <div className="divide-y divide-gray-200 dark:divide-zinc-800">
                           {rows.map((row) => {
                             const hidden = !revealed;
                             const masked = "•".repeat(
@@ -503,7 +504,7 @@ export default function MyPurchasesPage() {
                             return (
                               <div
                                 key={row.label}
-                                className="flex items-center gap-3 rounded-lg border border-gray-200 dark:border-zinc-800 bg-gray-50 dark:bg-zinc-800/50 px-3 py-2.5"
+                                className="flex items-center gap-3 py-2.5 first:pt-0 last:pb-0"
                               >
                                 <div className="w-28 shrink-0">
                                   <p className="text-xs font-medium text-gray-500 dark:text-zinc-400">

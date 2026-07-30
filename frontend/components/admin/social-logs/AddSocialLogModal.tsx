@@ -760,6 +760,15 @@ export default function AddSocialLogModal({ open, onClose, onCreated }: AddSocia
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
+                  <label className="mb-2 block text-sm font-medium text-gray-700 dark:text-zinc-300">Username</label>
+                  <input
+                    value={wizard.details.loginUsername ?? ""}
+                    onChange={(e) => setDetail("loginUsername", e.target.value)}
+                    placeholder="Login username"
+                    className="w-full rounded-xl border border-gray-300 dark:border-zinc-700 bg-gray-100 dark:bg-zinc-800 px-4 py-3 text-gray-900 dark:text-white"
+                  />
+                </div>
+                <div>
                   <label className="mb-2 block text-sm font-medium text-gray-700 dark:text-zinc-300">Login Email</label>
                   <input
                     value={wizard.details.loginEmail ?? ""}
