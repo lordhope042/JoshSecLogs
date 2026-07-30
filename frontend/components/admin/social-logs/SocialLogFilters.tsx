@@ -41,10 +41,12 @@ const categories: { value: SocialLogCategoryValue; label: string }[] = [
   { value: "INSTAGRAM_FOLLOWERS", label: "Instagram — Followers" },
   { value: "VPN", label: "VPN" },
   { value: "TEXTPLUS_NEXTPLUS", label: "Texting App" },
+  { value: "TELEGRAM_ACCOUNT", label: "Telegram" },
   { value: "TUTORIAL", label: "Tutorial" },
   { value: "TIKTOK_COUNTRY", label: "TikTok — By Country" },
   { value: "TIKTOK_FOLLOWERS", label: "TikTok — Followers" },
   { value: "WEBSITE_CREATION", label: "Website Creation" },
+  { value: "MAIL", label: "Mail" },
 ];
 
 const statuses: SocialLogStatus[] = [

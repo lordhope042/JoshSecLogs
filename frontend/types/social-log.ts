@@ -38,10 +38,12 @@ export type SocialLogCategoryValue =
   | "INSTAGRAM_FOLLOWERS"
   | "VPN"
   | "TEXTPLUS_NEXTPLUS"
+  | "TELEGRAM_ACCOUNT"
   | "TUTORIAL"
   | "TIKTOK_COUNTRY"
   | "TIKTOK_FOLLOWERS"
-  | "WEBSITE_CREATION";
+  | "WEBSITE_CREATION"
+  | "MAIL";
 
 // Only meaningful when category = FACEBOOK_PAGE
 export type SocialLogPageType =

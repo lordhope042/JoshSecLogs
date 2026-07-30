@@ -7,6 +7,8 @@ import {
   FaTiktok,
   FaShieldAlt,
   FaGraduationCap,
+  FaTelegram,
+  FaMailBulk,
 } from "react-icons/fa";
 
 import { FaCommentSms, FaXTwitter } from "react-icons/fa6";
@@ -38,10 +40,12 @@ const labels: Record<SocialLogCategoryValue, string> = {
   INSTAGRAM_FOLLOWERS: "Instagram — Followers",
   VPN: "VPN",
   TEXTPLUS_NEXTPLUS: "Texting App",
+  TELEGRAM_ACCOUNT: "Telegram",
   TUTORIAL: "Tutorial",
   TIKTOK_COUNTRY: "TikTok — By Country",
   TIKTOK_FOLLOWERS: "TikTok — Followers",
   WEBSITE_CREATION: "Website Creation",
+  MAIL: "Mail",
 };
 
 const icons: Record<SocialLogCategoryValue, IconType> = {
@@ -51,10 +55,12 @@ const icons: Record<SocialLogCategoryValue, IconType> = {
   INSTAGRAM_FOLLOWERS: FaInstagram,
   VPN: FaShieldAlt,
   TEXTPLUS_NEXTPLUS: FaCommentSms,
+  TELEGRAM_ACCOUNT: FaTelegram,
   TUTORIAL: FaGraduationCap,
   TIKTOK_COUNTRY: FaTiktok,
   TIKTOK_FOLLOWERS: FaTiktok,
   WEBSITE_CREATION: MdOutlineLaptopMac,
+  MAIL: FaMailBulk,
 };
 
 export const ALL_CATEGORIES = Object.keys(labels) as SocialLogCategoryValue[];
