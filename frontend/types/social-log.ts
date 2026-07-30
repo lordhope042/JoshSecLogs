@@ -251,6 +251,8 @@ export interface PurchasedSocialLog {
 
   purchasedAt: string | null;
 
+  loginUsername: string | null;
+
   loginEmail: string | null;
 
   emailPassword: string | null;
@@ -324,6 +326,8 @@ export interface CreateSocialLogDto {
   /*
   PRIVATE DETAILS
   */
+
+  loginUsername?: string;
 
   loginEmail?: string;
 

@@ -35,6 +35,7 @@ interface FormValues {
   description?: string;
   image?: string;
 
+  loginUsername?: string;
   loginEmail?: string;
   emailPassword?: string;
   accountPassword?: string;
@@ -190,6 +191,7 @@ const EMPTY_FORM: FormValues = {
   verified: false,
   description: "",
   image: "",
+  loginUsername: "",
   loginEmail: "",
   emailPassword: "",
   accountPassword: "",
@@ -355,6 +357,7 @@ export default function SocialLogForm({
         description: values.description?.trim() || undefined,
         image: values.image?.trim() || undefined,
 
+        loginUsername: values.loginUsername?.trim() || undefined,
         loginEmail: values.loginEmail?.trim() || undefined,
         emailPassword: values.emailPassword?.trim() || undefined,
         accountPassword: values.accountPassword?.trim() || undefined,
@@ -730,6 +733,16 @@ export default function SocialLogForm({
         </p>
 
         <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
+
+          <Field label="Username">
+            <input
+              type="text"
+              value={values.loginUsername}
+              onChange={(e) => update("loginUsername", e.target.value)}
+              placeholder="Login username for the account"
+              className={inputClass(false)}
+            />
+          </Field>
 
           <Field label="Login Email" error={errors.loginEmail}>
             <input
