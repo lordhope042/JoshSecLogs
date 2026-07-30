@@ -13,6 +13,7 @@ import { AdminModule } from "./admin/admin.module";
 
 import { MarketplaceModule } from "./marketplace/marketplace.module";
 import { SocialLogModule } from "./social-logs/social-log.module";
+import { ApiKeysModule } from "./api-keys/api-keys.module";
 
 @Module({
   imports: [
@@ -46,6 +47,9 @@ import { SocialLogModule } from "./social-logs/social-log.module";
 
     /* Social Logs */
     SocialLogModule,
+
+    /* API Keys */
+    ApiKeysModule,
   ],
 })
 export class AppModule {}

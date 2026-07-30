@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useState } from "react";
 
 import {
@@ -29,6 +29,7 @@ import { toast } from "sonner";
 
 export default function LoginForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
 
   const [showPassword, setShowPassword] =
     useState(false);
@@ -72,12 +73,22 @@ export default function LoginForm() {
 
       /*
       =====================================
-          ADMIN REDIRECT
+          REDIRECT LOGIC
+      1. If a ?redirect= query param exists (e.g. from /shop),
+         send the user there after login.
+      2. Admins always go to /admin regardless.
+      3. Default: /dashboard
       =====================================
       */
 
       if (user.role === "ADMIN") {
         router.replace("/admin");
+        return;
+      }
+
+      const redirect = searchParams.get("redirect");
+      if (redirect && redirect.startsWith("/")) {
+        router.replace(redirect);
         return;
       }
 
