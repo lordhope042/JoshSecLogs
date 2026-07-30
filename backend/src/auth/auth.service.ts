@@ -1,6 +1,7 @@
 import {
   BadRequestException,
   Injectable,
+  NotFoundException,
   UnauthorizedException,
 } from '@nestjs/common';
 
@@ -12,6 +13,9 @@ import { UsersService } from '../users/users.service';
 
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
+import { UpdateProfileDto } from './dto/update-profile.dto';
+import { UpdatePasswordDto } from './dto/update-password.dto';
+import { ForgotPasswordDto } from './dto/forgot-password.dto';
 
 const REFERRAL_COMMISSION_RATE = 0.05; // 5%
 
@@ -196,6 +200,111 @@ export class AuthService {
       referredUsers: referrals,
       totalEarnings: referrals.reduce((sum, r) => sum + r.earnings, 0),
       activeCount: referrals.filter((r) => r.status === 'active').length,
+    };
+  }
+
+  /* ============================================================
+     UPDATE PROFILE
+     Updates the authenticated user's display name and optionally
+     their email. If the email is changed, emailVerified is reset
+     to false so the user must re-verify the new address.
+  ============================================================ */
+  async updateProfile(userId: string, dto: UpdateProfileDto) {
+    const user = await this.users.findById(userId);
+
+    if (!user) {
+      throw new NotFoundException('User not found.');
+    }
+
+    const data: any = { name: dto.name };
+
+    if (dto.email && dto.email !== user.email) {
+      // Make sure the new email isn't already taken by someone else.
+      const existing = await this.users.findByEmail(dto.email);
+
+      if (existing && existing.id !== userId) {
+        throw new BadRequestException('That email is already in use.');
+      }
+
+      data.email = dto.email;
+      data.emailVerified = false;
+    }
+
+    const updated = await this.prisma.user.update({
+      where: { id: userId },
+      data,
+    });
+
+    const { passwordHash: _omit, ...safeUser } = updated as any;
+
+    return {
+      message: 'Profile updated successfully.',
+      user: safeUser,
+    };
+  }
+
+  /* ============================================================
+     UPDATE PASSWORD
+     Verifies the current password, then replaces the hash with
+     the new one. Returns a fresh access token so the client can
+     continue making authenticated requests without re-logging in.
+  ============================================================ */
+  async updatePassword(userId: string, dto: UpdatePasswordDto) {
+    const user = await this.users.findById(userId);
+
+    if (!user) {
+      throw new NotFoundException('User not found.');
+    }
+
+    const valid = await bcrypt.compare(
+      dto.currentPassword,
+      user.passwordHash,
+    );
+
+    if (!valid) {
+      throw new UnauthorizedException('Current password is incorrect.');
+    }
+
+    if (dto.currentPassword === dto.newPassword) {
+      throw new BadRequestException(
+        'New password must be different from the current password.',
+      );
+    }
+
+    const newHash = await bcrypt.hash(dto.newPassword, 12);
+
+    await this.prisma.user.update({
+      where: { id: userId },
+      data: { passwordHash: newHash },
+    });
+
+    return {
+      message: 'Password changed successfully.',
+    };
+  }
+
+  /* ============================================================
+     FORGOT PASSWORD
+     Always returns a generic success message regardless of
+     whether the email exists. This avoids account enumeration.
+     In production this would generate a reset token and email
+     it; for now the endpoint is a safe no-op that satisfies
+     the frontend flow and can be upgraded later.
+  ============================================================ */
+  async forgotPassword(dto: ForgotPasswordDto) {
+    // Look up the user silently. We never reveal whether the
+    // email is registered, even in error responses.
+    const user = await this.users.findByEmail(dto.email);
+
+    if (user) {
+      // TODO: integrate a real email provider here. Generate a
+      // signed reset token, store its hash + expiry, and send
+      // the reset link to user.email. For now we do nothing.
+    }
+
+    return {
+      message:
+        'If an account exists for that email, a password reset link has been sent.',
     };
   }
 }

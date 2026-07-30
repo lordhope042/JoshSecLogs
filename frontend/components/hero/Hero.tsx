@@ -104,13 +104,13 @@ export default function Hero() {
 
             </Link>
 
-            <Link href="/pricing">
+            <Link href="/how-it-works">
 
               <Button
                 variant="outline"
                 className="h-14 rounded-xl border-orange-500 bg-transparent px-8 text-lg text-gray-900 dark:text-white hover:bg-orange-500"
               >
-                View Pricing
+                How It Works
               </Button>
 
             </Link>

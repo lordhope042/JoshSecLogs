@@ -11,7 +11,7 @@ import api from "@/lib/axios";
 =============================== */
 
 interface UserProfile {
-  fullName: string;
+  name: string;
   email: string;
   phone: string;
 }
@@ -25,24 +25,29 @@ interface NotificationPrefs {
 
 /* ===============================
    Service calls
-   Adjust paths/payload shape to match your actual DTOs —
-   I only have /api/v1/auth/me (GET) confirmed from your route log.
-   PATCH endpoints below are my best-guess REST convention;
-   swap them for the real paths if they differ.
+   Backend endpoints (all confirmed):
+   - GET    /auth/me            → { name, email, ... }
+   - PATCH  /auth/me            → { name, email? }   (UpdateProfileDto)
+   - PATCH  /auth/me/password   → { currentPassword, newPassword }
+   Notification preferences are stored locally (localStorage) since
+   there is no backend endpoint for them yet.
 =============================== */
 
 async function fetchMe(): Promise<UserProfile> {
   const { data } = await api.get("/auth/me");
   const user = data.data ?? data;
   return {
-    fullName: user.fullName ?? user.name ?? "",
+    name: user.name ?? user.fullName ?? "",
     email: user.email ?? "",
     phone: user.phone ?? "",
   };
 }
 
-async function updateProfile(payload: UserProfile) {
-  const { data } = await api.patch("/auth/me", payload);
+async function updateProfile(payload: { name: string; email?: string }) {
+  const { data } = await api.patch("/auth/me", {
+    name: payload.name,
+    email: payload.email,
+  });
   return data.data ?? data;
 }
 
@@ -51,11 +56,6 @@ async function updatePassword(payload: { current: string; next: string }) {
     currentPassword: payload.current,
     newPassword: payload.next,
   });
-  return data.data ?? data;
-}
-
-async function updateNotifications(payload: NotificationPrefs) {
-  const { data } = await api.patch("/auth/me/notifications", payload);
   return data.data ?? data;
 }
 
@@ -73,7 +73,7 @@ export default function SettingsPage() {
   useEffect(() => setMounted(true), []);
 
   const [profile, setProfile] = useState<UserProfile>({
-    fullName: "",
+    name: "",
     email: "",
     phone: "",
   });
@@ -91,9 +91,20 @@ export default function SettingsPage() {
     promotions: false,
   });
 
-  /* ── Load current user on mount ── */
+  /* ── Load current user + saved notification prefs on mount ── */
   useEffect(() => {
     let cancelled = false;
+
+    // Restore locally-saved notification preferences
+    try {
+      const saved = localStorage.getItem("notification_prefs");
+      if (saved) {
+        const parsed = JSON.parse(saved) as NotificationPrefs;
+        if (!cancelled) setNotifications(parsed);
+      }
+    } catch {
+      // ignore parse errors
+    }
 
     (async () => {
       try {
@@ -116,7 +127,7 @@ export default function SettingsPage() {
   /* ── Save handlers, one per tab ── */
 
   const handleSaveProfile = async () => {
-    if (!profile.fullName.trim()) {
+    if (!profile.name.trim()) {
       toast.error("Full name is required.");
       return;
     }
@@ -127,7 +138,7 @@ export default function SettingsPage() {
 
     try {
       setSaving(true);
-      await updateProfile(profile);
+      await updateProfile({ name: profile.name, email: profile.email });
       toast.success("Profile updated.");
     } catch (err: any) {
       if (err?.response?.status === 401) return;
@@ -167,11 +178,11 @@ export default function SettingsPage() {
   const handleSaveNotifications = async () => {
     try {
       setSaving(true);
-      await updateNotifications(notifications);
+      // No backend endpoint yet — save locally so preferences persist
+      localStorage.setItem("notification_prefs", JSON.stringify(notifications));
       toast.success("Notification preferences saved.");
     } catch (err: any) {
-      if (err?.response?.status === 401) return;
-      toast.error(err?.response?.data?.message ?? "Failed to save preferences.");
+      toast.error("Failed to save preferences.");
     } finally {
       setSaving(false);
     }
@@ -241,8 +252,8 @@ export default function SettingsPage() {
                 <label className="text-sm text-gray-500 dark:text-zinc-400 block mb-1.5">Full name</label>
                 <input
                   type="text"
-                  value={profile.fullName}
-                  onChange={(e) => setProfile({ ...profile, fullName: e.target.value })}
+                  value={profile.name}
+                  onChange={(e) => setProfile({ ...profile, name: e.target.value })}
                   className="w-full bg-white dark:bg-[#0f172a] border border-gray-200 dark:border-zinc-800 rounded-lg px-3 py-2 text-sm text-gray-900 dark:text-white outline-none focus:border-orange-500"
                   placeholder="Enter your full name"
                 />

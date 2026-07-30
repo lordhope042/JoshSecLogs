@@ -578,13 +578,13 @@ function CTA() {
               </Button>
             </Link>
 
-            <Link href="/pricing">
+            <Link href="/shop">
               <Button
                 size="lg"
                 variant="outline"
                 className="border-orange-500 px-10 py-7 text-lg text-gray-900 dark:text-white hover:bg-orange-500"
               >
-                View Pricing
+                Browse Marketplace
               </Button>
             </Link>
           </div>
@@ -638,8 +638,8 @@ function Footer() {
               <Link href="/" className="block text-gray-700 dark:text-zinc-300 hover:text-orange-500">
                 Home
               </Link>
-              <Link href="/pricing" className="block text-gray-700 dark:text-zinc-300 hover:text-orange-500">
-                Pricing
+              <Link href="/shop" className="block text-gray-700 dark:text-zinc-300 hover:text-orange-500">
+                Shop
               </Link>
               <Link href="/how-it-works" className="block text-gray-700 dark:text-zinc-300 hover:text-orange-500">
                 How It Works

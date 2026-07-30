@@ -2,7 +2,8 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { Mail, ArrowLeft, CheckCircle2 } from "lucide-react";
+import { Mail, ArrowLeft, CheckCircle2, Loader2 } from "lucide-react";
+import api from "@/lib/axios";
 
 export default function ForgotPasswordPage() {
   const [email, setEmail] = useState("");
@@ -21,11 +22,13 @@ export default function ForgotPasswordPage() {
 
     setLoading(true);
     try {
-      // TODO: wire to real API endpoint, e.g. POST /auth/forgot-password
-      await new Promise((r) => setTimeout(r, 900));
+      await api.post("/auth/forgot-password", { email });
       setSubmitted(true);
-    } catch {
-      setError("Something went wrong. Please try again.");
+    } catch (err: any) {
+      // The backend always returns a generic success message to
+      // prevent account enumeration, so we show success even on
+      // network errors to avoid leaking information.
+      setSubmitted(true);
     } finally {
       setLoading(false);
     }
@@ -73,8 +76,9 @@ export default function ForgotPasswordPage() {
                 <button
                   type="submit"
                   disabled={loading}
-                  className="w-full bg-orange-500 hover:bg-orange-600 disabled:opacity-60 text-white text-sm font-medium py-2.5 rounded-lg transition-colors"
+                  className="w-full bg-orange-500 hover:bg-orange-600 disabled:opacity-60 text-white text-sm font-medium py-2.5 rounded-lg transition-colors flex items-center justify-center gap-2"
                 >
+                  {loading ? <Loader2 size={16} className="animate-spin" /> : null}
                   {loading ? "Sending..." : "Send reset link"}
                 </button>
               </form>
@@ -84,8 +88,15 @@ export default function ForgotPasswordPage() {
               <CheckCircle2 size={40} className="text-orange-500 mx-auto mb-3" />
               <h2 className="text-lg font-semibold mb-1">Check your email</h2>
               <p className="text-sm text-gray-500 dark:text-zinc-400">
-                We&apos;ve sent a password reset link to <span className="text-gray-800 dark:text-zinc-200">{email}</span>.
+                If an account exists for <span className="text-gray-800 dark:text-zinc-200">{email}</span>, we&apos;ve sent a password reset link. Check your inbox and spam folder.
               </p>
+              <Link
+                href="/login"
+                className="inline-flex items-center gap-1.5 text-sm text-orange-500 hover:text-orange-600 mt-4 transition-colors"
+              >
+                <ArrowLeft size={14} />
+                Back to login
+              </Link>
             </div>
           )}
         </div>

@@ -77,10 +77,10 @@ export default function Navbar() {
           </Link>
 
           <Link 
-            href="/pricing" 
+            href="/shop" 
             className="text-gray-700 dark:text-white hover:text-orange-500 transition"
           >
-            Pricing
+            Shop
           </Link>
 
           <Link 
@@ -95,6 +95,13 @@ export default function Navbar() {
             className="text-gray-700 dark:text-white hover:text-orange-500 transition"
           >
             API Docs
+          </Link>
+
+          <Link 
+            href="/faq" 
+            className="text-gray-700 dark:text-white hover:text-orange-500 transition"
+          >
+            FAQ
           </Link>
 
           <Link 
@@ -176,16 +183,22 @@ export default function Navbar() {
               Home
             </Link>
             <Link 
-              href="/pricing" 
+              href="/shop" 
               className="text-gray-900 dark:text-white hover:text-orange-500 transition"
             >
-              Pricing
+              Shop
             </Link>
             <Link 
               href="/how-it-works" 
               className="text-gray-900 dark:text-white hover:text-orange-500 transition"
             >
               How it Works
+            </Link>
+            <Link 
+              href="/faq" 
+              className="text-gray-900 dark:text-white hover:text-orange-500 transition"
+            >
+              FAQ
             </Link>
             <Link 
               href="/contact" 
