@@ -1,10 +1,12 @@
 "use client";
 
-import { useEffect } from "react";
+import { Suspense, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useWallet } from "@/hooks/useWallet";
 
-export default function WalletCallbackPage() {
+// useSearchParams() requires a Suspense boundary so the page can
+// opt out of full static prerendering during `next build`.
+function WalletCallbackInner() {
     const router = useRouter();
 
     const params = useSearchParams();
@@ -35,11 +37,25 @@ export default function WalletCallbackPage() {
         }
 
         verify();
-    }, []);
+    }, [params, router, verifyDeposit]);
 
     return (
         <div className="flex h-screen items-center justify-center">
             Verifying payment...
         </div>
+    );
+}
+
+export default function WalletCallbackPage() {
+    return (
+        <Suspense
+            fallback={
+                <div className="flex h-screen items-center justify-center">
+                    Verifying payment...
+                </div>
+            }
+        >
+            <WalletCallbackInner />
+        </Suspense>
     );
 }
