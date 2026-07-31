@@ -1,10 +1,19 @@
 import { NestFactory } from '@nestjs/core';
-import { ValidationPipe } from '@nestjs/common';
+import { NestApplicationOptions, ValidationPipe } from '@nestjs/common';
 import helmet from 'helmet';
 import { AppModule } from './app.module';
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
+  // FIX: rawBody is required so the Paystack webhook endpoint can compute an
+  // exact HMAC-SHA512 signature over the original bytes.  Without this,
+  // `req.rawBody` is undefined and signature verification fails — which means
+  // Paystack webhooks would either be rejected or, worse, accepted on a
+  // re-serialised body that no longer matches the signature.
+  const options: NestApplicationOptions = {
+    rawBody: true,
+  };
+
+  const app = await NestFactory.create(AppModule, options);
 
   app.setGlobalPrefix('api/v1');
 

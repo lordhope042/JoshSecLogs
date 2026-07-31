@@ -510,16 +510,66 @@ export class MarketplaceService {
       (provider as any)?.status,
     );
 
-    await this.prisma.order.update({
-      where: {
-        id: order.id,
-      },
-      data: {
-        status,
-      },
-    });
+    // ── Auto-refund on terminal failure states ──
+    // When a virtual number times out without receiving an SMS (or
+    // the provider otherwise fails the activation), the user has
+    // paid for a number that delivered no value. Refund the full
+    // selling price back to their wallet so their balance is
+    // restored. This is idempotent: once refundedAt is set we never
+    // refund the same order twice, even if sync is called again.
+    const shouldRefund =
+      (status === OrderStatus.TIMEOUT ||
+        status === OrderStatus.FAILED) &&
+      order.refundedAt === null;
 
-    return { ...provider, mappedStatus: status };
+    if (shouldRefund) {
+      try {
+        await this.wallet.credit(
+          userId,
+          Number(order.sellingPriceNgn),
+          `Refund for timed-out ${order.service}`,
+        );
+
+        await this.prisma.order.update({
+          where: { id: order.id },
+          data: {
+            status,
+            refundedAt: new Date(),
+          },
+        });
+
+        this.logger.log(
+          `Auto-refunded order ${order.id} (status=${status}) — ₦${order.sellingPriceNgn} returned to user ${userId}.`,
+        );
+      } catch (err) {
+        // Don't swallow the status update if the refund fails —
+        // still persist the new status so the UI reflects reality,
+        // but log loudly so it can be reconciled manually.
+        this.logger.error(
+          `Refund failed for order ${order.id} on status=${status}: ${err instanceof Error ? err.message : String(err)}`,
+        );
+
+        await this.prisma.order.update({
+          where: { id: order.id },
+          data: { status },
+        });
+      }
+    } else {
+      await this.prisma.order.update({
+        where: {
+          id: order.id,
+        },
+        data: {
+          status,
+        },
+      });
+    }
+
+    return {
+      ...provider,
+      mappedStatus: status,
+      refunded: shouldRefund,
+    };
   }
 
   /* ============================================================
@@ -600,22 +650,47 @@ async sms(userId: string, orderId: string) {
       (provider as any)?.status,
     );
 
+    // Refund on a genuine cancellation OR a timeout. A timeout means
+    // the number expired without receiving an SMS — the user paid for
+    // a number that delivered no value, so their wallet should be
+    // restored. Guard with refundedAt so a second cancel/sync can't
+    // double-refund.
+    const shouldRefund =
+      (status === OrderStatus.CANCELLED ||
+        status === OrderStatus.TIMEOUT) &&
+      order.refundedAt === null;
+
     await this.prisma.order.update({
       where: {
         id: order.id,
       },
       data: {
         status,
+        ...(shouldRefund ? { refundedAt: new Date() } : {}),
       },
     });
 
-    // Refund only on a genuine, clean cancellation
-    if (status === OrderStatus.CANCELLED) {
-      await this.wallet.credit(
-        userId,
-        Number(order.sellingPriceNgn),
-        `Refund for cancelled ${order.service}`,
-      );
+    if (shouldRefund) {
+      try {
+        await this.wallet.credit(
+          userId,
+          Number(order.sellingPriceNgn),
+          status === OrderStatus.TIMEOUT
+            ? `Refund for timed-out ${order.service}`
+            : `Refund for cancelled ${order.service}`,
+        );
+      } catch (err) {
+        // Revert the refundedAt marker if the credit failed, so a
+        // later sync can retry the refund.
+        await this.prisma.order.update({
+          where: { id: order.id },
+          data: { refundedAt: null },
+        });
+        this.logger.error(
+          `Cancel refund failed for order ${order.id}: ${err instanceof Error ? err.message : String(err)}`,
+        );
+        throw err;
+      }
     }
 
     return {
@@ -623,7 +698,7 @@ async sms(userId: string, orderId: string) {
       providerStatus:
         (provider as any)?.status?.toUpperCase?.() ?? 'UNKNOWN',
       status,
-      refunded: status === OrderStatus.CANCELLED,
+      refunded: shouldRefund,
     };
   }
 

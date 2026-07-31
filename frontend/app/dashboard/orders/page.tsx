@@ -89,7 +89,16 @@ type OrderSmsState = {
 // Backend response shapes vary — try the flat cases first, then one
 // level of nesting under `data` (common with a NestJS interceptor
 // that wraps every response as { success, data } or similar).
+//
+// IMPORTANT: every access is null-safe. The backend sms() endpoint
+// returns { Data: [...] | null, Total: number } — when no SMS has
+// arrived yet `Data` is null and `Total` is 0. We must never throw
+// on a null/undefined/primitive response, or the whole orders page
+// crashes with "Cannot read properties of undefined".
 function extractSmsList(data: any): SmsMessage[] {
+  // Guard: anything that isn't a plain object (null, undefined,
+  // string, number, boolean) cannot contain SMS messages.
+  if (data == null || typeof data !== "object") return [];
   if (Array.isArray(data)) return data;
   if (Array.isArray(data?.messages)) return data.messages;
   if (Array.isArray(data?.sms)) return data.sms;
@@ -99,19 +108,35 @@ function extractSmsList(data: any): SmsMessage[] {
   if (Array.isArray(data?.data?.sms)) return data.data.sms;
 
   // Confirmed shape from this backend: { Data: [...] | null, Total: number }
+  // When Data is null (no SMS yet), fall through to return [].
   if (Array.isArray(data?.Data)) return data.Data;
-  if (data?.Data && (data.Data.text || data.Data.code)) return [data.Data];
+  if (data?.Data && typeof data.Data === "object" && !Array.isArray(data.Data) && (data.Data.text || data.Data.code)) {
+    return [data.Data];
+  }
 
   // Some 5sim-style providers return a single object per SMS instead
   // of an array — e.g. { text, code, created_at } directly, or
   // nested under `data`. Wrap it as a one-item list if it looks like
   // a message.
   const maybeSingle = data?.text || data?.code ? data : data?.data;
-  if (maybeSingle && (maybeSingle.text || maybeSingle.code)) {
+  if (maybeSingle && typeof maybeSingle === "object" && (maybeSingle.text || maybeSingle.code)) {
     return [maybeSingle];
   }
 
   return [];
+}
+
+// Safe check for the backend's "no SMS" sentinel shape
+// { Data: null, Total: 0 } — used to suppress the parse-miss warning
+// for the (very common) case of an active number that hasn't received
+// a code yet.
+function isNoSmsSentinel(data: any): boolean {
+  if (data == null || typeof data !== "object") return false;
+  const t = data.Total ?? data.total;
+  return (
+    (data.Data === null || data.data === null || data.sms === null || data.messages === null) &&
+    t === 0
+  );
 }
 
 function withFallbackIds(list: any[]): SmsMessage[] {
@@ -145,7 +170,15 @@ export default function OrdersPage() {
   async function loadOrders() {
     try {
       const { data } = await api.get("/marketplace/orders");
-      setOrders(data);
+      // Backend returns a flat array, but guard against wrapped shapes too.
+      const list: Order[] = Array.isArray(data)
+        ? data
+        : Array.isArray(data?.data)
+          ? data.data
+          : Array.isArray(data?.orders)
+            ? data.orders
+            : [];
+      setOrders(list);
     } catch (err) {
       console.error(err);
     } finally {
@@ -280,7 +313,8 @@ export default function OrdersPage() {
       if (
         list.length === 0 &&
         data != null &&
-        !(("Data" in data && data.Total === 0) || ("total" in data && data.total === 0))
+        typeof data === "object" &&
+        !isNoSmsSentinel(data)
       ) {
         // eslint-disable-next-line no-console
         console.warn(

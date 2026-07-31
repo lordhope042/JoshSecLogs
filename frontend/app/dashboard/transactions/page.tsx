@@ -248,6 +248,13 @@ export default function TransactionsPage() {
     page: 1, limit: 10, total: 0, totalPages: 1,
   });
 
+  // Bulletproof accessor — if pagination ever becomes undefined, fall back to
+  // safe defaults so `pagination.total` can never throw "Cannot read properties
+  // of undefined (reading 'total')".
+  const safePagination: PaginationMeta = pagination ?? {
+    page: 1, limit: 10, total: 0, totalPages: 1,
+  };
+
   const loadInFlight = useRef(false);
   const pendingTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -255,15 +262,39 @@ export default function TransactionsPage() {
   const loadTransactions = useCallback(async (page = 1) => {
     setLoading(true);
     try {
-      const response = await getTransactions({
+      const response: any = await getTransactions({
         page,
         limit: 10,
         ...(typeFilter && { type: typeFilter }),
         ...(statusFilter && { status: statusFilter }),
         ...(searchQuery && { search: searchQuery }),
       });
-      setTransactions(response.data);
-      setPagination(response.meta);
+
+      // Backend returns { success, data: [...] } with NO meta field.
+      // Guard against every possible shape so pagination.total never crashes.
+      const raw: any = response?.data ?? response;
+      const list: Transaction[] = Array.isArray(raw)
+        ? raw
+        : Array.isArray(raw?.data)
+          ? raw.data
+          : Array.isArray(raw?.transactions)
+            ? raw.transactions
+            : [];
+
+      const meta: PaginationMeta | undefined =
+        response?.meta ?? raw?.meta ?? undefined;
+
+      setTransactions(list);
+      setPagination(
+        meta && typeof meta.total === "number"
+          ? meta
+          : {
+              page,
+              limit: 10,
+              total: list.length,
+              totalPages: Math.max(1, Math.ceil(list.length / 10)),
+            },
+      );
     } catch (err) {
       console.error("Failed to load transactions:", err);
       toast.error("Couldn't load transactions.");
@@ -274,8 +305,9 @@ export default function TransactionsPage() {
 
   const loadWallet = useCallback(async () => {
     try {
-      const response = await getWallet();
-      setWallet(response.data);
+      const response: any = await getWallet();
+      const w: Wallet | undefined = response?.data ?? response;
+      setWallet(w && typeof w === "object" ? w : null);
     } catch (err) {
       console.error("Failed to load wallet:", err);
     }
@@ -462,7 +494,7 @@ export default function TransactionsPage() {
           />
           <StatCard
             title="Transactions"
-            value={pagination.total}
+            value={safePagination.total}
             icon={<Activity size={20} />}
             color="blue"
             subtitle="All time"
@@ -600,25 +632,25 @@ export default function TransactionsPage() {
           </div>
 
           {/* Pagination */}
-          {pagination.totalPages > 1 && (
+          {safePagination.totalPages > 1 && (
             <div className="flex items-center justify-between border-t border-gray-100 dark:border-zinc-800 bg-gray-50/50 dark:bg-zinc-900/50 px-6 py-4">
               <p className="text-xs text-gray-500 dark:text-zinc-400">
-                Showing {((pagination.page - 1) * 10) + 1} - {Math.min(pagination.page * 10, pagination.total)} of {pagination.total}
+                Showing {((safePagination.page - 1) * 10) + 1} - {Math.min(safePagination.page * 10, safePagination.total)} of {safePagination.total}
               </p>
               <div className="flex items-center gap-2">
                 <button
-                  onClick={() => handlePageChange(pagination.page - 1)}
-                  disabled={pagination.page <= 1 || loading}
+                  onClick={() => handlePageChange(safePagination.page - 1)}
+                  disabled={safePagination.page <= 1 || loading}
                   className="rounded-lg border border-gray-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 p-2 text-gray-600 dark:text-zinc-400 transition hover:bg-gray-50 dark:hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-40"
                 >
                   <ChevronLeft size={16} />
                 </button>
                 <span className="px-3 text-xs font-medium text-gray-700 dark:text-zinc-300">
-                  Page {pagination.page} of {pagination.totalPages}
+                  Page {safePagination.page} of {safePagination.totalPages}
                 </span>
                 <button
-                  onClick={() => handlePageChange(pagination.page + 1)}
-                  disabled={pagination.page >= pagination.totalPages || loading}
+                  onClick={() => handlePageChange(safePagination.page + 1)}
+                  disabled={safePagination.page >= safePagination.totalPages || loading}
                   className="rounded-lg border border-gray-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 p-2 text-gray-600 dark:text-zinc-400 transition hover:bg-gray-50 dark:hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-40"
                 >
                   <ChevronRight size={16} />

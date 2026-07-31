@@ -2,13 +2,15 @@ import {
   Body,
   Controller,
   Get,
+  Headers,
+  HttpCode,
   Param,
   Post,
   Req,
   UseGuards,
 } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
-import { Request } from 'express';
+import type { Request } from 'express';
 
 import { PaymentsService } from './payments.service';
 
@@ -28,15 +30,38 @@ interface RequestWithUser extends Request {
 }
 
 @Controller('payments')
-@UseGuards(AuthGuard('jwt'))
 export class PaymentsController {
   constructor(private readonly paymentsService: PaymentsService) {}
+
+  // -----------------------------------------------------------------------
+  // PUBLIC WEBHOOK — Paystack calls this; must NOT be behind JWT guard.
+  // The raw request body is required for HMAC signature verification.
+  // -----------------------------------------------------------------------
+  @Post('webhook')
+  @HttpCode(200)
+  async webhook(
+    @Req() req: Request,
+    @Headers('x-paystack-signature') signature: string,
+  ) {
+    // req.body is the parsed JSON; req.rawBody (if available) is the raw
+    // buffer needed for an exact HMAC match.
+    const rawBody: Buffer =
+      (req as any).rawBody ??
+      Buffer.from(JSON.stringify(req.body ?? {}));
+
+    return this.paymentsService.webhook(
+      req.body,
+      signature,
+      rawBody,
+    );
+  }
 
   /*
   =====================================
       INITIALIZE PAYMENT
   =====================================
   */
+  @UseGuards(AuthGuard('jwt'))
   @Post('initialize')
   async initialize(
     @Req() req: RequestWithUser,
@@ -56,6 +81,7 @@ export class PaymentsController {
       VERIFY PAYMENT
   =====================================
   */
+  @UseGuards(AuthGuard('jwt'))
   @Post('verify')
   async verify(
     @Req() req: RequestWithUser,
@@ -72,6 +98,7 @@ export class PaymentsController {
       PAYMENT HISTORY
   =====================================
   */
+  @UseGuards(AuthGuard('jwt'))
   @Get()
   async history(@Req() req: RequestWithUser) {
     return this.paymentsService.history(req.user.id);
@@ -82,6 +109,7 @@ export class PaymentsController {
       SINGLE PAYMENT
   =====================================
   */
+  @UseGuards(AuthGuard('jwt'))
   @Get(':reference')
   async payment(
     @Req() req: RequestWithUser,
