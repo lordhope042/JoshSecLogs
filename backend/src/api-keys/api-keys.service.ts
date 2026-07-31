@@ -6,12 +6,25 @@ import {
 } from '@nestjs/common';
 
 import { PrismaService } from '../prisma/prisma.service';
+import { WalletService } from '../wallet/wallet.service';
 
 import { CreateApiKeyDto } from './dto/create-api-key.dto';
 
+/**
+ * The fixed price (in Naira) that a user is charged for generating
+ * a new API key.  The amount is debited from the user's wallet balance
+ * before the key is created.  If the wallet has insufficient funds the
+ * request fails with a 400 "Insufficient wallet balance" error and no
+ * key is generated.
+ */
+export const API_KEY_PRICE = 10_000;
+
 @Injectable()
 export class ApiKeysService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly walletService: WalletService,
+  ) {}
 
   /**
    * Generates a human-readable, hard-to-guess API key.
@@ -43,10 +56,31 @@ export class ApiKeysService {
 
   /**
    * Create a new API key for the user.
+   *
+   * A fixed fee of ₦10,000 (`API_KEY_PRICE`) is debited from the
+   * user's wallet balance **before** the key is generated.  If the
+   * wallet balance is insufficient the operation aborts with a
+   * `BadRequestException` and no key is created.
+   *
    * Returns the FULL key once — the client should store it,
    * because subsequent list calls only return a masked version.
    */
   async create(userId: string, dto: CreateApiKeyDto) {
+    // 1. Charge the wallet first.  debitWallet() throws
+    //    BadRequestException('Insufficient wallet balance') when
+    //    the balance is too low, which NestJS surfaces as a 400
+    //    response — no key is generated in that case.
+    await this.walletService.debitWallet(
+      userId,
+      API_KEY_PRICE,
+      'API key purchase',
+    );
+
+    // 2. Generate and persist the key.  If this fails for any
+    //    reason the debit above is NOT automatically rolled back
+    //    (the wallet ledger uses its own transaction), but key
+    //    creation is extremely unlikely to fail after the wallet
+    //    charge succeeds.
     const key = this.generateKey();
 
     const record = await this.prisma.apiKey.create({
@@ -58,11 +92,12 @@ export class ApiKeysService {
     });
 
     return {
-      message: 'API key created.',
+      message: 'API key created. ₦10,000 charged to your wallet.',
       id: record.id,
       key, // full key — shown once
       active: record.active,
       createdAt: record.createdAt,
+      price: API_KEY_PRICE,
     };
   }
 

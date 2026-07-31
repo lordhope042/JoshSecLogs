@@ -20,6 +20,33 @@ type WizardStep = 1 | 2 | 3 | 4;
 
 const STEP_LABELS = ["Platform", "Category", "Audience", "Details"];
 
+/*
+=====================================
+FOLLOWER TIER QUICK-PICKS
+
+These mirror the exact tier "floors" the buyer-side card grid
+(buildStaticStockGroups in SocialLogCard.tsx) uses to render one
+card per tier. Constraining the admin wizard to these values
+guarantees that every Twitter / TikTok log created lands on a
+visible card on the user side — a free-text number that doesn't
+exactly equal one of these floors would otherwise be invisible.
+=====================================
+*/
+const TWITTER_FOLLOWER_TIERS: { value: number; label: string }[] = [
+  { value: 0, label: "Empty Aged" },
+  { value: 100, label: "100+" },
+  { value: 200, label: "200+" },
+  { value: 500, label: "500+" },
+  { value: 1000, label: "1K+" },
+];
+
+const TIKTOK_FOLLOWER_TIERS: { value: number; label: string }[] = [
+  { value: 100, label: "100+" },
+  { value: 200, label: "200+" },
+  { value: 500, label: "500+" },
+  { value: 1000, label: "1K+" },
+];
+
 interface WizardState {
   group?: WizardGroup;
   selectedPageTypes: SocialLogPageType[];
@@ -192,7 +219,19 @@ export default function AddSocialLogModal({ open, onClose, onCreated }: AddSocia
       }));
     }
 
-    return [{ platform: group.platforms[0], category: group.category as string, label: group.label }];
+    // Default fallback — covers TWITTER, TELEGRAM, MAIL, etc.
+    // Carry the selected follower tier (if any) so follower-based
+    // categories like TWITTER_FOLLOWERS land on the right card.
+    const fallbackFollowers =
+      group.hasFollowers && wizard.followers !== undefined ? wizard.followers : undefined;
+    return [
+      {
+        platform: group.platforms[0],
+        category: group.category as string,
+        followers: fallbackFollowers,
+        label: group.label,
+      },
+    ];
   }, [group, needsPlatformChoice, wizard]);
 
   const needsSubTypeChoice = !!(group?.instagramSubTypes || group?.vpnTypes || group?.tutorialTypes || group?.websiteTypes);
@@ -666,13 +705,51 @@ export default function AddSocialLogModal({ open, onClose, onCreated }: AddSocia
             <div className="space-y-4">
               {showFollowers && (
                 <div>
-                  <label className="mb-2 block text-sm font-medium text-gray-700 dark:text-zinc-300">Follower Count</label>
-                  <input
-                    type="number"
-                    value={wizard.followers ?? ""}
-                    onChange={(e) => setWizard((s) => ({ ...s, followers: Number(e.target.value) }))}
-                    className="w-full rounded-xl border border-gray-300 dark:border-zinc-700 bg-gray-100 dark:bg-zinc-800 px-4 py-3 text-gray-900 dark:text-white"
-                  />
+                  <label className="mb-2 block text-sm font-medium text-gray-700 dark:text-zinc-300">
+                    {group.value === "TWITTER" || group.value === "TIKTOK" ? "Follower Tier" : "Follower Count"}
+                  </label>
+                  {group.value === "TWITTER" ? (
+                    <div className="flex flex-wrap gap-2">
+                      {TWITTER_FOLLOWER_TIERS.map((tier) => (
+                        <button
+                          key={tier.value}
+                          type="button"
+                          onClick={() => setWizard((s) => ({ ...s, followers: tier.value }))}
+                          className={`rounded-xl border px-4 py-2.5 text-sm font-medium transition ${
+                            wizard.followers === tier.value
+                              ? "border-orange-500 bg-orange-500/10 text-orange-600 dark:text-orange-400"
+                              : "border-gray-300 dark:border-zinc-700 bg-gray-100 dark:bg-zinc-800 text-gray-600 dark:text-zinc-400 hover:border-zinc-500"
+                          }`}
+                        >
+                          {tier.label}
+                        </button>
+                      ))}
+                    </div>
+                  ) : group.value === "TIKTOK" && wizard.includeFollowerTier ? (
+                    <div className="flex flex-wrap gap-2">
+                      {TIKTOK_FOLLOWER_TIERS.map((tier) => (
+                        <button
+                          key={tier.value}
+                          type="button"
+                          onClick={() => setWizard((s) => ({ ...s, followers: tier.value }))}
+                          className={`rounded-xl border px-4 py-2.5 text-sm font-medium transition ${
+                            wizard.followers === tier.value
+                              ? "border-orange-500 bg-orange-500/10 text-orange-600 dark:text-orange-400"
+                              : "border-gray-300 dark:border-zinc-700 bg-gray-100 dark:bg-zinc-800 text-gray-600 dark:text-zinc-400 hover:border-zinc-500"
+                          }`}
+                        >
+                          {tier.label}
+                        </button>
+                      ))}
+                    </div>
+                  ) : (
+                    <input
+                      type="number"
+                      value={wizard.followers ?? ""}
+                      onChange={(e) => setWizard((s) => ({ ...s, followers: Number(e.target.value) }))}
+                      className="w-full rounded-xl border border-gray-300 dark:border-zinc-700 bg-gray-100 dark:bg-zinc-800 px-4 py-3 text-gray-900 dark:text-white"
+                    />
+                  )}
                 </div>
               )}
               <div>
