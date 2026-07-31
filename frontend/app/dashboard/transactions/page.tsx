@@ -99,7 +99,12 @@ interface WalletResponse {
 }
 
 interface DepositResponse {
-  data: { authorizationUrl: string };
+  success: boolean;
+  reference: string;
+  authorizationUrl: string;
+  accessCode: string;
+  // Some gateways / wrappers nest under `data` — kept for safety.
+  data?: { authorizationUrl: string; authorization_url?: string };
 }
 
 interface SingleTransactionResponse {
@@ -377,11 +382,20 @@ export default function TransactionsPage() {
     if (funding) return;
     setFunding(true);
     try {
-      const response = await initializeDepositApi(amount);
-      if (!response.data?.authorizationUrl) throw new Error("No authorization URL");
+      const response: any = await initializeDepositApi(amount);
+      // The inline apiClient has a response interceptor that unwraps
+      // `response.data`, so `response` IS the backend JSON body already.
+      // The backend returns { success, reference, authorizationUrl, accessCode }
+      // with authorizationUrl at the top level — NOT nested under `.data`.
+      const authUrl =
+        response?.authorizationUrl ??
+        response?.data?.authorizationUrl ??
+        response?.authorization_url ??
+        response?.data?.authorization_url;
+      if (!authUrl) throw new Error("No authorization URL");
       setDepositOpen(false);
       setDepositAmount("");
-      window.location.assign(response.data.authorizationUrl);
+      window.location.assign(authUrl);
     } catch (err) {
       console.error("Deposit failed:", err);
       toast.error("Couldn't start the deposit. Please try again.");

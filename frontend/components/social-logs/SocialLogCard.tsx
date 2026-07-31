@@ -159,6 +159,30 @@ const STATIC_LISTING_TYPES: StaticListingType[] = [
   { category: "WEBSITE_CREATION", websiteType: "BOOSTING_WEBSITE" },
 ];
 
+/*
+=====================================
+FOLLOWER-TIER BUCKETING HELPERS
+
+The *_FOLLOWERS categories use a fixed set of tier "floors"
+(0, 100, 200, 500, 1000 for Twitter; 100, 200, 500, 1000 for
+TikTok). A real log may carry a `followers` value that doesn't
+exactly equal one of these floors (e.g. the admin typed 350, or
+the column is null because an older entry never set it). To make
+sure every follower-tier log still renders on a card, we bucket
+each log into the nearest tier floor >= its follower count, and
+null/undefined into the lowest tier.
+=====================================
+*/
+const FOLLOWER_TIER_FLOORS: Partial<Record<SocialLogCategoryValue, number>> = {
+  TWITTER_FOLLOWERS: 0,
+  TIKTOK_FOLLOWERS: 100,
+};
+
+const FOLLOWER_TIER_FLOORS_ARRAY: Partial<Record<SocialLogCategoryValue, number[]>> = {
+  TWITTER_FOLLOWERS: [0, 100, 200, 500, 1000],
+  TIKTOK_FOLLOWERS: [100, 200, 500, 1000],
+};
+
 export function buildStaticStockGroups(logs: SocialLog[]): SocialLogStockGroup[] {
   return STATIC_LISTING_TYPES.map((type) => {
     const matching = logs.filter((l) => {
@@ -170,7 +194,26 @@ export function buildStaticStockGroups(logs: SocialLog[]): SocialLogStockGroup[]
       if (type.vpnType && l.vpnType !== type.vpnType) return false;
       if (type.tutorialType && l.tutorialType !== type.tutorialType) return false;
       if (type.websiteType && l.websiteType !== type.websiteType) return false;
-      if (type.followers !== undefined && l.followers !== type.followers) return false;
+      // For *_FOLLOWERS tiers we need resilient bucketing: a log whose
+      // `followers` is null OR doesn't exactly equal the tier value would
+      // otherwise be invisible. Bucket it into the nearest tier so every
+      // Twitter / TikTok / follower-tier log always renders on a card.
+      if (type.followers !== undefined) {
+        const lf = l.followers;
+        if (lf === null || lf === undefined) {
+          // null/undefined followers only match the lowest tier (0 / 100)
+          return type.followers === FOLLOWER_TIER_FLOORS[type.category];
+        }
+        if (lf === type.followers) return true;
+        // Bucket into the nearest tier: a log with 350 followers should
+        // show on the 200 tier (the next-lower tier floor).
+        const floors = FOLLOWER_TIER_FLOORS_ARRAY[type.category];
+        if (floors) {
+          const nearest = floors.filter((f) => lf >= f).pop() ?? floors[0];
+          return nearest === type.followers;
+        }
+        return false;
+      }
       return true;
     });
 
