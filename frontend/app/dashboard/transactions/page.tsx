@@ -60,7 +60,7 @@ apiClient.interceptors.response.use(
 // =====================================
 // TYPES (inline)
 // =====================================
-type TransactionType = "credit" | "debit" | "refund" | "purchase";
+type TransactionType = "credit" | "debit" | "refund" | "purchase" | "deposit" | "transfer";
 type TransactionStatus = "pending" | "success" | "failed" | "cancelled";
 
 interface Transaction {
@@ -74,6 +74,19 @@ interface Transaction {
   metadata?: Record<string, any>;
   createdAt: string;
   updatedAt: string;
+}
+
+/**
+ * Normalizes a backend enum value (which Prisma returns in UPPERCASE,
+ * e.g. "SUCCESS", "REFUND", "PENDING") to the lowercase string the
+ * frontend's statusConfig / typeConfig maps expect.
+ *
+ * Without this, `statusConfig["SUCCESS"]` is undefined and every
+ * transaction falls back to the "pending" badge — even successful ones.
+ */
+function normalizeEnum(value: string | undefined | null): string {
+  if (!value) return "";
+  return value.toLowerCase();
 }
 
 interface Wallet {
@@ -189,6 +202,18 @@ const typeConfig: Record<
     sign: "-",
     icon: <ShoppingBag size={18} />,
   },
+  deposit: {
+    color: "text-emerald-400",
+    badge: "bg-emerald-500/10 text-emerald-400 border-emerald-500/20",
+    sign: "+",
+    icon: <ArrowDownLeft size={18} />,
+  },
+  transfer: {
+    color: "text-blue-400",
+    badge: "bg-blue-500/10 text-blue-400 border-blue-500/20",
+    sign: "-",
+    icon: <ArrowUpRight size={18} />,
+  },
 };
 
 /* ───────────────────────────────────────────
@@ -278,13 +303,24 @@ export default function TransactionsPage() {
       // Backend returns { success, data: [...] } with NO meta field.
       // Guard against every possible shape so pagination.total never crashes.
       const raw: any = response?.data ?? response;
-      const list: Transaction[] = Array.isArray(raw)
+      const rawList: any[] = Array.isArray(raw)
         ? raw
         : Array.isArray(raw?.data)
           ? raw.data
           : Array.isArray(raw?.transactions)
             ? raw.transactions
             : [];
+
+      // Normalize backend UPPERCASE enum values (e.g. "SUCCESS", "REFUND")
+      // to the lowercase keys our statusConfig / typeConfig maps use.
+      // Without this, every transaction falls back to "pending" because
+      // statusConfig["SUCCESS"] is undefined.
+      const list: Transaction[] = rawList.map((t: any) => ({
+        ...t,
+        status: normalizeEnum(t.status) as TransactionStatus,
+        type: normalizeEnum(t.type) as TransactionType,
+        amount: Number(t.amount) ?? 0,
+      }));
 
       const meta: PaginationMeta | undefined =
         response?.meta ?? raw?.meta ?? undefined;
@@ -406,8 +442,15 @@ export default function TransactionsPage() {
   // ---- VIEW TRANSACTION DETAIL ----
   async function handleViewDetails(reference: string) {
     try {
-      const response = await getTransactionByReference(reference);
-      setSelectedTx(response.data);
+      const response: any = await getTransactionByReference(reference);
+      const raw: any = response?.data ?? response;
+      // Normalize UPPERCASE backend enums to lowercase for our config maps.
+      setSelectedTx({
+        ...raw,
+        status: normalizeEnum(raw?.status) as TransactionStatus,
+        type: normalizeEnum(raw?.type) as TransactionType,
+        amount: Number(raw?.amount) ?? 0,
+      });
       setDetailOpen(true);
     } catch (err) {
       toast.error("Failed to load transaction details");
