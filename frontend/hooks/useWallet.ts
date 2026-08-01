@@ -1,313 +1,228 @@
 "use client";
 
-import {
-  useCallback,
-  useEffect,
-  useState,
-} from "react";
+/**
+ * useWallet — central wallet state for the dashboard.
+ *
+ * Exposes everything the dashboard pages need:
+ *   - balance / wallet / transactions / loading / funding  (state)
+ *   - loadWallet / loadBalance / loadTransactions           (fetchers)
+ *   - initializeDeposit(amount)                              (start Paystack flow)
+ *   - verifyDeposit(reference)                               (confirm + credit wallet)
+ *
+ * The deposit bug this hook fixes: previously the wallet page returned from
+ * Paystack and only *reloaded* the wallet after a delay, hoping the backend
+ * webhook had already credited the balance. `verifyDeposit` instead actively
+ * tells the backend "verify this reference with Paystack and credit me", then
+ * reloads — so the balance updates even when the webhook is slow or missing.
+ */
+import { useCallback, useState } from "react";
+import { toast } from "sonner";
 
-import { WalletAPI } from "@/services/wallet";
-import { PaymentsAPI } from "@/services/payments";
+import api from "@/lib/axios";
 
-import type {
-  Wallet,
-  WalletTransaction,
-} from "@/types/wallet";
+// ---------------------------------------------------------------------------
+// Types
+// ---------------------------------------------------------------------------
+export interface Wallet {
+  id?: string;
+  userId?: string;
+  balance: number;
+  currency: string;
+}
 
+export interface WalletTransaction {
+  id: string;
+  reference: string;
+  type: string;
+  amount: number;
+  currency: string;
+  status: string;
+  description?: string;
+  metadata?: Record<string, any>;
+  createdAt: string;
+  updatedAt?: string;
+}
+
+interface DepositResult {
+  success: boolean;
+  reference: string;
+  authorizationUrl?: string;
+  authorization_url?: string;
+  accessCode?: string;
+  data?: {
+    authorizationUrl?: string;
+    authorization_url?: string;
+    reference?: string;
+  };
+}
+
+// Backend wraps payloads in `{ data: ... }` most of the time, but a few
+// endpoints return bare objects. These helpers normalise both shapes.
+function unwrap<T>(res: any): T {
+  return (res && typeof res === "object" && "data" in res ? res.data : res) as T;
+}
+
+function toNumber(v: any): number {
+  if (v === null || v === undefined) return 0;
+  const n = typeof v === "string" ? parseFloat(v) : Number(v);
+  return Number.isFinite(n) ? n : 0;
+}
+
+// ---------------------------------------------------------------------------
+// Hook
+// ---------------------------------------------------------------------------
 export function useWallet() {
-  /*
-  =====================================
-  STATE
-  =====================================
-  */
+  const [wallet, setWallet] = useState<Wallet | null>(null);
+  const [transactions, setTransactions] = useState<WalletTransaction[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [funding, setFunding] = useState(false);
 
-  const [wallet, setWallet] =
-    useState<Wallet | null>(null);
+  const balance = wallet?.balance ?? 0;
 
-  const [balance, setBalance] =
-    useState(0);
+  /**
+   * GET /wallet → { data: { balance, currency, ... } } (or bare object).
+   */
+  const loadWallet = useCallback(async () => {
+    try {
+      const res: any = await api.get("/wallet");
+      const w = unwrap<Wallet | null>(res);
+      if (w && typeof w === "object") {
+        setWallet({
+          ...w,
+          balance: toNumber((w as any).balance),
+          currency: (w as any).currency || "₦",
+        });
+      }
+    } catch (err) {
+      console.error("useWallet.loadWallet failed:", err);
+    }
+  }, []);
 
-  const [transactions, setTransactions] =
-    useState<WalletTransaction[]>([]);
+  // Alias used by some pages (buy-number, marketplace).
+  const loadBalance = loadWallet;
 
-  const [loading, setLoading] =
-    useState(false);
+  /**
+   * GET /wallet/transactions → { data: [...] } | [...] | { transactions: [...] }
+   */
+  const loadTransactions = useCallback(async () => {
+    try {
+      const res: any = await api.get("/wallet/transactions");
+      const raw = unwrap<any>(res);
+      const list: WalletTransaction[] = Array.isArray(raw)
+        ? raw
+        : Array.isArray(raw?.data)
+          ? raw.data
+          : Array.isArray(raw?.transactions)
+            ? raw.transactions
+            : [];
+      setTransactions(
+        list.map((t) => ({
+          ...t,
+          amount: toNumber(t.amount),
+        })),
+      );
+    } catch (err) {
+      console.error("useWallet.loadTransactions failed:", err);
+    }
+  }, []);
 
-  const [funding, setFunding] =
-    useState(false);
+  /**
+   * Convenience: reload both at once.
+   */
+  const reload = useCallback(async () => {
+    setLoading(true);
+    try {
+      await Promise.all([loadWallet(), loadTransactions()]);
+    } finally {
+      setLoading(false);
+    }
+  }, [loadWallet, loadTransactions]);
 
-  const [verifying, setVerifying] =
-    useState(false);
-
-  /*
-  =====================================
-  LOAD WALLET
-  =====================================
-  */
-
-  const loadWallet = useCallback(
-    async () => {
+  /**
+   * POST /payments/initialize { amount } → start a Paystack deposit.
+   * Returns the normalized deposit result (with `authorizationUrl`).
+   */
+  const initializeDeposit = useCallback(
+    async (amount: number): Promise<DepositResult> => {
+      setFunding(true);
       try {
-        const response =
-          await WalletAPI.balance();
-
-        const walletData =
-          response.data?.data ??
-          response.data;
-
-        setWallet(walletData);
-
-        setBalance(
-          Number(
-            walletData?.balance ?? 0,
-          ),
-        );
-
-        return walletData;
-      } catch (error) {
-        console.error(
-          "Failed to load wallet:",
-          error,
-        );
-
-        setWallet(null);
-        setBalance(0);
-
-        return null;
+        const res: any = await api.post("/payments/initialize", { amount });
+        const data = unwrap<DepositResult>(res);
+        return data;
+      } finally {
+        setFunding(false);
       }
     },
     [],
   );
 
-  /*
-  =====================================
-  LOAD BALANCE
-  =====================================
-  */
-
-  const loadBalance =
-    useCallback(async () => {
+  /**
+   * POST /payments/verify { reference } → ask the backend to verify the
+   * Paystack payment and credit the wallet, then reload wallet + transactions
+   * so the new balance is visible immediately.
+   *
+   * This is the function that was effectively missing from the deposit return
+   * flow. Without it the balance only updates if the Paystack webhook lands
+   * first — which is why deposits appeared to succeed (admin shows "Success")
+   * but the user-side balance never moved.
+   *
+   * Returns the backend response so callers can inspect it (e.g. whether the
+   * backend reported success:false, which means the credit did NOT happen and
+   * should be surfaced to the user rather than silently swallowed).
+   */
+  const verifyDeposit = useCallback(
+    async (reference: string): Promise<any> => {
+      if (!reference) throw new Error("Missing payment reference");
+      let verifyRes: any = null;
       try {
-        const response =
-          await WalletAPI.balance();
-
-        const walletData =
-          response.data?.data ??
-          response.data;
-
-        const walletBalance =
-          Number(
-            walletData?.balance ?? 0,
-          );
-
-        setBalance(walletBalance);
-
-        return walletBalance;
-      } catch (error) {
-        console.error(
-          "Failed to load balance:",
-          error,
+        verifyRes = await api.post("/payments/verify", { reference });
+      } catch (err: any) {
+        // Some backends return 200 with success:false, others throw on a
+        // not-yet-verified payment. We still reload so the UI shows current
+        // state, then rethrow so the caller can surface the failure.
+        await Promise.all([loadWallet(), loadTransactions()]);
+        const status = err?.response?.status;
+        const msg =
+          err?.response?.data?.message ||
+          err?.response?.data?.error ||
+          err?.message ||
+          "Verification failed";
+        const e: any = new Error(
+          status === 400
+            ? `Deposit verification failed: ${msg}. The payment may not have completed on Paystack.`
+            : status === 401
+              ? "Your session expired. Please log in again."
+              : status && status >= 500
+                ? "The server couldn't verify your deposit right now. If you were charged, your balance will update shortly."
+                : `Could not verify deposit: ${msg}`,
         );
-
-        setBalance(0);
-
-        return 0;
-      }
-    }, []);
-
-  /*
-  =====================================
-  LOAD TRANSACTIONS
-  =====================================
-  */
-
-  const loadTransactions =
-    useCallback(async () => {
-      try {
-        const response =
-          await WalletAPI.transactions();
-
-        const list =
-          Array.isArray(
-            response.data,
-          )
-            ? response.data
-            : response.data
-                ?.transactions ??
-              response.data?.data ??
-              [];
-
-        setTransactions(list);
-
-        return list;
-      } catch (error) {
-        console.error(
-          "Failed to load transactions:",
-          error,
-        );
-
-        setTransactions([]);
-
-        return [];
-      }
-    }, []);
-
-  /*
-  =====================================
-  LOAD EVERYTHING
-  =====================================
-  */
-
-  const load = useCallback(
-    async () => {
-      try {
-        setLoading(true);
-
-        await Promise.all([
-          loadWallet(),
-          loadTransactions(),
-        ]);
+        e.status = status;
+        e.raw = err?.response?.data;
+        throw e;
       } finally {
-        setLoading(false);
+        // Always reload so the UI reflects whatever the backend now reports.
+        await Promise.all([loadWallet(), loadTransactions()]);
       }
+      return verifyRes;
     },
-    [
-      loadWallet,
-      loadTransactions,
-    ],
+    [loadWallet, loadTransactions],
   );
 
-  /*
-  =====================================
-  LOAD SINGLE TRANSACTION
-  =====================================
-  */
-
-  const loadTransaction =
-    useCallback(
-      async (
-        reference: string,
-      ) => {
-        const response =
-          await WalletAPI.transaction(
-            reference,
-          );
-
-        return (
-          response.data?.data ??
-          response.data
-        );
-      },
-      [],
-    );
-
-  /*
-  =====================================
-  INITIALIZE DEPOSIT
-  =====================================
-  */
-
-  const initializeDeposit =
-    useCallback(
-      async (
-        amount: number,
-      ) => {
-        try {
-          setFunding(true);
-
-          const response =
-            await PaymentsAPI.initialize(
-              amount,
-            );
-
-          return (
-            response.data?.data ??
-            response.data
-          );
-        } finally {
-          setFunding(false);
-        }
-      },
-      [],
-    );
-
-  /*
-  =====================================
-  VERIFY PAYMENT
-  =====================================
-  */
-
-  const verifyDeposit =
-    useCallback(
-      async (
-        reference: string,
-      ) => {
-        try {
-          setVerifying(true);
-
-          const response =
-            await PaymentsAPI.verify(
-              reference,
-            );
-
-          await load();
-
-          return (
-            response.data?.data ??
-            response.data
-          );
-        } finally {
-          setVerifying(false);
-        }
-      },
-      [load],
-    );
-
-  /*
-  =====================================
-  REFRESH
-  =====================================
-  */
-
-  const refresh =
-    useCallback(async () => {
-      await load();
-    }, [load]);
-
-  /*
-  =====================================
-  AUTO LOAD
-  =====================================
-  */
-
-  useEffect(() => {
-    load();
-  }, [load]);
-
-  /*
-  =====================================
-  EXPORTS
-  =====================================
-  */
-
   return {
+    // state
     wallet,
     balance,
     transactions,
-
     loading,
     funding,
-    verifying,
-
-    load,
-    refresh,
-
+    // actions
     loadWallet,
     loadBalance,
     loadTransactions,
-    loadTransaction,
-
+    reload,
     initializeDeposit,
     verifyDeposit,
   };
 }
+
+export default useWallet;
