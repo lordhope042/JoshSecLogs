@@ -1,97 +1,78 @@
 "use client";
 
-import {
-  Wallet as WalletIcon,
-  RefreshCcw,
-  PlusCircle,
-  Loader2,
-} from "lucide-react";
+import { Wallet as WalletIcon, RefreshCw, Plus, Loader2 } from "lucide-react";
 
-import { Wallet } from "@/types/wallet";
+import type { Wallet } from "@/hooks/useWallet";
+
+function formatCurrency(amount: number, currency = "₦") {
+  return `${currency}${Number(amount || 0).toLocaleString("en-NG", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  })}`;
+}
 
 interface WalletBalanceProps {
   wallet: Wallet | null;
-  loading?: boolean;
-  refreshing?: boolean;
-  onRefresh?: () => void;
+  loading: boolean;
+  refreshing: boolean;
+  onRefresh: () => void;
   onDeposit: () => void;
 }
 
 export default function WalletBalance({
   wallet,
-  loading = false,
-  refreshing = false,
+  loading,
+  refreshing,
   onRefresh,
   onDeposit,
 }: WalletBalanceProps) {
-  // Handle different response structures
-  const balance = Number(wallet?.balance ?? 0);
-  const updatedAt = wallet?.updatedAt;
+  const balance = wallet?.balance ?? 0;
+  const currency = wallet?.currency || "₦";
 
   return (
-    <div className="relative overflow-hidden rounded-3xl border border-orange-500/20 bg-gradient-to-br from-gray-50 dark:from-[#111827] via-gray-50 dark:via-[#18181b] to-white dark:to-[#09090b] p-8 shadow-xl">
-      <div className="absolute -right-10 -top-10 h-40 w-40 rounded-full bg-orange-500/10 blur-3xl" />
-
-      <div className="relative z-10">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <div className="rounded-2xl bg-orange-500/20 p-3">
-              <WalletIcon className="h-7 w-7 text-orange-400" />
-            </div>
-
-            <div>
-              <p className="text-sm uppercase tracking-widest text-gray-400 dark:text-zinc-500">
-                Wallet Balance
-              </p>
-
-              <h1 className="mt-1 text-4xl font-bold text-gray-900 dark:text-white">
-                {loading ? (
-                  <span className="inline-flex items-center gap-2">
-                    <Loader2 className="h-6 w-6 animate-spin" />
-                    <span className="text-2xl">Loading...</span>
-                  </span>
-                ) : wallet ? (
-                  `₦${balance.toLocaleString(undefined, {
-                    minimumFractionDigits: 2,
-                    maximumFractionDigits: 2,
-                  })}`
-                ) : (
-                  <span className="text-gray-500 dark:text-zinc-400">No wallet found</span>
-                )}
-              </h1>
-
-              {updatedAt && (
-                <p className="mt-2 text-xs text-gray-400 dark:text-zinc-500">
-                  Last Updated{" "}
-                  {new Date(updatedAt).toLocaleString()}
-                </p>
-              )}
-            </div>
+    <div className="relative overflow-hidden rounded-2xl border border-zinc-200/60 bg-white p-6 shadow-sm dark:border-white/10 dark:bg-[#0B1322] dark:shadow-none">
+      <div className="flex flex-col gap-6 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex items-center gap-4">
+          <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-emerald-500/10 text-emerald-500 dark:bg-emerald-400/10 dark:text-emerald-400">
+            <WalletIcon size={24} />
           </div>
 
-          {onRefresh && (
-            <button
-              onClick={onRefresh}
-              disabled={refreshing || loading}
-              className="rounded-xl border border-gray-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 p-3 transition hover:border-orange-500 hover:bg-gray-100 dark:hover:bg-zinc-800 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              <RefreshCcw
-                className={`h-5 w-5 text-gray-900 dark:text-white ${
-                  refreshing ? "animate-spin" : ""
-                }`}
-              />
-            </button>
-          )}
+          <div>
+            <p className="text-sm font-medium text-zinc-500 dark:text-zinc-400">
+              Wallet Balance
+            </p>
+
+            {loading ? (
+              <div className="mt-1 flex items-center gap-2">
+                <Loader2 size={20} className="animate-spin text-zinc-400" />
+                <span className="text-sm text-zinc-400">Loading…</span>
+              </div>
+            ) : (
+              <p className="text-3xl font-bold text-zinc-900 dark:text-white">
+                {formatCurrency(balance, currency)}
+              </p>
+            )}
+          </div>
         </div>
 
-        <div className="mt-8 flex flex-wrap gap-4">
+        <div className="flex items-center gap-3">
           <button
-            onClick={onDeposit}
-            disabled={loading || refreshing}
-            className="flex items-center gap-2 rounded-2xl bg-orange-500 px-6 py-3 font-semibold text-black transition hover:bg-orange-400 disabled:opacity-50 disabled:cursor-not-allowed"
+            type="button"
+            onClick={onRefresh}
+            disabled={refreshing || loading}
+            className="inline-flex items-center gap-2 rounded-lg border border-zinc-200 px-3 py-2 text-sm font-medium text-zinc-700 transition hover:bg-zinc-50 disabled:opacity-50 dark:border-white/10 dark:text-zinc-200 dark:hover:bg-white/5"
           >
-            <PlusCircle className="h-5 w-5" />
-            Deposit Funds
+            <RefreshCw size={16} className={refreshing ? "animate-spin" : ""} />
+            Refresh
+          </button>
+
+          <button
+            type="button"
+            onClick={onDeposit}
+            className="inline-flex items-center gap-2 rounded-lg bg-emerald-500 px-4 py-2 text-sm font-semibold text-white transition hover:bg-emerald-600"
+          >
+            <Plus size={16} />
+            Deposit
           </button>
         </div>
       </div>

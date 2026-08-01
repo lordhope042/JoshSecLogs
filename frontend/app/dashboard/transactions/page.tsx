@@ -368,14 +368,48 @@ export default function TransactionsPage() {
   }, [loadWallet, loadTransactions]);
 
   // ---- PAYSTACK RETURN HANDLER ----
+  // On return from Paystack the URL carries ?reference=... Previously we only
+  // waited 1.5s and reloaded, which relied on the backend webhook having
+  // already credited the wallet. If the webhook was slow/missing the balance
+  // never updated even though the payment was successful — the "deposit shows
+  // success but balance doesn't reflect" bug.
+  //
+  // We now EXPLICITLY hit POST /payments/verify { reference } so the backend
+  // verifies the payment with Paystack and credits the wallet, then reload.
+  const verifyAndReload = useCallback(
+    async (reference: string, attempt = 0) => {
+      toast.info("Confirming your payment…");
+      try {
+        await apiClient.post("/payments/verify", { reference });
+      } catch (err) {
+        if (attempt === 0) console.error("verify error:", err);
+      }
+      await loadWallet();
+      await loadTransactions(1);
+
+      // The verify call is the important part — it asks the backend to confirm
+      // the payment with Paystack and credit the wallet. Retry a few times in
+      // case verify + credit (or the webhook) lag behind the redirect.
+      if (attempt < 3) {
+        pendingTimeout.current = setTimeout(
+          () => verifyAndReload(reference, attempt + 1),
+          2000,
+        );
+      } else {
+        toast.success("Deposit confirmed — balance updated.");
+      }
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [],
+  );
+
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
     const reference = urlParams.get("reference");
 
     if (reference) {
       window.history.replaceState({}, "", window.location.pathname);
-      toast.info("Confirming your payment…");
-      pendingTimeout.current = setTimeout(() => load(), 1500);
+      pendingTimeout.current = setTimeout(() => verifyAndReload(reference), 800);
     } else {
       load();
     }
