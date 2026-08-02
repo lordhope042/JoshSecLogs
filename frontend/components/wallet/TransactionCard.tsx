@@ -96,8 +96,20 @@ const SOCIAL_LOGIN_KEYWORDS = [
   "social",
 ];
 
+// ---------------------------------------------------------------------------
+// NOTE on enum widening (build fix):
+// `WalletTransactionType` is now "CREDIT"|"DEBIT"|"DEPOSIT"|"PURCHASE"|"REFUND"
+// |"TRANSFER" (no WITHDRAWAL/ADJUSTMENT), and `WalletTransactionStatus` is
+// "PENDING"|"SUCCESS"|"FAILED" (no COMPLETED/CANCELLED). The backend may still
+// return those legacy values for historical rows, so we keep the cases but
+// widen the switch operand to a plain string via `String(x ?? "").toUpperCase()`
+// before switching. This keeps every legacy case valid (TS2678 only fires when
+// the operand is the strict union) while the prop types stay strictly typed.
+// ---------------------------------------------------------------------------
+
 function formatTitle(type: WalletTransactionType, description: string): string {
-  switch (type) {
+  const t = String(type ?? "").toUpperCase();
+  switch (t) {
     case "CREDIT":
       return "Wallet Funding";
     case "WITHDRAWAL":
@@ -108,6 +120,10 @@ function formatTitle(type: WalletTransactionType, description: string): string {
       return description || "Account Adjustment";
     case "PURCHASE":
       return description || "Purchase";
+    case "DEPOSIT":
+      return description || "Wallet Deposit";
+    case "TRANSFER":
+      return description || "Transfer";
     case "DEBIT":
       return description || "Wallet Debit";
     default:
@@ -116,7 +132,8 @@ function formatTitle(type: WalletTransactionType, description: string): string {
 }
 
 function formatSubLabel(type: WalletTransactionType, description: string): string {
-  switch (type) {
+  const t = String(type ?? "").toUpperCase();
+  switch (t) {
     case "CREDIT":
       return "Wallet Funding";
     case "WITHDRAWAL":
@@ -135,14 +152,21 @@ function formatSubLabel(type: WalletTransactionType, description: string): strin
       if (matchesKeyword(description, VIRTUAL_NUMBER_KEYWORDS)) return "Virtual Number";
       if (matchesKeyword(description, SOCIAL_LOGIN_KEYWORDS)) return "Social Login";
       return "Purchase";
+    case "DEPOSIT":
+      return "Wallet Deposit";
+    case "TRANSFER":
+      return description || "Transfer";
     default:
       return type;
   }
 }
 
 function statusMeta(status: WalletTransactionStatus) {
-  switch (status) {
+  const s = String(status ?? "").toUpperCase();
+  switch (s) {
     case "COMPLETED":
+      return { icon: CheckCircle2, badge: "bg-green-500/20 text-green-400" };
+    case "SUCCESS":
       return { icon: CheckCircle2, badge: "bg-green-500/20 text-green-400" };
     case "PENDING":
       return { icon: Clock3, badge: "bg-yellow-500/20 text-yellow-400" };
@@ -177,7 +201,13 @@ export default function TransactionCard({ transaction }: TransactionCardProps) {
 
   const direction = resolveDirection(transaction);
   const amount = resolveAmount(transaction);
-  const settled = transaction.status === "COMPLETED";
+  // `WalletTransactionStatus` is "PENDING"|"SUCCESS"|"FAILED" (no COMPLETED),
+  // but historical rows may still carry "COMPLETED". Compare against a widened
+  // string so the equality check is valid and still treats both SUCCESS and
+  // legacy COMPLETED as settled.
+  const settled = ["COMPLETED", "SUCCESS"].includes(
+    String(transaction.status ?? "").toUpperCase(),
+  );
 
   const baseMeta = directionMeta(direction, settled);
   const { icon: StatusIcon, badge } = statusMeta(transaction.status);
