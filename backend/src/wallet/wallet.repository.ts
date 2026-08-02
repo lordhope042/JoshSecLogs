@@ -230,18 +230,64 @@ export class WalletRepository {
   =====================================
   */
 
+  /*
+  =====================================
+      USER TRANSACTIONS  (PAGINATED)
+
+      FIX: server-side pagination.  Previously this returned EVERY row for
+      the user with no LIMIT — fine for a handful of transactions but it
+      becomes a real problem (memory + latency + payload size) once a user
+      has thousands of ledger entries.  Now callers can pass `page` (1-based)
+      and `limit`; we apply Prisma `take`/`skip` and also run a `count` so
+      the caller can render page controls.
+
+      When `page`/`limit` are omitted (e.g. the /wallet/refresh endpoint and
+      WalletService.summary) we fall back to the legacy behaviour of
+      returning everything, so existing callers are unaffected.
+  =====================================
+  */
+
   async transactions(
     userId: string,
+    page?: number,
+    limit?: number,
     tx?: TxClient,
   ) {
-    return this.client(tx).walletTransaction.findMany({
-      where: {
-        userId,
-      },
-      orderBy: {
-        createdAt: 'desc',
-      },
-    });
+    const client = this.client(tx);
+
+    // No pagination requested → return the full set (back-compat).
+    if (page === undefined || limit === undefined) {
+      return {
+        data: await client.walletTransaction.findMany({
+          where: { userId },
+          orderBy: { createdAt: 'desc' },
+        }),
+        total: await client.walletTransaction.count({
+          where: { userId },
+        }),
+      };
+    }
+
+    // Clamp inputs to safe, sane values.
+    const safePage = Math.max(1, Math.floor(page) || 1);
+    const safeLimit = Math.min(
+      100,
+      Math.max(1, Math.floor(limit) || 20),
+    );
+
+    const [data, total] = await Promise.all([
+      client.walletTransaction.findMany({
+        where: { userId },
+        orderBy: { createdAt: 'desc' },
+        take: safeLimit,
+        skip: (safePage - 1) * safeLimit,
+      }),
+      client.walletTransaction.count({
+        where: { userId },
+      }),
+    ]);
+
+    return { data, total };
   }
 
   /*

@@ -49,6 +49,7 @@ model WalletTransaction {
   description   String
   reference     String            @unique
   createdAt     DateTime          @default(now())
+  updatedAt     DateTime          @updatedAt
   balanceAfter  Decimal?          @db.Decimal(18, 2)
   balanceBefore Decimal?          @db.Decimal(18, 2)
   metadata      Json?
