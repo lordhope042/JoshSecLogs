@@ -10,19 +10,33 @@ export interface Wallet {
  * Transaction Types
  * ----------------------------------------- */
 
+/*
+ * These mirror the ACTUAL PostgreSQL enums confirmed from the live schema:
+ *   enum "TransactionType"   => CREDIT | DEBIT | DEPOSIT | PURCHASE | REFUND | TRANSFER
+ *   enum "TransactionStatus" => PENDING | SUCCESS | FAILED
+ *
+ * NOTE: the backend may return these in either UPPERCASE (raw enum) or
+ * lowercase (Prisma client default). Components should normalise with
+ * `.toUpperCase()` before comparing. The TransactionHistory component
+ * already does this.
+ *
+ * Previous (incorrect) values that have been removed:
+ *   - WITHDRAWAL, ADJUSTMENT  (not in DB enum — replaced by DEPOSIT, TRANSFER)
+ *   - COMPLETED, CANCELLED    (not in DB enum — SUCCESS is the success value;
+ *                              there is no CANCELLED status)
+ */
 export type WalletTransactionType =
   | "CREDIT"
   | "DEBIT"
+  | "DEPOSIT"
   | "PURCHASE"
-  | "WITHDRAWAL"
   | "REFUND"
-  | "ADJUSTMENT";
+  | "TRANSFER";
 
 export type WalletTransactionStatus =
   | "PENDING"
-  | "COMPLETED"
-  | "FAILED"
-  | "CANCELLED";
+  | "SUCCESS"
+  | "FAILED";
 
 /* -----------------------------------------
  * Wallet Transaction

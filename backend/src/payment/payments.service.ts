@@ -67,10 +67,30 @@ export class PaymentsService {
   /*
   =====================================
       SAFE WALLET CREDIT (ATOMIC + IDEMPOTENT)
-      - Uses a Prisma interactive transaction so the payment status check
-        and the status flip happen atomically.  This closes the race window
-        where a concurrent verify() call + a Paystack webhook could both
-        pass the "if status === SUCCESS return false" guard and double-credit.
+
+      *** THE BUG FIX ***
+      The previous version wrapped everything in `prisma.$transaction(tx => …)`
+      but then called `this.walletService.creditWallet(...)`, which internally
+      used `this.prisma` — the NON-transactional client — instead of `tx`.
+
+      Result: the Payment status flip ran on `tx`, but the Wallet.balance
+      UPDATE and the WalletTransaction INSERT ran on a completely separate
+      connection, outside the transaction.  The two operations were NOT
+      atomic.  Depending on isolation/commit timing this could leave the
+      Payment marked SUCCESS (committed on tx) while the wallet increment was
+      lost, overwritten, or rolled back — which is exactly the reported
+      symptom: admin sees the deposit as "Success", the ledger row exists with
+      the correct balanceAfter, but the live Wallet.balance never moves.
+
+      FIX: `WalletService.creditWallet` (and the repository methods it calls)
+      now accept an optional `tx` argument.  We pass `tx` through, so the
+      wallet UPDATE + ledger INSERT run on the SAME transaction/connection as
+      the Payment status flip.  All three writes now commit or roll back
+      together — exactly like the admin refund code already does.
+
+      This also keeps the idempotency guarantee: the `payment.status ===
+      SUCCESS` early return is read on `tx` with a row lock, so a concurrent
+      verify() + webhook can't both pass the guard.
   =====================================
   */
   private async creditWalletOnce(
@@ -130,13 +150,18 @@ export class PaymentsService {
         },
       });
 
-      // Credit the wallet.  WalletService.creditWallet creates its own
-      // WalletTransaction record with before/after balances.
+      // Credit the wallet ON THE SAME TRANSACTION (`tx`).
+      // Previously this called walletService.creditWallet WITHOUT tx, so the
+      // wallet balance increment ran on a separate connection and was not
+      // committed atomically with the payment status flip above.  Passing
+      // `tx` is the fix — now the balance UPDATE, the WalletTransaction
+      // INSERT, and the Payment status UPDATE all commit together.
       await this.walletService.creditWallet(
         userId,
         Number(payment.amount),
         `Deposit via Paystack (${reference})`,
         reference,
+        tx, // <-- THE FIX: run the wallet credit inside this transaction
       );
 
       return true;
@@ -194,6 +219,16 @@ export class PaymentsService {
     );
 
     // Persist the gateway response for audit trail.
+    // NOTE: the payment status (SUCCESS/FAILED/paidAt/verifiedAt) is ALREADY
+    // flipped inside `creditWalletOnce`'s transaction, so this second
+    // updateStatus is purely to store the raw provider response JSON.  We
+    // keep it as a best-effort, non-throwing write — it must NOT be relied on
+    // to set the status, because if it ran on `this.prisma` and committed
+    // separately it could mask the transactional flip.  It only touches the
+    // `providerResponse` column here is not needed because updateStatus also
+    // sets status — but since the row is already SUCCESS this is a harmless
+    // idempotent re-write of the same status.  Wrapped in .catch() so a
+    // duplicate-key / timing error can never break the verify flow.
     await this.paymentRepo
       .updateStatus(reference, PaymentStatus.SUCCESS, verification.raw)
       .catch(() => {
