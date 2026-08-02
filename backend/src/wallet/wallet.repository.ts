@@ -7,6 +7,28 @@ import {
 
 import { PrismaService } from '../prisma/prisma.service';
 
+/*
+ * The "tx client" type.
+ *
+ * `Prisma.TransactionClient` is the EXACT type of the `tx` argument that
+ * Prisma hands to the `prisma.$transaction(async (tx) => …)` callback.  It
+ * is `Omit<PrismaClient, '$connect' | '$disconnect' | '$on' | '$use' |
+ * '$extends'>` — i.e. a PrismaClient with the connection-management methods
+ * stripped off, but with every model delegate (wallet, walletTransaction,
+ * payment, …) intact.
+ *
+ * `PrismaService extends PrismaClient`, so a PrismaService instance is
+ * assignable to `Prisma.TransactionClient` (it has a superset of the
+ * required properties).  That means the SAME type accepts both:
+ *   - the transactional `tx` passed in from payments.service.ts
+ *   - the shared `this.prisma` PrismaService used as the default
+ *
+ * This lets every repository method run inside OR outside a transaction
+ * without any cast, which is what makes the Paystack deposit fix work:
+ * the wallet UPDATE + ledger INSERT run on the caller's `tx`.
+ */
+export type TxClient = Prisma.TransactionClient;
+
 @Injectable()
 export class WalletRepository {
   constructor(
@@ -15,20 +37,33 @@ export class WalletRepository {
 
   /*
   =====================================
+      resolve client helper
+      - if the caller passed a `tx` (from inside a $transaction), use it
+      - otherwise fall back to the shared `this.prisma`
+      This is the single line that fixes the deposit bug: every method now
+      runs on the SAME connection as the caller's transaction.
+  =====================================
+  */
+  private client(tx?: TxClient): TxClient {
+    return tx ?? this.prisma;
+  }
+
+  /*
+  =====================================
       WALLET
   =====================================
   */
 
-  async findWallet(userId: string) {
-    return this.prisma.wallet.findUnique({
+  async findWallet(userId: string, tx?: TxClient) {
+    return this.client(tx).wallet.findUnique({
       where: {
         userId,
       },
     });
   }
 
-  async createWallet(userId: string) {
-    return this.prisma.wallet.create({
+  async createWallet(userId: string, tx?: TxClient) {
+    return this.client(tx).wallet.create({
       data: {
         userId,
         balance: new Prisma.Decimal(0),
@@ -36,13 +71,13 @@ export class WalletRepository {
     });
   }
 
-  async getOrCreateWallet(userId: string) {
+  async getOrCreateWallet(userId: string, tx?: TxClient) {
     let wallet =
-      await this.findWallet(userId);
+      await this.findWallet(userId, tx);
 
     if (!wallet) {
       wallet =
-        await this.createWallet(userId);
+        await this.createWallet(userId, tx);
     }
 
     return wallet;
@@ -51,14 +86,18 @@ export class WalletRepository {
   /*
   =====================================
       CREDIT WALLET
+      - atomic SQL `UPDATE … SET balance = balance + amount`
+      - runs on `tx` when provided, so it participates in the caller's
+        transaction (and its row locks).
   =====================================
   */
 
   async creditWallet(
     userId: string,
     amount: number,
+    tx?: TxClient,
   ) {
-    return this.prisma.wallet.update({
+    return this.client(tx).wallet.update({
       where: {
         userId,
       },
@@ -79,8 +118,9 @@ export class WalletRepository {
   async debitWallet(
     userId: string,
     amount: number,
+    tx?: TxClient,
   ) {
-    return this.prisma.wallet.update({
+    return this.client(tx).wallet.update({
       where: {
         userId,
       },
@@ -101,8 +141,9 @@ export class WalletRepository {
   async setBalance(
     userId: string,
     amount: number,
+    tx?: TxClient,
   ) {
-    return this.prisma.wallet.update({
+    return this.client(tx).wallet.update({
       where: {
         userId,
       },
@@ -136,8 +177,8 @@ export class WalletRepository {
     reference: string;
 
     metadata?: Prisma.InputJsonValue;
-  }) {
-    return this.prisma.walletTransaction.create({
+  }, tx?: TxClient) {
+    return this.client(tx).walletTransaction.create({
       data,
     });
   }
@@ -156,8 +197,9 @@ export class WalletRepository {
       balanceAfter?: number;
       metadata?: Prisma.InputJsonValue;
     },
+    tx?: TxClient,
   ) {
-    return this.prisma.walletTransaction.update({
+    return this.client(tx).walletTransaction.update({
       where: {
         reference,
       },
@@ -173,8 +215,9 @@ export class WalletRepository {
 
   async findTransaction(
     reference: string,
+    tx?: TxClient,
   ) {
-    return this.prisma.walletTransaction.findUnique({
+    return this.client(tx).walletTransaction.findUnique({
       where: {
         reference,
       },
@@ -189,8 +232,9 @@ export class WalletRepository {
 
   async transactions(
     userId: string,
+    tx?: TxClient,
   ) {
-    return this.prisma.walletTransaction.findMany({
+    return this.client(tx).walletTransaction.findMany({
       where: {
         userId,
       },
@@ -206,12 +250,12 @@ export class WalletRepository {
   =====================================
   */
 
-  async summary(userId: string) {
+  async summary(userId: string, tx?: TxClient) {
     const wallet =
-      await this.getOrCreateWallet(userId);
+      await this.getOrCreateWallet(userId, tx);
 
     const transactions =
-      await this.prisma.walletTransaction.count({
+      await this.client(tx).walletTransaction.count({
         where: {
           userId,
         },
