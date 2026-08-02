@@ -23,11 +23,36 @@ import api from "@/lib/axios";
 // ---------------------------------------------------------------------------
 // Types
 // ---------------------------------------------------------------------------
+//
+// NOTE on the field set / optionality:
+// Every field that the canonical `Wallet` from `@/types/wallet` declares as a
+// REQUIRED `string` (id, userId, createdAt, updatedAt) is ALSO required here,
+// with runtime fallbacks in loadWallet() that guarantee they are always set.
+// This makes the hook's `Wallet` structurally assignable to ANY component
+// prop typed as that canonical `Wallet` — including `Topbar`, which declares
+// `wallet: Wallet | null | undefined`.
+//
+// Why required (not optional) here:
+//   The build error was:
+//     "Type 'Wallet | null' is not assignable to type 'Wallet | null | undefined'.
+//      Type 'Wallet' is missing the following properties: createdAt, updatedAt"
+//   and earlier, if we had made them optional, it would instead have become:
+//     "Type 'string | undefined' is not assignable to type 'string'"
+//   because `string | undefined` (an optional field) is NOT assignable to a
+//   required `string`. The only way to satisfy a required-string target is to
+//   make the source field a required string too — hence the runtime fallbacks.
+//
+// `currency` is an extra field not present on the canonical `Wallet`. That is
+// fine: TypeScript allows a variable (non-literal) with excess properties to
+// be assigned to a target type that omits them. We keep it required because
+// loadWallet() always supplies a value (defaulting to "₦").
 export interface Wallet {
-  id?: string;
-  userId?: string;
+  id: string;
+  userId: string;
   balance: number;
   currency: string;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface WalletTransaction {
@@ -87,10 +112,20 @@ export function useWallet() {
       const res: any = await api.get("/wallet");
       const w = unwrap<Wallet | null>(res);
       if (w && typeof w === "object") {
+        // id / userId / createdAt / updatedAt are all REQUIRED by this hook's
+        // Wallet type (so the value is assignable to Topbar's wallet prop and
+        // the canonical @/types/wallet Wallet). The backend always returns
+        // them, but we fall back to safe values if an older / partial response
+        // omits any of them — never leave them unset.
+        const now = new Date().toISOString();
         setWallet({
           ...w,
+          id: (w as any).id ?? "",
+          userId: (w as any).userId ?? "",
           balance: toNumber((w as any).balance),
           currency: (w as any).currency || "₦",
+          createdAt: (w as any).createdAt ?? now,
+          updatedAt: (w as any).updatedAt ?? now,
         });
       }
     } catch (err) {
