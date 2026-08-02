@@ -192,8 +192,44 @@ export class WalletService {
   =====================================
   */
 
-  async transactions(userId: string) {
-    return this.walletRepo.transactions(userId);
+  /*
+  =====================================
+      TRANSACTIONS  (PAGINATED)
+
+      FIX: pass optional `page`/`limit` through to the repository and shape
+      the response into `{ data, meta }` so the frontend can render page
+      controls.  When `page`/`limit` are omitted the repository returns the
+      full set (back-compat for /wallet/refresh and any other legacy caller).
+  =====================================
+  */
+
+  async transactions(userId: string, page?: number, limit?: number) {
+    const { data, total } =
+      await this.walletRepo.transactions(userId, page, limit);
+
+    // Legacy (unpaginated) callers: just hand back the array so existing
+    // destructuring `{ data: transactions }` keeps working.
+    if (page === undefined || limit === undefined) {
+      return data;
+    }
+
+    const safePage = Math.max(1, Math.floor(page) || 1);
+    const safeLimit = Math.min(
+      100,
+      Math.max(1, Math.floor(limit) || 20),
+    );
+
+    return {
+      data,
+      meta: {
+        page: safePage,
+        limit: safeLimit,
+        total,
+        totalPages: Math.ceil(total / safeLimit) || 1,
+        hasNext: safePage * safeLimit < total,
+        hasPrev: safePage > 1,
+      },
+    };
   }
 
   async transaction(userId: string, reference: string) {

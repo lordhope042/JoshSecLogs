@@ -523,28 +523,40 @@ export class MarketplaceService {
       order.refundedAt === null;
 
     if (shouldRefund) {
+      // FIX: wrap the wallet credit AND the order status/refundedAt update
+      // in a SINGLE Prisma interactive transaction.  Previously these were
+      // two independent writes — if the `order.update` threw after the
+      // `wallet.credit` had already committed, the user's wallet was
+      // credited but `refundedAt` stayed null, so a later sync would
+      // credit them AGAIN (double refund).  Now both succeed or both
+      // roll back together.
       try {
-        await this.wallet.credit(
-          userId,
-          Number(order.sellingPriceNgn),
-          `Refund for timed-out ${order.service}`,
-        );
+        await this.prisma.$transaction(async (tx) => {
+          await this.wallet.creditWallet(
+            userId,
+            Number(order.sellingPriceNgn),
+            `Refund for timed-out ${order.service}`,
+            undefined,
+            tx,
+          );
 
-        await this.prisma.order.update({
-          where: { id: order.id },
-          data: {
-            status,
-            refundedAt: new Date(),
-          },
+          await tx.order.update({
+            where: { id: order.id },
+            data: {
+              status,
+              refundedAt: new Date(),
+            },
+          });
         });
 
         this.logger.log(
           `Auto-refunded order ${order.id} (status=${status}) — ₦${order.sellingPriceNgn} returned to user ${userId}.`,
         );
       } catch (err) {
-        // Don't swallow the status update if the refund fails —
-        // still persist the new status so the UI reflects reality,
-        // but log loudly so it can be reconciled manually.
+        // The whole transaction rolled back, so neither the credit nor
+        // the order update was persisted.  Persist just the status so the
+        // UI reflects reality, and log loudly so it can be reconciled
+        // manually.  refundedAt remains null, so a later sync can retry.
         this.logger.error(
           `Refund failed for order ${order.id} on status=${status}: ${err instanceof Error ? err.message : String(err)}`,
         );
@@ -660,37 +672,53 @@ async sms(userId: string, orderId: string) {
         status === OrderStatus.TIMEOUT) &&
       order.refundedAt === null;
 
-    await this.prisma.order.update({
-      where: {
-        id: order.id,
-      },
-      data: {
-        status,
-        ...(shouldRefund ? { refundedAt: new Date() } : {}),
-      },
-    });
-
     if (shouldRefund) {
+      // FIX: wrap the order status/refundedAt update AND the wallet credit
+      // in a SINGLE Prisma interactive transaction.  Previously the code
+      // first set `refundedAt` on the order, then credited the wallet as a
+      // separate write — if the credit threw, a compensating rollback
+      // (setting refundedAt back to null) was attempted, but that rollback
+      // itself could fail, leaving the order marked as refunded with no
+      // money returned.  Now both operations commit or roll back together,
+      // so no compensating rollback is needed.
       try {
-        await this.wallet.credit(
-          userId,
-          Number(order.sellingPriceNgn),
-          status === OrderStatus.TIMEOUT
-            ? `Refund for timed-out ${order.service}`
-            : `Refund for cancelled ${order.service}`,
-        );
-      } catch (err) {
-        // Revert the refundedAt marker if the credit failed, so a
-        // later sync can retry the refund.
-        await this.prisma.order.update({
-          where: { id: order.id },
-          data: { refundedAt: null },
+        await this.prisma.$transaction(async (tx) => {
+          await tx.order.update({
+            where: { id: order.id },
+            data: {
+              status,
+              refundedAt: new Date(),
+            },
+          });
+
+          await this.wallet.creditWallet(
+            userId,
+            Number(order.sellingPriceNgn),
+            status === OrderStatus.TIMEOUT
+              ? `Refund for timed-out ${order.service}`
+              : `Refund for cancelled ${order.service}`,
+            undefined,
+            tx,
+          );
         });
+      } catch (err) {
+        // Transaction rolled back — neither the order update nor the
+        // credit persisted, so refundedAt is still null and a later
+        // sync/cancel can retry cleanly.
         this.logger.error(
           `Cancel refund failed for order ${order.id}: ${err instanceof Error ? err.message : String(err)}`,
         );
         throw err;
       }
+    } else {
+      await this.prisma.order.update({
+        where: {
+          id: order.id,
+        },
+        data: {
+          status,
+        },
+      });
     }
 
     return {
