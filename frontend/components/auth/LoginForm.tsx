@@ -27,6 +27,8 @@ import api from "@/lib/axios";
 
 import { toast } from "sonner";
 
+import { markJustLoggedIn } from "@/hooks/useWelcomeNotification";
+
 export default function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -52,10 +54,19 @@ export default function LoginForm() {
         data,
       );
 
+      // NOTE: the shared axios instance's response interceptor already
+      // unwraps `response.data`, so `res` here IS the backend JSON body
+      // ({ message, accessToken, user, isFirstLogin }) — not a full
+      // Axios response.
       const {
         accessToken,
         user,
-      } = res.data;
+        isFirstLogin,
+      } = res as unknown as {
+        accessToken: string;
+        user: { name: string; role: string };
+        isFirstLogin?: boolean;
+      };
 
       localStorage.setItem(
         "access_token",
@@ -66,6 +77,11 @@ export default function LoginForm() {
         "user",
         JSON.stringify(user),
       );
+
+      // Flag that the dashboard welcome/notification modal should fire
+      // once for this login session, and whether to show the "welcome"
+      // or "welcome back" variant. Cleared by the modal on dismiss.
+      markJustLoggedIn(isFirstLogin);
 
       toast.success(
         `Welcome back ${user.name}!`,

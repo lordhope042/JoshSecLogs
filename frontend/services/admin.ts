@@ -12,6 +12,10 @@ export interface AdminDashboardStats {
 }
 
 export async function getAdminDashboard(): Promise<AdminDashboardStats> {
-  const { data } = await api.get("/admin/dashboard");
-  return data.data ?? data;
+  // NOTE: the shared axios instance's response interceptor already
+  // unwraps `response.data`, so `api.get(...)` resolves directly to the
+  // backend JSON body — { users, walletBalance, orders, ... } — not
+  // `{ data: {...} }`. Do not destructure `.data` off of it again.
+  const stats = await api.get("/admin/dashboard");
+  return stats as unknown as AdminDashboardStats;
 }

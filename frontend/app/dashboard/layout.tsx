@@ -5,8 +5,10 @@ import { useRouter } from "next/navigation";
 
 import Sidebar from "@/components/dashboard/Sidebar";
 import Topbar from "@/components/dashboard/Topbar";
+import WelcomeNotificationModal from "@/components/dashboard/WelcomeNotificationModal";
 
 import { useWallet } from "@/hooks/useWallet";
+import { useWelcomeNotification } from "@/hooks/useWelcomeNotification";
 
 export default function DashboardLayout({
   children,
@@ -17,6 +19,18 @@ export default function DashboardLayout({
   const [mobileOpen, setMobileOpen] = useState(false);
 
   const { wallet, loading, loadWallet } = useWallet();
+
+  // Show the welcome/notification modal once, right after a fresh login,
+  // populated with whatever the admin currently has marked active.
+  // The hook is session-gated: it only fires when `LoginForm` set the
+  // "just logged in" marker, and clears it on dismiss so it won't reappear
+  // on sub-route navigation or refresh.
+  const {
+    shouldShow: showWelcome,
+    notification: welcomeNotification,
+    isFirstLogin,
+    dismiss: dismissWelcome,
+  } = useWelcomeNotification();
 
   // Poll the wallet, but pause while the tab is hidden — no point
   // hammering the API for a user who isn't looking at the screen.
@@ -92,6 +106,15 @@ export default function DashboardLayout({
 
         <main className="flex-1 overflow-y-auto p-4 lg:p-8">{children}</main>
       </div>
+
+      {/* Login notification — pops once after a fresh login, if the admin
+          currently has an active notification set. */}
+      <WelcomeNotificationModal
+        shouldShow={showWelcome}
+        notification={welcomeNotification}
+        isFirstLogin={isFirstLogin}
+        onDismiss={dismissWelcome}
+      />
     </div>
   );
 }

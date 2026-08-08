@@ -10,6 +10,7 @@ import {
   CreditCard,
   ShoppingBag,
   ShieldCheck,
+  Bell,
   Settings,
   LogOut,
   ChevronLeft,
@@ -51,6 +52,11 @@ const menus = [
     title: "Social Logs",
     href: "/admin/social-logs",
     icon: ShieldCheck,
+  },
+  {
+    title: "Notifications",
+    href: "/admin/notifications",
+    icon: Bell,
   },
   {
     title: "Settings",
