@@ -334,7 +334,7 @@ export default function LoginForm() {
 
         </Button>
 
-        {/* REGISTER */}
+        {/* REGISTER y*/}
 
         <div className="pt-2 text-center text-sm text-gray-500 dark:text-zinc-400">
 
