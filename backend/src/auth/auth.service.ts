@@ -122,6 +122,11 @@ export class AuthService {
       role: user.role,
     });
 
+    // Track this login and find out whether it's the user's first ever —
+    // drives whether the frontend shows a "welcome" or "welcome back"
+    // notification.
+    const isFirstLogin = await this.users.markLogin(user.id);
+
     // FIX: same passwordHash strip as register() above.
     const { passwordHash: _omit, ...safeUser } = user as any;
 
@@ -129,6 +134,7 @@ export class AuthService {
       message: 'Login successful',
       accessToken,
       user: safeUser,
+      isFirstLogin,
     };
   }
 

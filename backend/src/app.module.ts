@@ -14,6 +14,7 @@ import { AdminModule } from "./admin/admin.module";
 import { MarketplaceModule } from "./marketplace/marketplace.module";
 import { SocialLogModule } from "./social-logs/social-log.module";
 import { ApiKeysModule } from "./api-keys/api-keys.module";
+import { NotificationModule } from "./notifications/notification.module";
 
 @Module({
   imports: [
@@ -50,6 +51,9 @@ import { ApiKeysModule } from "./api-keys/api-keys.module";
 
     /* API Keys */
     ApiKeysModule,
+
+    /* Notifications */
+    NotificationModule,
   ],
 })
 export class AppModule {}
