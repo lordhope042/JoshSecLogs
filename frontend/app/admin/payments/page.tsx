@@ -2,284 +2,662 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
-  CreditCard,
+  Users,
   Search,
-  Loader2,
-  User,
+  Shield,
+  ShieldOff,
   Calendar,
-  CheckCircle2,
-  XCircle,
-  Clock,
+  ChevronLeft,
+  ChevronRight,
+  Loader2,
+  Eye,
+  Wallet,
+  UserCheck,
+  Ban,
   TrendingUp,
-  Globe,
-  ShieldCheck,
-  Banknote,
+  CheckCircle,
 } from "lucide-react";
 import { toast } from "sonner";
-import api from "@/lib/axios";
+import axios from "axios";
 
-/* ── Types ── */
-
-interface AdminPayment {
+/* ───────────────────────────────────────────
+   Types
+   ─────────────────────────────────────────── */
+interface User {
   id: string;
-  userId: string;
-  reference: string;
-  amount: number | string;
-  status: "PENDING" | "SUCCESS" | "FAILED";
-  createdAt: string;
-  gatewayReference: string | null;
-  providerResponse: any;
-  updatedAt: string;
-  currency: string;
-  paidAt: string | null;
-  provider: string;
-  verifiedAt: string | null;
-  user?: {
-    name: string | null;
-    email: string;
+  name?: string | null;
+  email?: string | null;
+  role?: string | null;
+  isActive?: boolean | null;
+  wallet?: {
+    balance?: number | string | null;
   } | null;
+  createdAt?: string | null;
+  updatedAt?: string | null;
+  _count?: {
+    orders?: number;
+    transactions?: number;
+  };
 }
 
-/* ── Helpers ── */
+/* ───────────────────────────────────────────
+   API Client
+   ─────────────────────────────────────────── */
+const api = axios.create({
+  baseURL: process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api/v1",
+});
 
-const STATUS_CONFIG: Record<string, { color: string; icon: any; label: string }> = {
-  PENDING: { color: "bg-yellow-500/10 text-yellow-500", icon: Clock, label: "Pending" },
-  SUCCESS: { color: "bg-green-500/10 text-green-500", icon: CheckCircle2, label: "Success" },
-  FAILED: { color: "bg-red-500/10 text-red-500", icon: XCircle, label: "Failed" },
-};
+api.interceptors.request.use((config) => {
+  const token = localStorage.getItem("access_token");
+  if (token) config.headers.Authorization = `Bearer ${token}`;
+  return config;
+});
 
-function formatMoney(value: number | string, currency: string): string {
-  const num = Number(value);
-  if (isNaN(num)) return `${currency === "NGN" ? "₦" : ""}0`;
-  const symbol = currency === "NGN" ? "₦" : currency === "USD" ? "$" : "";
-  return `${symbol}${num.toLocaleString("en-NG", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+api.interceptors.response.use(
+  (res) => res,
+  (err) => {
+    if (err.response?.status === 401) {
+      localStorage.removeItem("access_token");
+      window.location.href = "/login";
+    }
+    return Promise.reject(err);
+  },
+);
+
+/* ───────────────────────────────────────────
+   Helpers
+   ─────────────────────────────────────────── */
+function formatDate(date: string | null | undefined): string {
+  if (!date) return "N/A";
+  try {
+    return new Date(date).toLocaleDateString("en-NG", {
+      day: "numeric",
+      month: "short",
+      year: "numeric",
+    });
+  } catch {
+    return "N/A";
+  }
 }
 
-function formatDate(iso: string): string {
-  if (!iso) return "—";
-  const d = new Date(iso);
-  if (isNaN(d.getTime())) return "—";
-  return d.toLocaleDateString("en-NG", {
-    day: "2-digit",
-    month: "short",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
+function formatCurrency(value: number | null | undefined): string {
+  if (value === null || value === undefined || isNaN(value)) return "₦0";
+  return `₦${value.toLocaleString("en-NG")}`;
 }
 
-/* ── Page ── */
+function getInitials(name: string | null | undefined): string {
+  if (!name || typeof name !== "string") return "?";
+  return name.charAt(0).toUpperCase();
+}
 
-export default function AdminPaymentsPage() {
-  const [payments, setPayments] = useState<AdminPayment[]>([]);
+function getDisplayName(name: string | null | undefined): string {
+  if (!name || typeof name !== "string") return "Unknown User";
+  return name;
+}
+
+function getDisplayEmail(email: string | null | undefined): string {
+  if (!email || typeof email !== "string") return "No email";
+  return email;
+}
+
+function getRole(role: string | null | undefined): string {
+  if (!role || typeof role !== "string") return "USER";
+  return role.toUpperCase();
+}
+
+function getStatus(isActive: boolean | null | undefined): boolean {
+  return isActive === true;
+}
+
+// FIX: coerce string balances (e.g. from a decimal/bigint API field serialized
+// as a string) to a real number. Previously `wallet?.balance ?? 0` could return
+// a string, and `sum + getBalance(...)` in the stats reducer would then do
+// string concatenation instead of numeric addition, producing a garbled
+// mega-digit "total balance" (e.g. "₦000200000217600000000000093701000").
+function getBalance(wallet: { balance?: number | string | null } | null | undefined): number {
+  const raw = wallet?.balance;
+  if (raw === null || raw === undefined) return 0;
+  const num = typeof raw === "string" ? parseFloat(raw) : raw;
+  return typeof num === "number" && !isNaN(num) ? num : 0;
+}
+
+// Read the logged-in admin's own id from wherever your auth stores it.
+// Adjust this if your app keeps the current user elsewhere (context, a
+// decoded JWT, etc.) — localStorage is a placeholder matching this file's
+// existing pattern of reading "access_token" directly.
+function getCurrentUserId(): string | null {
+  if (typeof window === "undefined") return null;
+  return localStorage.getItem("user_id");
+}
+
+/* ───────────────────────────────────────────
+   Stat Card
+   ─────────────────────────────────────────── */
+function StatCard({
+  title,
+  value,
+  icon,
+  color,
+}: {
+  title: string;
+  value: string | number;
+  icon: React.ReactNode;
+  color: string;
+}) {
+  const colorMap: Record<string, string> = {
+    blue: "bg-blue-500/10 text-blue-400 border-blue-500/20",
+    green: "bg-green-500/10 text-green-400 border-green-500/20",
+    orange: "bg-orange-500/10 text-orange-400 border-orange-500/20",
+    purple: "bg-purple-500/10 text-purple-400 border-purple-500/20",
+    red: "bg-red-500/10 text-red-400 border-red-500/20",
+    emerald: "bg-emerald-500/10 text-emerald-400 border-emerald-500/20",
+  };
+
+  return (
+    <div className="rounded-2xl border border-gray-200 dark:border-zinc-800 bg-white/80 dark:bg-zinc-900/80 p-6">
+      <div className="flex items-start justify-between">
+        <div>
+          <p className="text-sm font-medium text-gray-500 dark:text-zinc-400">{title}</p>
+          <p className="mt-2 text-3xl font-bold text-gray-900 dark:text-white">{value}</p>
+        </div>
+        <div className={`flex h-12 w-12 items-center justify-center rounded-xl border ${colorMap[color]}`}>
+          {icon}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ───────────────────────────────────────────
+   User Details Modal
+   ─────────────────────────────────────────── */
+function UserDetailsModal({ user, onClose }: { user: User | null; onClose: () => void }) {
+  if (!user) return null;
+
+  const displayName = getDisplayName(user.name);
+  const displayEmail = getDisplayEmail(user.email);
+  const role = getRole(user.role);
+  const isActive = getStatus(user.isActive);
+  const balance = getBalance(user.wallet);
+  const orders = user._count?.orders ?? 0;
+  const transactions = user._count?.transactions ?? 0;
+  const joined = formatDate(user.createdAt);
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-6 backdrop-blur-sm"
+      onClick={onClose}
+    >
+      <div
+        onClick={(e) => e.stopPropagation()}
+        className="w-full max-w-lg rounded-2xl border border-gray-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-6"
+      >
+        <div className="flex items-center justify-between">
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-white">User Details</h3>
+          <button
+            onClick={onClose}
+            className="rounded-lg p-1.5 text-gray-500 dark:text-zinc-400 transition hover:bg-gray-100 dark:hover:bg-zinc-800 hover:text-gray-900 dark:hover:text-white"
+          >
+            ✕
+          </button>
+        </div>
+
+        <div className="mt-6 space-y-4">
+          <div className="flex items-center gap-4 rounded-xl bg-gray-100/50 dark:bg-zinc-800/50 p-4">
+            <div className="flex h-14 w-14 items-center justify-center rounded-full bg-orange-500/10 text-xl font-bold text-orange-500">
+              {getInitials(user.name)}
+            </div>
+            <div>
+              <p className="text-lg font-semibold text-gray-900 dark:text-white">{displayName}</p>
+              <p className="text-sm text-gray-500 dark:text-zinc-400">{displayEmail}</p>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div className="rounded-xl bg-gray-100/50 dark:bg-zinc-800/50 p-4">
+              <p className="text-xs text-gray-400 dark:text-zinc-500">Role</p>
+              <p className="mt-1 text-sm font-medium text-gray-900 dark:text-white">{role}</p>
+            </div>
+            <div className="rounded-xl bg-gray-100/50 dark:bg-zinc-800/50 p-4">
+              <p className="text-xs text-gray-400 dark:text-zinc-500">Status</p>
+              <span
+                className={`mt-1 inline-block rounded-full px-2 py-0.5 text-xs font-medium ${
+                  isActive ? "bg-green-500/10 text-green-400" : "bg-red-500/10 text-red-400"
+                }`}
+              >
+                {isActive ? "Active" : "Suspended"}
+              </span>
+            </div>
+            <div className="rounded-xl bg-gray-100/50 dark:bg-zinc-800/50 p-4">
+              <p className="text-xs text-gray-400 dark:text-zinc-500">Balance</p>
+              <p className="mt-1 text-sm font-medium text-gray-900 dark:text-white">{formatCurrency(balance)}</p>
+            </div>
+            <div className="rounded-xl bg-gray-100/50 dark:bg-zinc-800/50 p-4">
+              <p className="text-xs text-gray-400 dark:text-zinc-500">Orders</p>
+              <p className="mt-1 text-sm font-medium text-gray-900 dark:text-white">{orders}</p>
+            </div>
+            <div className="rounded-xl bg-gray-100/50 dark:bg-zinc-800/50 p-4">
+              <p className="text-xs text-gray-400 dark:text-zinc-500">Transactions</p>
+              <p className="mt-1 text-sm font-medium text-gray-900 dark:text-white">{transactions}</p>
+            </div>
+            <div className="rounded-xl bg-gray-100/50 dark:bg-zinc-800/50 p-4">
+              <p className="text-xs text-gray-400 dark:text-zinc-500">Joined</p>
+              <p className="mt-1 text-sm font-medium text-gray-900 dark:text-white">{joined}</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ───────────────────────────────────────────
+   Main Page
+   ─────────────────────────────────────────── */
+export default function AdminUsersPage() {
+  const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
-  const [statusFilter, setStatusFilter] = useState<string>("ALL");
-  const [providerFilter, setProviderFilter] = useState<string>("ALL");
+  const [roleFilter, setRoleFilter] = useState<"ALL" | "USER" | "ADMIN">("ALL");
+  const [statusFilter, setStatusFilter] = useState<"ALL" | "ACTIVE" | "SUSPENDED">("ALL");
+  const [sortBy, setSortBy] = useState<"newest" | "oldest" | "balance_high" | "balance_low">("newest");
+  const [page, setPage] = useState(1);
+  const [limit] = useState(10);
+  const [selectedUser, setSelectedUser] = useState<User | null>(null);
+  const [actionLoading, setActionLoading] = useState<string | null>(null);
 
-  const fetchPayments = useCallback(async () => {
-    setLoading(true);
+  const currentUserId = useMemo(() => getCurrentUserId(), []);
+
+  const loadUsers = useCallback(async () => {
     try {
-      const res = await api.get("/admin/payments");
-      const data = Array.isArray(res.data) ? res.data : res.data?.payments ?? [];
-      setPayments(data);
+      setLoading(true);
+      const { data } = await api.get("/admin/users");
+
+      const normalizedUsers = (Array.isArray(data) ? data : data.users || []).map((u: any) => ({
+        id: u.id || "",
+        name: u.name || null,
+        email: u.email || null,
+        role: u.role || "USER",
+        isActive: u.isActive ?? true,
+        // FIX: run raw balance through getBalance so a string value from the
+        // API (e.g. "50000") is stored as a real number, not a string that
+        // later gets string-concatenated instead of summed.
+        wallet: u.wallet ? { balance: getBalance(u.wallet) } : null,
+        createdAt: u.createdAt || null,
+        updatedAt: u.updatedAt || null,
+        _count: {
+          orders: u._count?.orders ?? 0,
+          transactions: u._count?.transactions ?? 0,
+        },
+      }));
+
+      setUsers(normalizedUsers);
     } catch (err: any) {
-      const msg = err?.response?.data?.message || "Failed to load payments.";
+      const msg = err?.response?.data?.message || "Failed to load users";
       toast.error(msg);
-      setPayments([]);
+      setUsers([]);
     } finally {
       setLoading(false);
     }
   }, []);
 
   useEffect(() => {
-    fetchPayments();
-  }, [fetchPayments]);
+    loadUsers();
+  }, [loadUsers]);
 
-  /* Stats */
-  const stats = useMemo(() => {
-    const total = payments.length;
-    const successful = payments.filter((p) => p.status === "SUCCESS").length;
-    const pending = payments.filter((p) => p.status === "PENDING").length;
-    const failed = payments.filter((p) => p.status === "FAILED").length;
-    const totalRevenue = payments
-      .filter((p) => p.status === "SUCCESS")
-      .reduce((sum, p) => sum + Number(p.amount || 0), 0);
-    return { total, successful, pending, failed, totalRevenue };
-  }, [payments]);
+  // Client-side filtering
+  const filteredUsers = useMemo(() => {
+    let result = [...users];
 
-  const providers = useMemo(() => {
-    const set = new Set<string>();
-    payments.forEach((p) => set.add(p.provider || "UNKNOWN"));
-    return Array.from(set).sort();
-  }, [payments]);
-
-  /* Filtered rows */
-  const filtered = useMemo(() => {
-    const q = search.trim().toLowerCase();
-    return payments.filter((p) => {
-      if (statusFilter !== "ALL" && p.status !== statusFilter) return false;
-      if (providerFilter !== "ALL" && (p.provider || "UNKNOWN") !== providerFilter) return false;
-      if (!q) return true;
-      return (
-        p.reference?.toLowerCase().includes(q) ||
-        p.gatewayReference?.toLowerCase().includes(q) ||
-        p.user?.email?.toLowerCase().includes(q) ||
-        p.user?.name?.toLowerCase().includes(q) ||
-        p.id.toLowerCase().includes(q)
+    if (search) {
+      const keyword = search.toLowerCase();
+      result = result.filter(
+        (u) =>
+          (u.name?.toLowerCase() || "").includes(keyword) ||
+          (u.email?.toLowerCase() || "").includes(keyword),
       );
-    });
-  }, [payments, search, statusFilter, providerFilter]);
+    }
+
+    if (roleFilter !== "ALL") {
+      result = result.filter((u) => getRole(u.role) === roleFilter);
+    }
+
+    if (statusFilter !== "ALL") {
+      result = result.filter((u) =>
+        statusFilter === "ACTIVE" ? getStatus(u.isActive) : !getStatus(u.isActive),
+      );
+    }
+
+    switch (sortBy) {
+      case "newest":
+        result.sort((a, b) => {
+          const aTime = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+          const bTime = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+          return bTime - aTime;
+        });
+        break;
+      case "oldest":
+        result.sort((a, b) => {
+          const aTime = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+          const bTime = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+          return aTime - bTime;
+        });
+        break;
+      case "balance_high":
+        result.sort((a, b) => getBalance(b.wallet) - getBalance(a.wallet));
+        break;
+      case "balance_low":
+        result.sort((a, b) => getBalance(a.wallet) - getBalance(b.wallet));
+        break;
+    }
+
+    return result;
+  }, [users, search, roleFilter, statusFilter, sortBy]);
+
+  // Pagination — fixed window calc, no duplicate page numbers at the tail
+  const totalPages = Math.ceil(filteredUsers.length / limit) || 1;
+  const paginatedUsers = useMemo(() => {
+    const start = (page - 1) * limit;
+    return filteredUsers.slice(start, start + limit);
+  }, [filteredUsers, page, limit]);
+
+  const pageWindow = useMemo(() => {
+    const windowSize = Math.min(totalPages, 5);
+    const start = Math.max(1, Math.min(page - 2, totalPages - windowSize + 1));
+    return Array.from({ length: windowSize }, (_, i) => start + i);
+  }, [page, totalPages]);
+
+  const stats = useMemo(() => {
+    const total = users.length;
+    const admins = users.filter((u) => getRole(u.role) === "ADMIN").length;
+    const active = users.filter((u) => getStatus(u.isActive)).length;
+    const suspended = users.filter((u) => !getStatus(u.isActive)).length;
+    const totalBalance = users.reduce((sum, u) => sum + getBalance(u.wallet), 0);
+    return { total, admins, active, suspended, totalBalance };
+  }, [users]);
+
+  const handlePageChange = (newPage: number) => {
+    if (newPage < 1 || newPage > totalPages) return;
+    setPage(newPage);
+  };
+
+  // ── Actions ──
+
+  const handleToggleRole = async (user: User) => {
+    const isSelf = currentUserId != null && user.id === currentUserId;
+    if (isSelf) {
+      toast.error("You can't change your own role from here.");
+      return;
+    }
+
+    const currentRole = getRole(user.role);
+    const newRole = currentRole === "ADMIN" ? "USER" : "ADMIN";
+    const displayName = getDisplayName(user.name);
+
+    if (!window.confirm(`Change ${displayName} to ${newRole}?`)) return;
+
+    try {
+      setActionLoading(user.id);
+      await api.patch(`/admin/users/${user.id}/role`, { role: newRole });
+      toast.success(`${displayName} is now ${newRole}`);
+      await loadUsers();
+    } catch (err: any) {
+      toast.error(err?.response?.data?.message || "Failed to update role");
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
+  const handleToggleStatus = async (user: User) => {
+    const isSelf = currentUserId != null && user.id === currentUserId;
+    if (isSelf) {
+      toast.error("You can't suspend your own account from here.");
+      return;
+    }
+
+    const currentStatus = getStatus(user.isActive);
+    const newStatus = !currentStatus;
+    const action = newStatus ? "activate" : "suspend";
+    const displayName = getDisplayName(user.name);
+
+    if (!window.confirm(`${action === "activate" ? "Activate" : "Suspend"} ${displayName}?`)) return;
+
+    try {
+      setActionLoading(user.id);
+      await api.patch(`/admin/users/${user.id}/status`, { isActive: newStatus });
+      toast.success(`${displayName} ${action}d`);
+      await loadUsers();
+    } catch (err: any) {
+      toast.error(err?.response?.data?.message || "Failed to update status");
+    } finally {
+      setActionLoading(null);
+    }
+  };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       {/* Header */}
-      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">Payments</h1>
-          <p className="text-sm text-muted-foreground">
-            All wallet funding transactions processed through payment gateways.
-          </p>
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Users</h1>
+          <p className="text-gray-500">Manage platform users and their accounts.</p>
         </div>
-        <button
-          onClick={fetchPayments}
-          disabled={loading}
-          className="inline-flex h-9 items-center gap-2 rounded-md border border-border bg-background px-3 text-sm font-medium hover:bg-accent disabled:opacity-50"
-        >
-          {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <CreditCard className="h-4 w-4" />}
-          Refresh
-        </button>
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-2 gap-4 lg:grid-cols-5">
-        <StatCard label="Total Payments" value={stats.total} icon={CreditCard} color="text-blue-500" />
-        <StatCard label="Successful" value={stats.successful} icon={CheckCircle2} color="text-green-500" />
-        <StatCard label="Pending" value={stats.pending} icon={Clock} color="text-yellow-500" />
-        <StatCard label="Failed" value={stats.failed} icon={XCircle} color="text-red-500" />
+      <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+        <StatCard title="Total Users" value={stats.total} icon={<Users size={24} />} color="blue" />
+        <StatCard title="Admins" value={stats.admins} icon={<Shield size={24} />} color="orange" />
+        <StatCard title="Active" value={stats.active} icon={<UserCheck size={24} />} color="green" />
+        <StatCard title="Suspended" value={stats.suspended} icon={<Ban size={24} />} color="red" />
+      </div>
+
+      {/* Total Balance */}
+      <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
         <StatCard
-          label="Total Revenue"
-          value={formatMoney(stats.totalRevenue, "NGN")}
-          icon={Banknote}
-          color="text-emerald-500"
+          title="Total User Balance"
+          value={formatCurrency(stats.totalBalance)}
+          icon={<TrendingUp size={24} />}
+          color="emerald"
         />
       </div>
 
       {/* Filters */}
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+      <div className="flex flex-col gap-4 rounded-2xl border border-gray-200 dark:border-zinc-800 bg-white/80 dark:bg-zinc-900/80 p-4 lg:flex-row lg:items-center">
         <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400 dark:text-zinc-500" />
           <input
+            type="text"
+            placeholder="Search by name or email..."
             value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search reference, gateway ref, user email or name..."
-            className="h-9 w-full rounded-md border border-border bg-background pl-9 pr-3 text-sm outline-none focus:ring-2 focus:ring-ring"
+            onChange={(e) => {
+              setSearch(e.target.value);
+              setPage(1);
+            }}
+            className="w-full rounded-xl border border-gray-300 dark:border-zinc-700 bg-gray-100 dark:bg-zinc-800 py-2.5 pl-10 pr-4 text-sm text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-zinc-500 outline-none focus:border-orange-500"
           />
         </div>
+
+        <select
+          value={roleFilter}
+          onChange={(e) => {
+            setRoleFilter(e.target.value as any);
+            setPage(1);
+          }}
+          className="rounded-xl border border-gray-300 dark:border-zinc-700 bg-gray-100 dark:bg-zinc-800 px-4 py-2.5 text-sm text-gray-900 dark:text-white outline-none focus:border-orange-500"
+        >
+          <option value="ALL">All Roles</option>
+          <option value="USER">Users</option>
+          <option value="ADMIN">Admins</option>
+        </select>
+
         <select
           value={statusFilter}
-          onChange={(e) => setStatusFilter(e.target.value)}
-          className="h-9 rounded-md border border-border bg-background px-3 text-sm outline-none focus:ring-2 focus:ring-ring"
+          onChange={(e) => {
+            setStatusFilter(e.target.value as any);
+            setPage(1);
+          }}
+          className="rounded-xl border border-gray-300 dark:border-zinc-700 bg-gray-100 dark:bg-zinc-800 px-4 py-2.5 text-sm text-gray-900 dark:text-white outline-none focus:border-orange-500"
         >
-          <option value="ALL">All Statuses</option>
-          <option value="SUCCESS">Success</option>
-          <option value="PENDING">Pending</option>
-          <option value="FAILED">Failed</option>
+          <option value="ALL">All Status</option>
+          <option value="ACTIVE">Active</option>
+          <option value="SUSPENDED">Suspended</option>
         </select>
+
         <select
-          value={providerFilter}
-          onChange={(e) => setProviderFilter(e.target.value)}
-          className="h-9 rounded-md border border-border bg-background px-3 text-sm outline-none focus:ring-2 focus:ring-ring"
+          value={sortBy}
+          onChange={(e) => setSortBy(e.target.value as any)}
+          className="rounded-xl border border-gray-300 dark:border-zinc-700 bg-gray-100 dark:bg-zinc-800 px-4 py-2.5 text-sm text-gray-900 dark:text-white outline-none focus:border-orange-500"
         >
-          <option value="ALL">All Providers</option>
-          {providers.map((p) => (
-            <option key={p} value={p}>
-              {p}
-            </option>
-          ))}
+          <option value="newest">Newest First</option>
+          <option value="oldest">Oldest First</option>
+          <option value="balance_high">Balance: High → Low</option>
+          <option value="balance_low">Balance: Low → High</option>
         </select>
       </div>
 
       {/* Table */}
-      <div className="overflow-hidden rounded-lg border border-border">
+      <div className="overflow-hidden rounded-2xl border border-gray-200 dark:border-zinc-800 bg-white/80 dark:bg-zinc-900/80">
         <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead className="bg-muted/50 text-left text-xs uppercase tracking-wider text-muted-foreground">
-              <tr>
-                <th className="px-4 py-3 font-medium">Reference</th>
-                <th className="px-4 py-3 font-medium">User</th>
-                <th className="px-4 py-3 font-medium">Amount</th>
-                <th className="px-4 py-3 font-medium">Provider</th>
-                <th className="px-4 py-3 font-medium">Status</th>
-                <th className="px-4 py-3 font-medium">Date</th>
+          <table className="w-full text-left text-sm">
+            <thead>
+              <tr className="border-b border-gray-200 dark:border-zinc-800 bg-white/50 dark:bg-zinc-900/50">
+                <th className="px-6 py-4 font-medium text-gray-500 dark:text-zinc-400">User</th>
+                <th className="px-6 py-4 font-medium text-gray-500 dark:text-zinc-400">Role</th>
+                <th className="px-6 py-4 font-medium text-gray-500 dark:text-zinc-400">Balance</th>
+                <th className="px-6 py-4 font-medium text-gray-500 dark:text-zinc-400">Status</th>
+                <th className="px-6 py-4 font-medium text-gray-500 dark:text-zinc-400">Joined</th>
+                <th className="px-6 py-4 font-medium text-gray-500 dark:text-zinc-400 text-right">Actions</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-border">
+            <tbody className="divide-y divide-gray-200 dark:divide-zinc-800">
               {loading ? (
                 <tr>
-                  <td colSpan={6} className="px-4 py-16 text-center text-muted-foreground">
-                    <Loader2 className="mx-auto h-6 w-6 animate-spin" />
+                  <td colSpan={6} className="px-6 py-12 text-center">
+                    <Loader2 className="mx-auto h-8 w-8 animate-spin text-orange-500" />
                   </td>
                 </tr>
-              ) : filtered.length === 0 ? (
+              ) : paginatedUsers.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="px-4 py-16 text-center text-muted-foreground">
-                    <CreditCard className="mx-auto mb-2 h-8 w-8 opacity-40" />
-                    No payments found.
+                  <td colSpan={6} className="px-6 py-12 text-center text-gray-400 dark:text-zinc-500">
+                    No users found
                   </td>
                 </tr>
               ) : (
-                filtered.map((p) => {
-                  const cfg = STATUS_CONFIG[p.status] ?? STATUS_CONFIG.PENDING;
-                  const StatusIcon = cfg.icon;
+                paginatedUsers.map((user) => {
+                  const displayName = getDisplayName(user.name);
+                  const displayEmail = getDisplayEmail(user.email);
+                  const role = getRole(user.role);
+                  const isActive = getStatus(user.isActive);
+                  const balance = getBalance(user.wallet);
+                  const joined = formatDate(user.createdAt);
+                  const isSelf = currentUserId != null && user.id === currentUserId;
+
                   return (
-                    <tr key={p.id} className="hover:bg-muted/30">
-                      <td className="px-4 py-3">
-                        <div className="font-mono text-xs font-medium">{p.reference}</div>
-                        {p.gatewayReference && (
-                          <div className="font-mono text-xs text-muted-foreground">
-                            gw: {p.gatewayReference}
+                    <tr key={user.id} className="transition hover:bg-gray-100/30 dark:hover:bg-zinc-800/30">
+                      <td className="px-6 py-4">
+                        <div className="flex items-center gap-3">
+                          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-orange-500/10 text-sm font-bold text-orange-500">
+                            {getInitials(user.name)}
                           </div>
-                        )}
-                      </td>
-                      <td className="px-4 py-3">
-                        <div className="flex items-center gap-2">
-                          <User className="h-3.5 w-3.5 text-muted-foreground" />
                           <div>
-                            <div className="text-xs font-medium">{p.user?.name || "—"}</div>
-                            <div className="text-xs text-muted-foreground">{p.user?.email || "—"}</div>
+                            <p className="flex items-center gap-1.5 font-medium text-gray-900 dark:text-white">
+                              {displayName}
+                              {isSelf && (
+                                <span className="rounded-full bg-gray-200 dark:bg-zinc-700 px-1.5 py-0.5 text-[10px] font-normal text-gray-700 dark:text-zinc-300">
+                                  You
+                                </span>
+                              )}
+                            </p>
+                            <p className="text-xs text-gray-400 dark:text-zinc-500">{displayEmail}</p>
                           </div>
                         </div>
                       </td>
-                      <td className="px-4 py-3">
-                        <div className="font-semibold">{formatMoney(p.amount, p.currency)}</div>
-                        <div className="text-xs text-muted-foreground">{p.currency}</div>
-                      </td>
-                      <td className="px-4 py-3">
-                        <span className="inline-flex items-center gap-1.5 rounded-md bg-muted px-2 py-1 text-xs font-medium">
-                          <Globe className="h-3 w-3" />
-                          {p.provider}
-                        </span>
-                      </td>
-                      <td className="px-4 py-3">
+                      <td className="px-6 py-4">
                         <span
-                          className={`inline-flex items-center gap-1.5 rounded-md px-2 py-1 text-xs font-medium ${cfg.color}`}
+                          className={`inline-block rounded-full px-2.5 py-1 text-xs font-medium ${
+                            role === "ADMIN"
+                              ? "bg-orange-500/10 text-orange-400"
+                              : "bg-blue-500/10 text-blue-400"
+                          }`}
                         >
-                          <StatusIcon className="h-3 w-3" />
-                          {cfg.label}
+                          {role}
                         </span>
                       </td>
-                      <td className="px-4 py-3">
-                        <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                          <Calendar className="h-3 w-3" />
-                          {formatDate(p.createdAt)}
+                      <td className="px-6 py-4">
+                        <div className="flex items-center gap-1.5 text-gray-900 dark:text-white">
+                          <Wallet size={14} className="text-gray-400 dark:text-zinc-500" />
+                          {formatCurrency(balance)}
                         </div>
-                        {p.paidAt && (
-                          <div className="mt-0.5 flex items-center gap-1.5 text-xs text-emerald-600">
-                            <ShieldCheck className="h-3 w-3" />
-                            Paid {formatDate(p.paidAt)}
-                          </div>
-                        )}
+                      </td>
+                      <td className="px-6 py-4">
+                        <span
+                          className={`inline-block rounded-full px-2.5 py-1 text-xs font-medium ${
+                            isActive ? "bg-green-500/10 text-green-400" : "bg-red-500/10 text-red-400"
+                          }`}
+                        >
+                          {isActive ? "Active" : "Suspended"}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 text-gray-500 dark:text-zinc-400">
+                        <div className="flex items-center gap-1.5">
+                          <Calendar size={14} />
+                          {joined}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4">
+                        <div className="flex items-center justify-end gap-2">
+                          {/* View Details */}
+                          <button
+                            onClick={() => setSelectedUser(user)}
+                            className="rounded-lg p-2 text-gray-500 dark:text-zinc-400 transition hover:bg-gray-100 dark:hover:bg-zinc-800 hover:text-gray-900 dark:hover:text-white"
+                            title="View Details"
+                          >
+                            <Eye size={16} />
+                          </button>
+
+                          {/* Toggle Role */}
+                          <button
+                            onClick={() => handleToggleRole(user)}
+                            disabled={actionLoading === user.id || isSelf}
+                            className="rounded-lg p-2 text-gray-500 dark:text-zinc-400 transition hover:bg-orange-500/10 hover:text-orange-400 disabled:cursor-not-allowed disabled:opacity-40"
+                            title={
+                              isSelf
+                                ? "You can't change your own role"
+                                : role === "ADMIN"
+                                ? "Demote to User"
+                                : "Promote to Admin"
+                            }
+                          >
+                            {actionLoading === user.id ? (
+                              <Loader2 size={16} className="animate-spin" />
+                            ) : role === "ADMIN" ? (
+                              <ShieldOff size={16} />
+                            ) : (
+                              <Shield size={16} />
+                            )}
+                          </button>
+
+                          {/* Toggle Status */}
+                          <button
+                            onClick={() => handleToggleStatus(user)}
+                            disabled={actionLoading === user.id || isSelf}
+                            className={`rounded-lg p-2 transition disabled:cursor-not-allowed disabled:opacity-40 ${
+                              isActive
+                                ? "text-gray-500 dark:text-zinc-400 hover:bg-red-500/10 hover:text-red-400"
+                                : "text-gray-500 dark:text-zinc-400 hover:bg-green-500/10 hover:text-green-400"
+                            }`}
+                            title={isSelf ? "You can't suspend your own account" : isActive ? "Suspend" : "Activate"}
+                          >
+                            {actionLoading === user.id ? (
+                              <Loader2 size={16} className="animate-spin" />
+                            ) : isActive ? (
+                              <Ban size={16} />
+                            ) : (
+                              <CheckCircle size={16} />
+                            )}
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   );
@@ -288,37 +666,49 @@ export default function AdminPaymentsPage() {
             </tbody>
           </table>
         </div>
+
+        {/* Pagination */}
+        {totalPages > 1 && (
+          <div className="flex items-center justify-between border-t border-gray-200 dark:border-zinc-800 px-6 py-4">
+            <p className="text-sm text-gray-400 dark:text-zinc-500">
+              Showing {(page - 1) * limit + 1} -{" "}
+              {Math.min(page * limit, filteredUsers.length)} of {filteredUsers.length} users
+            </p>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => handlePageChange(page - 1)}
+                disabled={page === 1}
+                className="rounded-lg border border-gray-300 dark:border-zinc-700 p-2 text-gray-500 dark:text-zinc-400 transition hover:bg-gray-100 dark:hover:bg-zinc-800 hover:text-gray-900 dark:hover:text-white disabled:opacity-50"
+              >
+                <ChevronLeft size={16} />
+              </button>
+              {pageWindow.map((pageNum) => (
+                <button
+                  key={pageNum}
+                  onClick={() => handlePageChange(pageNum)}
+                  className={`rounded-lg px-3 py-2 text-sm font-medium transition ${
+                    pageNum === page
+                      ? "bg-orange-600 text-white"
+                      : "border border-gray-300 dark:border-zinc-700 text-gray-500 dark:text-zinc-400 hover:bg-gray-100 dark:hover:bg-zinc-800 hover:text-gray-900 dark:hover:text-white"
+                  }`}
+                >
+                  {pageNum}
+                </button>
+              ))}
+              <button
+                onClick={() => handlePageChange(page + 1)}
+                disabled={page === totalPages}
+                className="rounded-lg border border-gray-300 dark:border-zinc-700 p-2 text-gray-500 dark:text-zinc-400 transition hover:bg-gray-100 dark:hover:bg-zinc-800 hover:text-gray-900 dark:hover:text-white disabled:opacity-50"
+              >
+                <ChevronRight size={16} />
+              </button>
+            </div>
+          </div>
+        )}
       </div>
 
-      {!loading && filtered.length > 0 && (
-        <div className="text-xs text-muted-foreground">
-          Showing {filtered.length} of {payments.length} payment{payments.length === 1 ? "" : "s"}.
-        </div>
-      )}
-    </div>
-  );
-}
-
-/* ── Stat Card ── */
-
-function StatCard({
-  label,
-  value,
-  icon: Icon,
-  color,
-}: {
-  label: string;
-  value: string | number;
-  icon: any;
-  color: string;
-}) {
-  return (
-    <div className="rounded-lg border border-border bg-card p-4">
-      <div className="flex items-center justify-between">
-        <span className="text-xs font-medium text-muted-foreground">{label}</span>
-        <Icon className={`h-4 w-4 ${color}`} />
-      </div>
-      <div className="mt-2 text-xl font-bold">{value}</div>
+      {/* User Details Modal */}
+      <UserDetailsModal user={selectedUser} onClose={() => setSelectedUser(null)} />
     </div>
   );
 }

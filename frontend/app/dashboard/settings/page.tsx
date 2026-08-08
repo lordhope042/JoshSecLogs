@@ -33,9 +33,13 @@ interface NotificationPrefs {
    there is no backend endpoint for them yet.
 =============================== */
 
+// `api` (shared @/lib/axios) already unwraps the response in its
+// interceptor — every call below resolves DIRECTLY to the backend
+// payload. Don't destructure `.data` off the result again.
+
 async function fetchMe(): Promise<UserProfile> {
-  const { data } = await api.get("/auth/me");
-  const user = data.data ?? data;
+  const data: any = await api.get("/auth/me");
+  const user = data?.data ?? data;
   return {
     name: user.name ?? user.fullName ?? "",
     email: user.email ?? "",
@@ -44,19 +48,19 @@ async function fetchMe(): Promise<UserProfile> {
 }
 
 async function updateProfile(payload: { name: string; email?: string }) {
-  const { data } = await api.patch("/auth/me", {
+  const data: any = await api.patch("/auth/me", {
     name: payload.name,
     email: payload.email,
   });
-  return data.data ?? data;
+  return data?.data ?? data;
 }
 
 async function updatePassword(payload: { current: string; next: string }) {
-  const { data } = await api.patch("/auth/me/password", {
+  const data: any = await api.patch("/auth/me/password", {
     currentPassword: payload.current,
     newPassword: payload.next,
   });
-  return data.data ?? data;
+  return data?.data ?? data;
 }
 
 /* ===============================

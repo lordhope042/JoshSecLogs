@@ -67,13 +67,16 @@ export default function RegisterForm() {
 
   const onSubmit = async (data: RegisterData) => {
     try {
-      const response = await api.post(
+      const response: any = await api.post(
         "/auth/register",
         data
       );
 
+      // `api` (shared @/lib/axios) already unwraps the response — `response`
+      // IS the backend payload already, not `{ data: { message } }`. Reading
+      // `.data` here was silently swallowing the real success message.
       toast.success(
-        response.data?.message ??
+        response?.message ??
           "Registration Successful"
       );
 

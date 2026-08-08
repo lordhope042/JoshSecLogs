@@ -4,6 +4,7 @@ import {
   Get,
   Param,
   Post,
+  Query,
   Req,
   UseGuards,
 } from '@nestjs/common';
@@ -32,25 +33,33 @@ export class MarketplaceController {
   ============================================================ */
 
   @Get('countries')
-  countries() {
-    return this.marketplaceService.countries();
+  countries(
+    @Query('provider') provider?: 'FIVESIM' | 'GRIZZYSMS',
+  ) {
+    return this.marketplaceService.countries(
+      provider ?? 'FIVESIM',
+    );
   }
 
   @Get('products/:country')
   products(
     @Param('country') country: string,
+    @Query('provider') provider?: 'FIVESIM' | 'GRIZZYSMS',
   ) {
     return this.marketplaceService.products(
       country,
+      provider ?? 'FIVESIM',
     );
   }
 
   @Get('prices/:country')
   prices(
     @Param('country') country: string,
+    @Query('provider') provider?: 'FIVESIM' | 'GRIZZYSMS',
   ) {
     return this.marketplaceService.prices(
       country,
+      provider ?? 'FIVESIM',
     );
   }
 

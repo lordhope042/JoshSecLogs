@@ -47,8 +47,9 @@ export default function ApiKeysPage() {
   const loadKeys = useCallback(async () => {
     try {
       setLoading(true);
-      const { data } = await api.get("/api-keys");
-      const list = data.data ?? data;
+      // `api` already unwraps the response — don't destructure `.data` again.
+      const data: any = await api.get("/api-keys");
+      const list = data?.data ?? data;
       setKeys(Array.isArray(list) ? list : []);
     } catch (err: any) {
       if (err?.response?.status === 401) return;
@@ -60,8 +61,8 @@ export default function ApiKeysPage() {
 
   const loadWalletBalance = useCallback(async () => {
     try {
-      const { data } = await api.get("/wallet");
-      const wallet = data.data ?? data;
+      const data: any = await api.get("/wallet");
+      const wallet = data?.data ?? data;
       setWalletBalance(Number(wallet?.balance ?? 0));
     } catch {
       // non-critical — the page still works without the balance
@@ -84,8 +85,8 @@ export default function ApiKeysPage() {
     setConfirmOpen(false);
     try {
       setCreating(true);
-      const { data } = await api.post("/api-keys", {});
-      const result = data.data ?? data;
+      const data: any = await api.post("/api-keys", {});
+      const result = data?.data ?? data;
       setNewKeyId(result.id);
       setNewKeyValue(result.key);
       setShowNewKey(true);

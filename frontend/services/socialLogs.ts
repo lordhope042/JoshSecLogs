@@ -11,6 +11,19 @@ import type {
   PurchaseSocialLogResponse,
 } from "@/types/social-log";
 
+/**
+ * IMPORTANT: `api` (the shared axios instance from `@/lib/axios`) already
+ * unwraps the response in its interceptor — every `api.get(...)` /
+ * `api.post(...)` call below resolves DIRECTLY to the backend payload, not
+ * `{ data: payload }`. Do NOT destructure `.data` off the result again.
+ *
+ * The old code did `const { data } = await api.get(...); return data.data ?? data;`
+ * — that's a double-unwrap. Whenever the backend returned a bare (non-enveloped)
+ * body, the interceptor already reduced it to that bare value, so destructuring
+ * `{ data }` off of it produced `undefined`, and `undefined.data` crashed with
+ * "Cannot read properties of undefined (reading 'data')".
+ */
+
 /* ===============================
    GET ALL SOCIAL LOGS
    Accepts optional filters — only { platform } is actually read
@@ -21,10 +34,10 @@ import type {
 export async function getSocialLogs(
   filters?: SocialLogFilters,
 ): Promise<SocialLog[]> {
-  const { data } = await api.get("/social-logs", {
+  const data = await api.get("/social-logs", {
     params: filters,
   });
-  return data.data ?? data;
+  return (data as any)?.data ?? data;
 }
 
 /* ===============================
@@ -35,8 +48,8 @@ export async function getSocialLogs(
 export async function getSocialLogsByCategory(
   category: SocialLogCategoryValue,
 ): Promise<SocialLog[]> {
-  const { data } = await api.get(`/social-logs/category/${category}`);
-  return data.data ?? data;
+  const data = await api.get(`/social-logs/category/${category}`);
+  return (data as any)?.data ?? data;
 }
 
 /* ===============================
@@ -45,8 +58,8 @@ export async function getSocialLogsByCategory(
 export async function getSocialLog(
   id: string,
 ): Promise<SocialLog> {
-  const { data } = await api.get(`/social-logs/${id}`);
-  return data.data ?? data;
+  const data = await api.get(`/social-logs/${id}`);
+  return (data as any)?.data ?? data;
 }
 
 /* ===============================
@@ -55,8 +68,8 @@ export async function getSocialLog(
 export async function createSocialLog(
   payload: CreateSocialLogDto,
 ): Promise<SocialLog> {
-  const { data } = await api.post("/social-logs", payload);
-  return data.data ?? data;
+  const data = await api.post("/social-logs", payload);
+  return (data as any)?.data ?? data;
 }
 
 /* ===============================
@@ -66,8 +79,8 @@ export async function updateSocialLog(
   id: string,
   payload: UpdateSocialLogDto,
 ): Promise<SocialLog> {
-  const { data } = await api.patch(`/social-logs/${id}`, payload);
-  return data.data ?? data;
+  const data = await api.patch(`/social-logs/${id}`, payload);
+  return (data as any)?.data ?? data;
 }
 
 /* ===============================
@@ -86,8 +99,8 @@ export async function markSoldSocialLog(
   id: string,
   buyerId: string,
 ): Promise<SocialLog> {
-  const { data } = await api.patch(`/social-logs/${id}/sold/${buyerId}`);
-  return data.data ?? data;
+  const data = await api.patch(`/social-logs/${id}/sold/${buyerId}`);
+  return (data as any)?.data ?? data;
 }
 
 /* ===============================
@@ -95,8 +108,8 @@ export async function markSoldSocialLog(
    Grouped tab-summary list — { category, count, total }[]
 =============================== */
 export async function getSocialLogCategories(): Promise<SocialLogCategory[]> {
-  const { data } = await api.get("/social-logs/categories");
-  return data.data ?? data;
+  const data = await api.get("/social-logs/categories");
+  return (data as any)?.data ?? data;
 }
 
 /* ===============================
@@ -105,16 +118,16 @@ export async function getSocialLogCategories(): Promise<SocialLogCategory[]> {
 export async function purchaseSocialLog(
   id: string,
 ): Promise<PurchaseSocialLogResponse> {
-  const { data } = await api.post(`/social-logs/${id}/purchase`);
-  return data.data ?? data;
+  const data = await api.post(`/social-logs/${id}/purchase`);
+  return (data as any)?.data ?? data;
 }
 
 /* ===============================
    GET MY PURCHASES (list)
 =============================== */
 export async function getMyPurchases(): Promise<SocialLog[]> {
-  const { data } = await api.get("/social-logs/my-purchases");
-  return data.data ?? data;
+  const data = await api.get("/social-logs/my-purchases");
+  return (data as any)?.data ?? data;
 }
 
 /* ===============================
@@ -123,6 +136,6 @@ export async function getMyPurchases(): Promise<SocialLog[]> {
 export async function getPurchasedSocialLog(
   id: string,
 ): Promise<PurchasedSocialLog> {
-  const { data } = await api.get(`/social-logs/my-purchases/${id}`);
-  return data.data ?? data;
+  const data = await api.get(`/social-logs/my-purchases/${id}`);
+  return (data as any)?.data ?? data;
 }

@@ -10,9 +10,12 @@ import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../prisma/prisma.service';
 import { WalletService } from '../wallet/wallet.service';
 import { FiveSimService } from '../providers/fivesim/fivesim.service';
+import { GrizzySmsService } from '../providers/grizzysms/grizzysms.service';
 import { OrderStatus } from '@prisma/client';
 
 import { BuyNumberDto } from './dto/buy-number.dto';
+
+type Provider = 'FIVESIM' | 'GRIZZYSMS';
 
 @Injectable()
 export class MarketplaceService {
@@ -22,6 +25,7 @@ export class MarketplaceService {
 
   constructor(
     private readonly fiveSim: FiveSimService,
+    private readonly grizzySms: GrizzySmsService,
     private readonly wallet: WalletService,
     private readonly prisma: PrismaService,
     private readonly config: ConfigService,
@@ -35,6 +39,15 @@ export class MarketplaceService {
     return Number(
       this.config.get<number>('USD_TO_NGN') ??
         1650,
+    );
+  }
+
+  // GrizzySMS (handler_api.php / SMS-Activate protocol) prices in RUB,
+  // not USD — a separate conversion rate is needed for it.
+  private get rubRate(): number {
+    return Number(
+      this.config.get<number>('RUB_TO_NGN') ??
+        18,
     );
   }
 
@@ -53,11 +66,48 @@ export class MarketplaceService {
     );
   }
 
+  private convertRubPrice(
+    rub: number,
+  ): number {
+    return Math.ceil(
+      rub * this.rubRate * this.markup,
+    );
+  }
+
+  /* ============================================================
+              GRIZZYSMS NAME LOOKUP (VERIFY BEFORE USE)
+  ============================================================
+  GrizzySMS's handler_api.php actions given to us don't include a
+  country/service *name* lookup — only numeric country ids and short
+  service codes. Rather than guess (a wrong id could send a purchase
+  to the wrong country), raw codes are shown until verified names are
+  filled in here from Grizzy's own docs/support.
+  ============================================================ */
+
+  private readonly grizzyCountryNames: Record<string, string> = {
+    // '0': 'Russia',
+    // '187': 'Nigeria',
+    // fill in once verified — falls back to "Country {id}" otherwise
+  };
+
+  private readonly grizzyServiceNames: Record<string, string> = {
+    // 'wa': 'WhatsApp',
+    // 'tg': 'Telegram',
+    // fill in once verified — falls back to the raw code otherwise
+  };
+
   /* ============================================================
                         COUNTRIES
   ============================================================ */
 
-  async countries() {
+  async countries(provider: Provider = 'FIVESIM') {
+    if (provider === 'GRIZZYSMS') {
+      return this.grizzyCountries();
+    }
+    return this.fiveSimCountries();
+  }
+
+  private async fiveSimCountries() {
     try {
       const response =
         await this.fiveSim.countries();
@@ -104,11 +154,44 @@ export class MarketplaceService {
     }
   }
 
+  private async grizzyCountries() {
+    try {
+      const prices = await this.grizzySms.getPricesV2();
+
+      return Object.keys(prices ?? {})
+        .map((id) => ({
+          id,
+          code: id,
+          name: this.grizzyCountryNames[id] ?? `Country ${id}`,
+          iso: id,
+          prefix: '',
+          flag: null,
+        }))
+        .sort((a, b) => a.name.localeCompare(b.name));
+    } catch (error) {
+      this.logger.error(
+        'Failed loading GrizzySMS countries',
+        error,
+      );
+
+      throw new BadGatewayException(
+        'Unable to load countries.',
+      );
+    }
+  }
+
   /* ============================================================
                         PRODUCTS
   ============================================================ */
 
-  async products(country: string) {
+  async products(country: string, provider: Provider = 'FIVESIM') {
+    if (provider === 'GRIZZYSMS') {
+      return this.grizzyProducts(country);
+    }
+    return this.fiveSimProducts(country);
+  }
+
+  private async fiveSimProducts(country: string) {
     try {
       const response =
         await this.fiveSim.products(
@@ -148,11 +231,43 @@ export class MarketplaceService {
     }
   }
 
+  private async grizzyProducts(country: string) {
+    try {
+      const prices = await this.grizzySms.getPricesV2(undefined, country);
+      const services = prices?.[country] ?? {};
+
+      return Object.keys(services)
+        .map((code) => ({
+          id: code,
+          service: code,
+          name: this.grizzyServiceNames[code] ?? code,
+          image: null,
+        }))
+        .sort((a, b) => a.name.localeCompare(b.name));
+    } catch (error) {
+      this.logger.error(
+        `Failed loading GrizzySMS products for ${country}`,
+        error,
+      );
+
+      throw new BadGatewayException(
+        'Unable to load products.',
+      );
+    }
+  }
+
   /* ============================================================
                           PRICES
   ============================================================ */
 
-  async prices(country: string) {
+  async prices(country: string, provider: Provider = 'FIVESIM') {
+    if (provider === 'GRIZZYSMS') {
+      return this.grizzyPrices(country);
+    }
+    return this.fiveSimPrices(country);
+  }
+
+  private async fiveSimPrices(country: string) {
     try {
       const response: any =
         await this.fiveSim.prices(
@@ -228,6 +343,51 @@ export class MarketplaceService {
     }
   }
 
+  /**
+   * GrizzySMS (handler_api.php protocol) has no per-operator breakdown
+   * the way 5sim does — each service+country combo is a single price
+   * and stock count. To keep the response shape identical for the
+   * frontend, a single synthetic activationType of "any" is returned
+   * per service.
+   */
+  private async grizzyPrices(country: string) {
+    try {
+      const response = await this.grizzySms.getPricesV2(undefined, country);
+      const services = response?.[country] ?? {};
+
+      return Object.entries(services)
+        .map(([service, info]: any) => {
+          const rub = Number(info?.cost ?? 0);
+
+          return {
+            service,
+            activationTypes: [
+              {
+                activationType: 'any',
+                stock: Number(info?.count ?? 0),
+                priceUsd: rub, // stored in the "usd" field for shape
+                                // compatibility — this is actually RUB;
+                                // see convertRubPrice below for the
+                                // conversion actually used at purchase.
+                priceNgn: this.convertRubPrice(rub),
+              },
+            ],
+          };
+        })
+        .filter((s) => s.activationTypes[0].stock > 0)
+        .sort((a, b) => a.service.localeCompare(b.service));
+    } catch (error) {
+      this.logger.error(
+        `Failed loading GrizzySMS prices for ${country}`,
+        error,
+      );
+
+      throw new BadGatewayException(
+        'Unable to load prices.',
+      );
+    }
+  }
+
   /* ============================================================
                     PURCHASE HELPERS
   ============================================================ */
@@ -236,8 +396,9 @@ export class MarketplaceService {
     country: string,
     operator: string,
     product: string,
+    provider: Provider,
   ) {
-    const services = await this.prices(country);
+    const services = await this.prices(country, provider);
 
     const service = services.find(
       (s: any) => s.service === product,
@@ -274,7 +435,20 @@ export class MarketplaceService {
     country: string,
     operator: string,
     product: string,
+    provider: Provider,
   ) {
+    if (provider === 'GRIZZYSMS') {
+      const purchase = await this.grizzySms.buy(product, country);
+
+      if (!purchase?.id) {
+        throw new BadGatewayException(
+          'Provider failed to allocate a number.',
+        );
+      }
+
+      return purchase;
+    }
+
     const purchase =
       await this.fiveSim.buy(
         country,
@@ -301,7 +475,7 @@ export class MarketplaceService {
       data: {
         userId,
 
-        provider: 'FIVESIM',
+        provider: dto.provider,
 
         providerOrderId: String(
           purchase.id,
@@ -385,6 +559,58 @@ export class MarketplaceService {
     }
   }
 
+  /**
+   * GrizzySMS (handler_api.php) getStatus raw codes:
+   *   STATUS_WAIT_CODE   -> waiting for SMS, still active
+   *   STATUS_WAIT_RETRY  -> waiting for SMS, still active
+   *   STATUS_WAIT_RESEND -> waiting for SMS, still active
+   *   STATUS_OK          -> SMS received
+   *   STATUS_CANCEL      -> cancelled
+   */
+  private mapGrizzyStatus(rawCode: string | undefined): OrderStatus {
+    switch (rawCode) {
+      case 'STATUS_WAIT_CODE':
+      case 'STATUS_WAIT_RETRY':
+      case 'STATUS_WAIT_RESEND':
+        return OrderStatus.ACTIVE;
+
+      case 'STATUS_OK':
+        return OrderStatus.COMPLETED;
+
+      case 'STATUS_CANCEL':
+        return OrderStatus.CANCELLED;
+
+      default:
+        this.logger.warn(
+          `Unmapped GrizzySMS status "${rawCode}" — defaulting to PENDING`,
+        );
+        return OrderStatus.PENDING;
+    }
+  }
+
+  private async checkProviderOrder(order: {
+    provider: string;
+    providerOrderId: string | null;
+  }) {
+    if (order.provider === 'GRIZZYSMS') {
+      const result = await this.grizzySms.getStatus(
+        order.providerOrderId ?? '',
+      );
+      return {
+        status: this.mapGrizzyStatus(result.code),
+        sms: result.code === 'STATUS_OK' && result.value ? [result.value] : null,
+        raw: result,
+      };
+    }
+
+    const result = await this.fiveSim.check(Number(order.providerOrderId));
+    return {
+      status: this.mapProviderStatus((result as any)?.status),
+      sms: result.sms,
+      raw: result,
+    };
+  }
+
   /* ============================================================
                         BUY NUMBER
   ============================================================ */
@@ -402,6 +628,7 @@ export class MarketplaceService {
         dto.country,
         operator,
         dto.product,
+        dto.provider,
       );
 
     const amount =
@@ -421,6 +648,7 @@ export class MarketplaceService {
           dto.country,
           operator,
           dto.product,
+          dto.provider,
         );
 
       // Save order
@@ -501,14 +729,8 @@ export class MarketplaceService {
         orderId,
       );
 
-    const provider =
-      await this.fiveSim.check(
-        Number(order.providerOrderId),
-      );
-
-    const status = this.mapProviderStatus(
-      (provider as any)?.status,
-    );
+    const checked = await this.checkProviderOrder(order);
+    const status = checked.status;
 
     // ── Auto-refund on terminal failure states ──
     // When a virtual number times out without receiving an SMS (or
@@ -578,7 +800,7 @@ export class MarketplaceService {
     }
 
     return {
-      ...provider,
+      ...checked.raw,
       mappedStatus: status,
       refunded: shouldRefund,
     };
@@ -587,16 +809,16 @@ export class MarketplaceService {
   /* ============================================================
                         SMS
   ============================================================ */
-async sms(userId: string, orderId: string) {
-  const order = await this.getOrder(userId, orderId);
+  async sms(userId: string, orderId: string) {
+    const order = await this.getOrder(userId, orderId);
 
-  const provider = await this.fiveSim.check(Number(order.providerOrderId));
+    const checked = await this.checkProviderOrder(order);
 
-  return {
-    Data: provider.sms && provider.sms.length > 0 ? provider.sms : null,
-    Total: provider.sms?.length ?? 0,
-  };
-}
+    return {
+      Data: checked.sms && checked.sms.length > 0 ? checked.sms : null,
+      Total: checked.sms?.length ?? 0,
+    };
+  }
 
   /* ============================================================
                         FINISH
@@ -612,9 +834,13 @@ async sms(userId: string, orderId: string) {
         orderId,
       );
 
-    await this.fiveSim.finish(
-      Number(order.providerOrderId),
-    );
+    if (order.provider === 'GRIZZYSMS') {
+      await this.grizzySms.finish(order.providerOrderId ?? '');
+    } else {
+      await this.fiveSim.finish(
+        Number(order.providerOrderId),
+      );
+    }
 
     await this.prisma.order.update({
       where: {
@@ -653,14 +879,23 @@ async sms(userId: string, orderId: string) {
       );
     }
 
-    const provider =
-      await this.fiveSim.cancel(
+    let status: OrderStatus;
+    let rawStatusLabel: string;
+
+    if (order.provider === 'GRIZZYSMS') {
+      const code = await this.grizzySms.cancel(order.providerOrderId ?? '');
+      status = this.mapGrizzyStatus(
+        code === 'ACCESS_CANCEL' ? 'STATUS_CANCEL' : undefined,
+      );
+      rawStatusLabel = code;
+    } else {
+      const provider = await this.fiveSim.cancel(
         Number(order.providerOrderId),
       );
-
-    const status = this.mapProviderStatus(
-      (provider as any)?.status,
-    );
+      status = this.mapProviderStatus((provider as any)?.status);
+      rawStatusLabel =
+        (provider as any)?.status?.toUpperCase?.() ?? 'UNKNOWN';
+    }
 
     // Refund on a genuine cancellation OR a timeout. A timeout means
     // the number expired without receiving an SMS — the user paid for
@@ -723,8 +958,7 @@ async sms(userId: string, orderId: string) {
 
     return {
       success: true,
-      providerStatus:
-        (provider as any)?.status?.toUpperCase?.() ?? 'UNKNOWN',
+      providerStatus: rawStatusLabel,
       status,
       refunded: shouldRefund,
     };
@@ -753,9 +987,15 @@ async sms(userId: string, orderId: string) {
       );
     }
 
-    await this.fiveSim.ban(
-      Number(order.providerOrderId),
-    );
+    if (order.provider === 'GRIZZYSMS') {
+      // handler_api.php has no separate "ban" action — status 8 (cancel)
+      // is the closest equivalent for marking a number bad/unusable.
+      await this.grizzySms.cancel(order.providerOrderId ?? '');
+    } else {
+      await this.fiveSim.ban(
+        Number(order.providerOrderId),
+      );
+    }
 
     await this.prisma.order.update({
       where: {

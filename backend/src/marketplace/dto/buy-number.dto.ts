@@ -1,4 +1,5 @@
 import {
+  IsIn,
   IsNotEmpty,
   IsOptional,
   IsString,
@@ -7,6 +8,17 @@ import {
 } from 'class-validator';
 
 export class BuyNumberDto {
+  /*
+  =====================================
+      PROVIDER
+  =====================================
+  */
+
+  @IsIn(['FIVESIM', 'GRIZZYSMS'], {
+    message: 'Provider must be FIVESIM or GRIZZYSMS.',
+  })
+  provider!: 'FIVESIM' | 'GRIZZYSMS';
+
   /*
   =====================================
       COUNTRY

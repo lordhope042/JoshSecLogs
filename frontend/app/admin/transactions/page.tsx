@@ -468,9 +468,16 @@ export default function AdminWalletPage() {
   const loadTransactions = useCallback(async () => {
     try {
       setLoading(true);
-      const { data } = await api.get("/admin/transactions");
+      // NOTE: `api` (shared @/lib/axios) already unwraps the response in its
+      // interceptor — this resolves DIRECTLY to the backend payload, not
+      // `{ data: ... }`. Don't destructure `.data` off it again (that was
+      // the bug: a bare-array response meant `data` here was `undefined`,
+      // and `data.transactions` crashed).
+      const payload: any = await api.get("/admin/transactions");
 
-      const rawItems: RawTransaction[] = Array.isArray(data) ? data : data.transactions || [];
+      const rawItems: RawTransaction[] = Array.isArray(payload)
+        ? payload
+        : payload?.transactions ?? payload?.data ?? [];
 
       const normalized: Transaction[] = rawItems.map((t) => {
         const mappedType = mapBackendType(t.type, t.description);

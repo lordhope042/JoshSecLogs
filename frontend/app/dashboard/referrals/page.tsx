@@ -21,8 +21,9 @@ interface ReferralData {
 }
 
 async function fetchReferrals(): Promise<ReferralData> {
-  const { data } = await api.get("/auth/me/referrals");
-  return data.data ?? data;
+  // `api` already unwraps the response — don't destructure `.data` again.
+  const data: any = await api.get("/auth/me/referrals");
+  return data?.data ?? data;
 }
 
 export default function ReferralsPage() {

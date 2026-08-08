@@ -85,8 +85,14 @@ export default function AdminOrdersPage() {
   const loadOrders = useCallback(async () => {
     try {
       setLoading(true);
-      const { data } = await api.get("/admin/orders");
-      const list = data.data ?? data;
+      // `api` (shared @/lib/axios) already unwraps the response in its
+      // interceptor — this resolves DIRECTLY to the backend payload, not
+      // `{ data: ... }`. Don't destructure `.data` off it again (that was
+      // the bug: a bare-array response meant `data` here was `undefined`,
+      // and `data.data` crashed with "Cannot read properties of undefined
+      // (reading 'data')" — caught below and shown as this generic toast).
+      const payload: any = await api.get("/admin/orders");
+      const list = Array.isArray(payload) ? payload : payload?.data ?? payload?.orders ?? [];
       setOrders(Array.isArray(list) ? list : []);
     } catch (err: any) {
       if (err?.response?.status === 401) return;

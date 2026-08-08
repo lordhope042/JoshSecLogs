@@ -486,8 +486,16 @@ export default function TransactionsPage() {
         amount: Number(raw?.amount) ?? 0,
       });
       setDetailOpen(true);
-    } catch (err) {
-      toast.error("Failed to load transaction details");
+    } catch (err: any) {
+      console.error("handleViewDetails failed:", reference, err?.response?.status, err?.response?.data ?? err);
+      const status = err?.response?.status;
+      if (status === 404) {
+        toast.error("That transaction no longer exists.");
+      } else if (status === 401) {
+        toast.error("Your session expired — please log in again.");
+      } else {
+        toast.error(err?.response?.data?.message ?? "Failed to load transaction details");
+      }
     }
   }
 
