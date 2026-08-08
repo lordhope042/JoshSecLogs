@@ -15,6 +15,7 @@ model User {
   updatedAt           DateTime            @updatedAt
   emailVerified       Boolean             @default(false)
   isActive            Boolean             @default(true)
+  lastLoginAt         DateTime?
   name                String
   referralCode        String?             @unique
   referredBy          String?
@@ -193,6 +194,36 @@ model ApiKey {
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
+}
+
+model Notification {
+  id          String               @id @default(uuid())
+  title       String
+  message     String
+  active      Boolean              @default(true)
+  type        NotificationType     @default(GENERAL)
+  style       NotificationStyle    @default(ICON_BADGE)
+  telegramUrl String?
+  whatsappUrl String?
+  createdAt   DateTime             @default(now())
+  updatedAt   DateTime             @updatedAt
+
+  @@index([active])
+  @@index([createdAt])
+  @@index([type])
+}
+
+enum NotificationType {
+  GENERAL
+  WELCOME_NEW
+  WELCOME_BACK
+}
+
+enum NotificationStyle {
+  MINIMAL
+  BANNER
+  ICON_BADGE
+  SPLIT
 }
 
 enum UserRole {
