@@ -1,5 +1,7 @@
 "use client";
 
+import { useEffect } from "react";
+
 import {
   Wallet,
   ShoppingCart,
@@ -9,20 +11,35 @@ import {
 
 import DashboardCard from "@/components/dashboard/DashboardCard";
 
-import { useWallet } from "@/hooks/useWallet";
+import { useWalletContext } from "@/contexts/WalletContext";
 import { useOrders } from "@/hooks/useOrders";
 
 export default function DashboardPage() {
+  // FIX: was its own separate `useWallet()` call — a second,
+  // disconnected fetch from the one DashboardLayout already makes for
+  // Topbar. Now reads the single shared instance via context, so this
+  // page always shows exactly what Topbar shows, with no extra
+  // request and no possibility of the two disagreeing.
   const {
     balance,
     transactions,
     loading: walletLoading,
-  } = useWallet();
+    loadTransactions,
+  } = useWalletContext();
 
   const {
     orders,
     loading: ordersLoading,
+    loadOrders,
   } = useOrders();
+
+  // Wallet itself is already loaded/polled by WalletProvider — only
+  // transactions and orders still need to be fetched by this page.
+  useEffect(() => {
+    loadTransactions();
+    loadOrders();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const completedOrders = orders.filter(
     (order) =>

@@ -169,14 +169,21 @@ export default function OrdersPage() {
 
   async function loadOrders() {
     try {
-      const { data } = await api.get("/marketplace/orders");
+      // FIX: `api` (lib/axios.ts) already unwraps `response.data` in its
+      // response interceptor, so `api.get(...)` resolves directly to the
+      // backend's JSON body — a flat array of orders — not an Axios
+      // response object. Destructuring `{ data }` off that array pulled
+      // a `.data` property that doesn't exist on arrays, so `data` was
+      // always `undefined` and `list` silently ended up `[]` on every
+      // load. Use the resolved value directly instead.
+      const data = await api.get("/marketplace/orders");
       // Backend returns a flat array, but guard against wrapped shapes too.
       const list: Order[] = Array.isArray(data)
         ? data
-        : Array.isArray(data?.data)
-          ? data.data
-          : Array.isArray(data?.orders)
-            ? data.orders
+        : Array.isArray((data as any)?.data)
+          ? (data as any).data
+          : Array.isArray((data as any)?.orders)
+            ? (data as any).orders
             : [];
       setOrders(list);
     } catch (err) {
@@ -258,9 +265,15 @@ export default function OrdersPage() {
       setWorkingId(id);
       setWorkingAction("cancel");
 
-      const { data } = await api.post(`/marketplace/orders/${id}/cancel`);
+      // FIX: same unwrap issue as loadOrders() — `api.post(...)` already
+      // resolves to the backend's JSON body directly, so this was
+      // destructuring `.data` off an object that has no such property
+      // (the backend's cancel() response is { success, providerStatus,
+      // status, refunded } — no `data` wrapper), making `data` always
+      // `undefined` and silently swallowing the real success message.
+      const data = await api.post(`/marketplace/orders/${id}/cancel`);
 
-      alert(data?.message ?? "Order cancelled successfully.");
+      alert((data as any)?.message ?? "Order cancelled successfully.");
 
       await loadOrders();
     } catch (error: any) {
@@ -303,7 +316,12 @@ export default function OrdersPage() {
     }
 
     try {
-      const { data } = await api.get(`/marketplace/orders/${orderId}/sms`);
+      // FIX: same unwrap issue — `api.get(...)` already resolves to the
+      // backend's { Data, Total } body directly, not an Axios response.
+      // Destructuring `.data` off that pulled a DIFFERENT, unrelated
+      // `Data` (capital-D) field incorrectly, or undefined entirely,
+      // so extractSmsList() never received the real payload.
+      const data = await api.get(`/marketplace/orders/${orderId}/sms`);
 
       // eslint-disable-next-line no-console
       console.log(`[SMS RAW RESPONSE] order=${orderId}`, data);

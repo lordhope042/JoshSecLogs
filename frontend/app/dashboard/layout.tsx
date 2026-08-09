@@ -7,18 +7,22 @@ import Sidebar from "@/components/dashboard/Sidebar";
 import Topbar from "@/components/dashboard/Topbar";
 import WelcomeNotificationModal from "@/components/dashboard/WelcomeNotificationModal";
 
-import { useWallet } from "@/hooks/useWallet";
+import { WalletProvider, useWalletContext } from "@/contexts/WalletContext";
 import { useWelcomeNotification } from "@/hooks/useWelcomeNotification";
 
-export default function DashboardLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+// The actual layout body — split out so it can sit INSIDE
+// <WalletProvider> and call useWalletContext(). (Providers can't
+// supply context to their own direct children's props before the
+// provider itself has rendered, so the consumer has to be a child
+// component, not the same component that renders the provider.)
+function DashboardLayoutInner({ children }: { children: React.ReactNode }) {
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
 
-  const { wallet, loading, loadWallet } = useWallet();
+  // FIX: was `useWallet()` directly — now reads the single shared
+  // instance from WalletProvider. Polling/loadWallet-on-mount is now
+  // handled once inside WalletProvider itself, not duplicated here.
+  const { wallet, loading } = useWalletContext();
 
   // Show the welcome/notification modal once, right after a fresh login,
   // populated with whatever the admin currently has marked active.
@@ -31,37 +35,6 @@ export default function DashboardLayout({
     isFirstLogin,
     dismiss: dismissWelcome,
   } = useWelcomeNotification();
-
-  // Poll the wallet, but pause while the tab is hidden — no point
-  // hammering the API for a user who isn't looking at the screen.
-  useEffect(() => {
-    loadWallet();
-
-    let interval: ReturnType<typeof setInterval> | null = null;
-
-    const start = () => {
-      if (interval) return;
-      interval = setInterval(() => {
-        if (document.visibilityState === "visible") {
-          loadWallet();
-        }
-      }, 15000); // was labeled "15 seconds" but set to 5000 — fixed to match
-    };
-
-    const handleVisibility = () => {
-      if (document.visibilityState === "visible") {
-        loadWallet(); // catch up immediately on return to tab
-      }
-    };
-
-    start();
-    document.addEventListener("visibilitychange", handleVisibility);
-
-    return () => {
-      if (interval) clearInterval(interval);
-      document.removeEventListener("visibilitychange", handleVisibility);
-    };
-  }, [loadWallet]);
 
   // Close the mobile drawer on Escape, and don't let the drawer
   // steal scroll from the body when it's open on a small screen.
@@ -116,5 +89,17 @@ export default function DashboardLayout({
         onDismiss={dismissWelcome}
       />
     </div>
+  );
+}
+
+export default function DashboardLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
+  return (
+    <WalletProvider>
+      <DashboardLayoutInner>{children}</DashboardLayoutInner>
+    </WalletProvider>
   );
 }
