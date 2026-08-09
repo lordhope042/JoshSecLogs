@@ -42,31 +42,6 @@ export class MarketplaceService {
     );
   }
 
-  // GrizzySMS (handler_api.php / SMS-Activate protocol) prices in RUB,
-  // not USD — a separate conversion rate is needed for it.
-  // No hardcoded fallback: if this isn't set in the environment, pricing
-  // would silently run on a stale guessed rate, which directly affects
-  // what customers get charged. Fail loudly instead.
-  private get rubRate(): number {
-    const raw = this.config.get<string>('RUB_TO_NGN');
-
-    if (raw === undefined || raw === null || raw === '') {
-      throw new BadGatewayException(
-        'RUB_TO_NGN is not configured — cannot price GrizzySMS services.',
-      );
-    }
-
-    const rate = Number(raw);
-
-    if (!Number.isFinite(rate) || rate <= 0) {
-      throw new BadGatewayException(
-        `RUB_TO_NGN is set to an invalid value: "${raw}".`,
-      );
-    }
-
-    return rate;
-  }
-
   private get markup(): number {
     return Number(
       this.config.get<number>('MARKUP') ??
@@ -82,11 +57,18 @@ export class MarketplaceService {
     );
   }
 
-  private convertRubPrice(
-    rub: number,
+  // GrizzySMS (handler_api.php / SMS-Activate protocol) — confirmed
+  // 2026-08-09 that this account is priced and billed in USD, not RUB
+  // (some handler_api.php resellers default to RUB, but not this one).
+  // Uses the same usdRate/markup as 5sim — kept as a separate named
+  // method (rather than reusing convertPrice directly) so the call
+  // site in grizzyPrices() stays self-documenting about which
+  // provider's price it's converting.
+  private convertUsdPriceGrizzy(
+    usd: number,
   ): number {
     return Math.ceil(
-      rub * this.rubRate * this.markup,
+      usd * this.usdRate * this.markup,
     );
   }
 
@@ -420,21 +402,24 @@ export class MarketplaceService {
       const services = response?.[countryId] ?? {};
 
       // GrizzySMS returns each service as a map of
-      // { [priceInRub as string]: countAvailable } — MULTIPLE price
+      // { [priceInUsd as string]: countAvailable } — MULTIPLE price
       // tiers per service, not a single {cost, count} object (that
       // was the wrong assumption before — it silently produced
       // stock: 0 for every service, since info.cost/info.count don't
       // exist on this shape). Pick the cheapest tier that actually
       // has stock available.
+      //
+      // NOTE: confirmed 2026-08-09 this account is priced in USD, not
+      // RUB — see convertUsdPriceGrizzy() above.
       return Object.entries(services)
         .map(([service, tiers]: any) => {
           const best = Object.entries(tiers ?? {})
             .map(([priceStr, count]: any) => ({
-              rub: Number(priceStr),
+              usd: Number(priceStr),
               stock: Number(count),
             }))
-            .filter((t) => t.stock > 0 && t.rub > 0)
-            .sort((a, b) => a.rub - b.rub)[0];
+            .filter((t) => t.stock > 0 && t.usd > 0)
+            .sort((a, b) => a.usd - b.usd)[0];
 
           if (!best) {
             return null;
@@ -447,11 +432,8 @@ export class MarketplaceService {
               {
                 activationType: 'any',
                 stock: best.stock,
-                priceUsd: best.rub, // stored in the "usd" field for shape
-                                     // compatibility — this is actually RUB;
-                                     // see convertRubPrice below for the
-                                     // conversion actually used at purchase.
-                priceNgn: this.convertRubPrice(best.rub),
+                priceUsd: best.usd,
+                priceNgn: this.convertUsdPriceGrizzy(best.usd),
               },
             ],
           };

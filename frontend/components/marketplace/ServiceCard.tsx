@@ -30,10 +30,9 @@ interface ServiceCardProps {
   activationTypes: ActivationType[];
 
   /**
-   * GrizzySMS prices in RUB, not USD — the backend still returns that
-   * figure in the `priceUsd` field for response-shape consistency, so
-   * the currency symbol shown next to it needs to match the actual
-   * provider rather than always assuming USD.
+   * Both 5sim and GrizzySMS are billed/priced in USD (confirmed
+   * 2026-08-09), so `priceUsd` is genuinely USD for both providers —
+   * the currency symbol shown next to it is the same either way.
    */
   provider?: Provider;
 
@@ -51,7 +50,7 @@ export default function ServiceCard({
   provider = "FIVESIM",
   onBuy,
 }: ServiceCardProps) {
-  const currencySymbol = provider === "GRIZZYSMS" ? "₽" : "$";
+  const currencySymbol = "$";
   const displayName = name ?? service;
 
   return (
