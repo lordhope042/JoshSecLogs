@@ -20,6 +20,8 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
+export type Provider = "FIVESIM" | "GRIZZYSMS";
+
 export const MarketplaceAPI = {
   /*
   =====================================
@@ -27,23 +29,28 @@ export const MarketplaceAPI = {
   =====================================
   */
 
-  countries() {
-    return api.get("/marketplace/countries");
+  countries(provider: Provider = "FIVESIM") {
+    return api.get("/marketplace/countries", {
+      params: { provider },
+    });
   },
 
-  products(country: string) {
+  products(country: string, provider: Provider = "FIVESIM") {
     return api.get(
       `/marketplace/products/${country}`,
+      { params: { provider } },
     );
   },
 
-  prices(country: string) {
+  prices(country: string, provider: Provider = "FIVESIM") {
     return api.get(
       `/marketplace/prices/${country}`,
+      { params: { provider } },
     );
   },
 
   buy(data: {
+    provider: Provider;
     country: string;
     operator: string;
     product: string;
@@ -61,34 +68,40 @@ export const MarketplaceAPI = {
   */
 
   orders() {
-    return api.get("/orders");
+    return api.get("/marketplace/orders");
   },
 
   order(id: string) {
-    return api.get(`/orders/${id}`);
+    return api.get(`/marketplace/orders/${id}`);
   },
 
   sms(id: string) {
     return api.get(
-      `/orders/${id}/messages`,
+      `/marketplace/orders/${id}/sms`,
     );
   },
 
   finish(id: string) {
     return api.post(
-      `/orders/${id}/finish`,
+      `/marketplace/orders/${id}/finish`,
     );
   },
 
   cancel(id: string) {
     return api.post(
-      `/orders/${id}/cancel`,
+      `/marketplace/orders/${id}/cancel`,
     );
   },
 
   ban(id: string) {
     return api.post(
-      `/orders/${id}/ban`,
+      `/marketplace/orders/${id}/ban`,
+    );
+  },
+
+  sync(id: string) {
+    return api.get(
+      `/marketplace/orders/${id}/sync`,
     );
   },
 };

@@ -24,12 +24,16 @@ kopeechka-family clones, etc). It is NOT a JSON REST API like 5sim:
     "0" = Russia, "wa" = WhatsApp — NOT the same codes 5sim uses).
   - Prices are in RUB (Russian Rubles), not USD.
 
-VERIFY BEFORE GOING LIVE: this implementation follows the standard,
-well-documented handler_api.php protocol. GrizzySMS's own docs page is
-a JS-rendered SPA that couldn't be scraped for exact confirmation —
-test each action once with curl/Postman against a real API key and
-compare against the parsing below, especially `getPricesV2` (some
-resellers add extra fields to the v2 response).
+VERIFIED against GrizzySMS's own official API docs (confirmed live,
+2026-08-09):
+  - Country names: `action=getCountries` (works, returns id/rus/eng/chn).
+  - Service names: `action=getServicesList` — NOT `getServices`, which
+    returns BAD_ACTION on this API. Response is wrapped in a top-level
+    `{ services: [...] }` object.
+  - `country` param on getPricesV2/getNumber must be GrizzySMS's
+    numeric country ID (e.g. Bangladesh = "60"), not a name/slug —
+    MarketplaceService resolves this via getCountriesList() before
+    calling into this service.
 =====================================
 */
 
@@ -58,6 +62,13 @@ export interface GrizzyPriceResponse {
 export class GrizzySmsService {
   private readonly logger = new Logger(GrizzySmsService.name);
 
+  // Simple in-memory cache for the country/service reference lists —
+  // these change rarely, so there's no need to hit the API on every
+  // dropdown load. 1 hour TTL.
+  private countriesCache: { data: { id: string; name: string }[]; expiresAt: number } | null = null;
+  private servicesCache: { data: { code: string; name: string }[]; expiresAt: number } | null = null;
+  private readonly CACHE_TTL_MS = 60 * 60 * 1000;
+
   constructor(
     private readonly http: HttpService,
     private readonly config: ConfigService,
@@ -76,10 +87,22 @@ export class GrizzySmsService {
   }
 
   private get baseUrl(): string {
-    const url =
-      this.config.get<string>('GRIZZYSMS_BASE_URL') ||
-      'https://api.grizzlysms.com/stubs/handler_api.php';
-    return url;
+    const configured = this.config.get<string>('GRIZZYSMS_BASE_URL');
+
+    if (!configured) {
+      return 'https://api.grizzlysms.com/stubs/handler_api.php';
+    }
+
+    // Accept either the bare domain (e.g. "https://api.grizzlysms.com",
+    // the form GrizzySMS's own official tooling documents for this env
+    // var) or a full path already including /stubs/handler_api.php.
+    // Appending the fixed action-protocol path ourselves means both
+    // forms work, instead of silently producing a broken URL (and a
+    // 502) if someone configures just the domain.
+    const trimmed = configured.replace(/\/+$/, '');
+    return trimmed.endsWith('/handler_api.php')
+      ? trimmed
+      : `${trimmed}/stubs/handler_api.php`;
   }
 
   /* ===============================
@@ -204,6 +227,123 @@ RESPONSE: ${JSON.stringify(err.response?.data)}
       throw new BadGatewayException(
         `GrizzySMS getPricesV2 returned non-JSON: ${raw.slice(0, 200)}`,
       );
+    }
+  }
+
+  /* ===============================
+        COUNTRIES / SERVICES
+        (live names, no hardcoding)
+  =============================== */
+
+  /**
+   * Attempts `action=getCountries` — same action-naming convention as
+   * every other call in this protocol (getBalance, getPrices,
+   * getNumber...), and a real live equivalent is confirmed to exist for
+   * this API by third-party tooling built specifically for GrizzySMS.
+   * Returns null (never throws) if this account/API version doesn't
+   * support it, so callers can fall back to raw ids from getPricesV2.
+   */
+  async getCountriesList(): Promise<
+    { id: string; name: string }[] | null
+  > {
+    if (this.countriesCache && this.countriesCache.expiresAt > Date.now()) {
+      return this.countriesCache.data;
+    }
+
+    try {
+      const raw = await this.request({ action: 'getCountries' });
+      const parsed = JSON.parse(raw);
+
+      let result: { id: string; name: string }[] | null = null;
+
+      // Expected shape: either an array of { id, name/name_en/rus } or
+      // an object keyed by id. Normalize both.
+      if (Array.isArray(parsed)) {
+        result = parsed
+          .map((entry: any) => ({
+            id: String(entry.id ?? entry.country ?? ''),
+            name: String(
+              entry.name_en ?? entry.name ?? entry.eng ?? entry.id ?? '',
+            ),
+          }))
+          .filter((c) => c.id);
+      } else if (parsed && typeof parsed === 'object') {
+        result = Object.entries(parsed).map(([id, value]: any) => ({
+          id,
+          name: String(
+            value?.name_en ?? value?.name ?? value?.eng ?? id,
+          ),
+        }));
+      }
+
+      if (result) {
+        this.countriesCache = {
+          data: result,
+          expiresAt: Date.now() + this.CACHE_TTL_MS,
+        };
+      }
+
+      return result;
+    } catch {
+      return null;
+    }
+  }
+
+  /**
+   * Uses `action=getServicesList` — confirmed via GrizzySMS's own API
+   * docs (not the standard handler_api.php action name `getServices`,
+   * which returns BAD_ACTION on this API). Response is wrapped in a
+   * top-level `{ services: [...] }` object. Returns null (never
+   * throws) if this account/API version doesn't support it.
+   */
+  async getServicesList(): Promise<
+    { code: string; name: string }[] | null
+  > {
+    if (this.servicesCache && this.servicesCache.expiresAt > Date.now()) {
+      return this.servicesCache.data;
+    }
+
+    try {
+      const raw = await this.request({ action: 'getServicesList' });
+      const parsed = JSON.parse(raw);
+
+      let result: { code: string; name: string }[] | null = null;
+
+      // GrizzySMS wraps the array under a `services` key. Still accept
+      // a bare array or an object-keyed-by-code as fallbacks in case
+      // the shape ever changes.
+      const list = Array.isArray(parsed)
+        ? parsed
+        : Array.isArray(parsed?.services)
+          ? parsed.services
+          : null;
+
+      if (list) {
+        result = list
+          .map((entry: any) => ({
+            code: String(entry.code ?? entry.id ?? ''),
+            name: String(entry.name ?? entry.title ?? entry.code ?? ''),
+          }))
+          .filter((s: { code: string; name: string }) => s.code);
+      } else if (parsed && typeof parsed === 'object') {
+        result = Object.entries(parsed).map(([code, value]: any) => ({
+          code,
+          name: String(
+            typeof value === 'string' ? value : value?.name ?? code,
+          ),
+        }));
+      }
+
+      if (result) {
+        this.servicesCache = {
+          data: result,
+          expiresAt: Date.now() + this.CACHE_TTL_MS,
+        };
+      }
+
+      return result;
+    } catch {
+      return null;
     }
   }
 

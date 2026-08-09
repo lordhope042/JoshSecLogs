@@ -44,11 +44,27 @@ export class MarketplaceService {
 
   // GrizzySMS (handler_api.php / SMS-Activate protocol) prices in RUB,
   // not USD — a separate conversion rate is needed for it.
+  // No hardcoded fallback: if this isn't set in the environment, pricing
+  // would silently run on a stale guessed rate, which directly affects
+  // what customers get charged. Fail loudly instead.
   private get rubRate(): number {
-    return Number(
-      this.config.get<number>('RUB_TO_NGN') ??
-        18,
-    );
+    const raw = this.config.get<string>('RUB_TO_NGN');
+
+    if (raw === undefined || raw === null || raw === '') {
+      throw new BadGatewayException(
+        'RUB_TO_NGN is not configured — cannot price GrizzySMS services.',
+      );
+    }
+
+    const rate = Number(raw);
+
+    if (!Number.isFinite(rate) || rate <= 0) {
+      throw new BadGatewayException(
+        `RUB_TO_NGN is set to an invalid value: "${raw}".`,
+      );
+    }
+
+    return rate;
   }
 
   private get markup(): number {
@@ -75,26 +91,14 @@ export class MarketplaceService {
   }
 
   /* ============================================================
-              GRIZZYSMS NAME LOOKUP (VERIFY BEFORE USE)
+              GRIZZYSMS NAME LOOKUP (live, not hardcoded)
   ============================================================
-  GrizzySMS's handler_api.php actions given to us don't include a
-  country/service *name* lookup — only numeric country ids and short
-  service codes. Rather than guess (a wrong id could send a purchase
-  to the wrong country), raw codes are shown until verified names are
-  filled in here from Grizzy's own docs/support.
+  Names come from GrizzySMS's own getCountries/getServices actions
+  (GrizzySmsService.getCountriesList/getServicesList), cached for an
+  hour. If those actions aren't available on this account/API version,
+  they return null and we fall back to the raw id/code as the display
+  name — never a guessed or hardcoded translation.
   ============================================================ */
-
-  private readonly grizzyCountryNames: Record<string, string> = {
-    // '0': 'Russia',
-    // '187': 'Nigeria',
-    // fill in once verified — falls back to "Country {id}" otherwise
-  };
-
-  private readonly grizzyServiceNames: Record<string, string> = {
-    // 'wa': 'WhatsApp',
-    // 'tg': 'Telegram',
-    // fill in once verified — falls back to the raw code otherwise
-  };
 
   /* ============================================================
                         COUNTRIES
@@ -156,13 +160,20 @@ export class MarketplaceService {
 
   private async grizzyCountries() {
     try {
-      const prices = await this.grizzySms.getPricesV2();
+      const [prices, namedList] = await Promise.all([
+        this.grizzySms.getPricesV2(),
+        this.grizzySms.getCountriesList(),
+      ]);
+
+      const nameMap = new Map(
+        (namedList ?? []).map((c) => [c.id, c.name]),
+      );
 
       return Object.keys(prices ?? {})
         .map((id) => ({
           id,
           code: id,
-          name: this.grizzyCountryNames[id] ?? `Country ${id}`,
+          name: nameMap.get(id) ?? `Country ${id}`,
           iso: id,
           prefix: '',
           flag: null,
@@ -178,6 +189,39 @@ export class MarketplaceService {
         'Unable to load countries.',
       );
     }
+  }
+
+  /**
+   * Resolves a country name/slug (e.g. "bangladesh", from the URL) to
+   * GrizzySMS's numeric country ID (e.g. "60"), using the live
+   * getCountriesList() lookup. If the caller already passed a numeric
+   * ID, it's returned as-is — no wasted lookup.
+   */
+  private async resolveGrizzyCountryId(country: string): Promise<string> {
+    // Already numeric — nothing to resolve.
+    if (/^\d+$/.test(country)) {
+      return country;
+    }
+
+    const list = await this.grizzySms.getCountriesList();
+
+    if (!list) {
+      throw new BadGatewayException(
+        'Unable to resolve country — GrizzySMS country list unavailable.',
+      );
+    }
+
+    const match = list.find(
+      (c) => c.name.toLowerCase() === country.toLowerCase(),
+    );
+
+    if (!match) {
+      throw new BadRequestException(
+        `Unknown country "${country}" for GrizzySMS.`,
+      );
+    }
+
+    return match.id;
   }
 
   /* ============================================================
@@ -233,14 +277,24 @@ export class MarketplaceService {
 
   private async grizzyProducts(country: string) {
     try {
-      const prices = await this.grizzySms.getPricesV2(undefined, country);
-      const services = prices?.[country] ?? {};
+      const countryId = await this.resolveGrizzyCountryId(country);
+
+      const [prices, namedList] = await Promise.all([
+        this.grizzySms.getPricesV2(undefined, countryId),
+        this.grizzySms.getServicesList(),
+      ]);
+
+      const nameMap = new Map(
+        (namedList ?? []).map((s) => [s.code, s.name]),
+      );
+
+      const services = prices?.[countryId] ?? {};
 
       return Object.keys(services)
         .map((code) => ({
           id: code,
           service: code,
-          name: this.grizzyServiceNames[code] ?? code,
+          name: nameMap.get(code) ?? code,
           image: null,
         }))
         .sort((a, b) => a.name.localeCompare(b.name));
@@ -352,29 +406,65 @@ export class MarketplaceService {
    */
   private async grizzyPrices(country: string) {
     try {
-      const response = await this.grizzySms.getPricesV2(undefined, country);
-      const services = response?.[country] ?? {};
+      const countryId = await this.resolveGrizzyCountryId(country);
 
+      const [response, namedList] = await Promise.all([
+        this.grizzySms.getPricesV2(undefined, countryId),
+        this.grizzySms.getServicesList(),
+      ]);
+
+      const nameMap = new Map(
+        (namedList ?? []).map((s) => [s.code, s.name]),
+      );
+
+      const services = response?.[countryId] ?? {};
+
+      // GrizzySMS returns each service as a map of
+      // { [priceInRub as string]: countAvailable } — MULTIPLE price
+      // tiers per service, not a single {cost, count} object (that
+      // was the wrong assumption before — it silently produced
+      // stock: 0 for every service, since info.cost/info.count don't
+      // exist on this shape). Pick the cheapest tier that actually
+      // has stock available.
       return Object.entries(services)
-        .map(([service, info]: any) => {
-          const rub = Number(info?.cost ?? 0);
+        .map(([service, tiers]: any) => {
+          const best = Object.entries(tiers ?? {})
+            .map(([priceStr, count]: any) => ({
+              rub: Number(priceStr),
+              stock: Number(count),
+            }))
+            .filter((t) => t.stock > 0 && t.rub > 0)
+            .sort((a, b) => a.rub - b.rub)[0];
+
+          if (!best) {
+            return null;
+          }
 
           return {
-            service,
+            service, // raw code (e.g. "wa") — still used for the buy call
+            name: nameMap.get(service) ?? service, // friendly display name
             activationTypes: [
               {
                 activationType: 'any',
-                stock: Number(info?.count ?? 0),
-                priceUsd: rub, // stored in the "usd" field for shape
-                                // compatibility — this is actually RUB;
-                                // see convertRubPrice below for the
-                                // conversion actually used at purchase.
-                priceNgn: this.convertRubPrice(rub),
+                stock: best.stock,
+                priceUsd: best.rub, // stored in the "usd" field for shape
+                                     // compatibility — this is actually RUB;
+                                     // see convertRubPrice below for the
+                                     // conversion actually used at purchase.
+                priceNgn: this.convertRubPrice(best.rub),
               },
             ],
           };
         })
-        .filter((s) => s.activationTypes[0].stock > 0)
+        .filter(
+          (
+            s,
+          ): s is {
+            service: string;
+            name: string;
+            activationTypes: any[];
+          } => s !== null,
+        )
         .sort((a, b) => a.service.localeCompare(b.service));
     } catch (error) {
       this.logger.error(
@@ -438,7 +528,8 @@ export class MarketplaceService {
     provider: Provider,
   ) {
     if (provider === 'GRIZZYSMS') {
-      const purchase = await this.grizzySms.buy(product, country);
+      const countryId = await this.resolveGrizzyCountryId(country);
+      const purchase = await this.grizzySms.buy(product, countryId);
 
       if (!purchase?.id) {
         throw new BadGatewayException(

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { MarketplaceAPI } from "@/services/marketplace";
+import { MarketplaceAPI, Provider } from "@/services/marketplace";
 
 export function useMarketplace() {
   const [countries, setCountries] = useState<any[]>([]);
@@ -17,11 +17,11 @@ export function useMarketplace() {
   =====================================
   */
 
-  const loadCountries = async () => {
+  const loadCountries = async (provider: Provider = "FIVESIM") => {
     try {
       setLoading(true);
 
-      const { data } = await MarketplaceAPI.countries();
+      const { data } = await MarketplaceAPI.countries(provider);
 
       setCountries(data);
 
@@ -37,11 +37,14 @@ export function useMarketplace() {
   =====================================
   */
 
-  const loadProducts = async (country: string) => {
+  const loadProducts = async (
+    country: string,
+    provider: Provider = "FIVESIM",
+  ) => {
     try {
       setLoading(true);
 
-      const { data } = await MarketplaceAPI.products(country);
+      const { data } = await MarketplaceAPI.products(country, provider);
 
       setProducts(data);
 
@@ -57,11 +60,14 @@ export function useMarketplace() {
   =====================================
   */
 
-  const loadPrices = async (country: string) => {
+  const loadPrices = async (
+    country: string,
+    provider: Provider = "FIVESIM",
+  ) => {
     try {
       setLoading(true);
 
-      const { data } = await MarketplaceAPI.prices(country);
+      const { data } = await MarketplaceAPI.prices(country, provider);
 
       setPrices(data);
 
@@ -78,6 +84,7 @@ export function useMarketplace() {
   */
 
   const buy = async (payload: {
+    provider: Provider;
     country: string;
     operator: string;
     product: string;

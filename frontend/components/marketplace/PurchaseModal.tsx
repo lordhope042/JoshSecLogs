@@ -13,7 +13,9 @@ import {
   CheckCircle2,
   Loader2,
   ShieldCheck,
+  Server,
 } from "lucide-react";
+import type { Provider } from "@/services/marketplace";
 
 /* ==========================================================
    TYPES
@@ -23,6 +25,7 @@ interface PurchaseModalProps {
   open: boolean;
   loading: boolean;
 
+  provider: Provider;
   country: string;
   service: string;
   activationType: string;
@@ -70,6 +73,7 @@ export default function PurchaseModal({
   open,
   loading,
 
+  provider,
   country,
   service,
   activationType,
@@ -81,6 +85,9 @@ export default function PurchaseModal({
   onConfirm,
 }: PurchaseModalProps) {
   if (!open) return null;
+
+  const providerLabel =
+    provider === "GRIZZYSMS" ? "Provider 2" : "Provider 1";
 
   const insufficient = wallet < price;
 
@@ -148,6 +155,12 @@ export default function PurchaseModal({
               </h3>
 
               <div className="space-y-4">
+
+                <Row
+                  icon={<Server size={18} />}
+                  label="Provider"
+                  value={providerLabel}
+                />
 
                 <Row
                   icon={<Globe size={18} />}

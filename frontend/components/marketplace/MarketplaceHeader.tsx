@@ -1,9 +1,16 @@
 "use client";
 
-import { Country } from "@/src/types/marketplace";
+// FIX: was importing `Country` from "@/src/types/marketplace" — that path
+// doesn't exist (the real folder is "types/", no "/src/" prefix), and
+// `types/marketplace.ts` doesn't export a `Country` type anyway. The real
+// export lives in "@/types/country". The old import would fail the
+// TypeScript build.
+import { Country } from "@/types/country";
+import type { Provider } from "@/services/marketplace";
 
 interface Product {
   id?: string;
+  service?: string;
   name?: string;
   product?: string;
 }
@@ -12,20 +19,29 @@ interface Props {
   countries: Country[] | any[];
   products?: Product[];
 
+  provider: Provider;
   country: string;
   service: string;
 
+  onProviderChange: (value: Provider) => void;
   onCountryChange: (value: string) => void;
   onServiceChange: (value: string) => void;
 
   disabled?: boolean;
 }
 
+const PROVIDERS: { value: Provider; label: string }[] = [
+  { value: "FIVESIM", label: "Provider 1" },
+  { value: "GRIZZYSMS", label: "Provider 2" },
+];
+
 export default function MarketplaceHeader({
   countries = [],
   products = [],
+  provider,
   country,
   service,
+  onProviderChange,
   onCountryChange,
   onServiceChange,
   disabled = false,
@@ -45,8 +61,33 @@ export default function MarketplaceHeader({
         </h1>
 
         <p className="mt-2 text-gray-500 dark:text-zinc-400">
-          Select your preferred country and service to continue.
+          Select a provider, country and service to continue.
         </p>
+      </div>
+
+      {/* Provider */}
+      <div className="mb-6">
+        <label className="mb-2 block text-sm font-medium text-gray-500 dark:text-zinc-400">
+          Provider
+        </label>
+
+        <div className="grid grid-cols-2 gap-3">
+          {PROVIDERS.map((p) => (
+            <button
+              key={p.value}
+              type="button"
+              disabled={disabled}
+              onClick={() => onProviderChange(p.value)}
+              className={`h-12 rounded-xl border px-4 text-sm font-semibold transition ${
+                provider === p.value
+                  ? "border-orange-500 bg-orange-500/10 text-orange-500"
+                  : "border-gray-300 dark:border-zinc-700 bg-gray-50 dark:bg-[#0F172A] text-gray-500 dark:text-zinc-400 hover:border-orange-500/40"
+              } disabled:cursor-not-allowed disabled:opacity-60`}
+            >
+              {p.label}
+            </button>
+          ))}
+        </div>
       </div>
 
       <div className="grid gap-5 md:grid-cols-2">
@@ -102,22 +143,37 @@ export default function MarketplaceHeader({
             </option>
 
             {validProducts.map((product) => {
+              // FIX: previously used `product.product ?? product.name ??
+              // product.id`, so when only `name` was populated (the
+              // friendly display name, e.g. "Apple") the <option>'s
+              // VALUE became that display name instead of the provider's
+              // raw service code (e.g. "wx"). ServiceGrid then filtered
+              // on `item.service === selectedService`, where item.service
+              // is always the raw code from the backend — so the
+              // dropdown's selection could never match anything and the
+              // grid always rendered empty. Now `service`/`product`/`id`
+              // (the actual code fields) are tried first, and `name` is
+              // used ONLY for the visible label, never the value.
               const value =
+                product.service ??
                 product.product ??
-                product.name ??
                 product.id ??
                 "";
+
+              const label =
+                product.name ??
+                value
+                  .replace(/_/g, " ")
+                  .replace(/\b\w/g, (c) =>
+                    c.toUpperCase()
+                  );
 
               return (
                 <option
                   key={value}
                   value={value}
                 >
-                  {value
-                    .replace(/_/g, " ")
-                    .replace(/\b\w/g, (c) =>
-                      c.toUpperCase()
-                    )}
+                  {label}
                 </option>
               );
             })}

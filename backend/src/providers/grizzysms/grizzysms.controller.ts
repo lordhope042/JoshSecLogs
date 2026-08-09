@@ -20,4 +20,22 @@ export class GrizzySmsController {
   ping() {
     return this.grizzySms.ping();
   }
+
+  /* ===============================
+        RAW CATALOG (for mapping)
+  =============================== */
+
+  /**
+   * Dumps the full raw getPricesV2 response — every country id and
+   * service code GrizzySMS currently has stock for, with no name
+   * translation applied. Use this to manually cross-reference against
+   * GrizzySMS's own country pages / support to build out
+   * `grizzyCountryNames` / `grizzyServiceNames` in marketplace.service.ts.
+   */
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('ADMIN')
+  @Get('raw-catalog')
+  rawCatalog() {
+    return this.grizzySms.getPricesV2();
+  }
 }

@@ -1,12 +1,15 @@
 "use client";
 
 import ServiceCard from "./ServiceCard";
+import ServiceCardSkeleton from "./ServiceCardSkeleton";
 import { ServicePrices } from "@/types/price";
+import type { Provider } from "@/services/marketplace";
 
 interface ServiceGridProps {
   prices: ServicePrices;
   selectedService?: string;
   loading?: boolean;
+  provider?: Provider;
 
   onBuy: (
     service: string,
@@ -19,14 +22,15 @@ export default function ServiceGrid({
   prices = [],
   selectedService = "",
   loading = false,
+  provider = "FIVESIM",
   onBuy,
 }: ServiceGridProps) {
   if (loading) {
     return (
-      <div className="rounded-3xl border border-gray-200 dark:border-zinc-800 bg-white dark:bg-[#111827] p-12 text-center">
-        <p className="text-gray-500 dark:text-zinc-400">
-          Loading available services...
-        </p>
+      <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
+        {Array.from({ length: 6 }).map((_, i) => (
+          <ServiceCardSkeleton key={i} />
+        ))}
       </div>
     );
   }
@@ -81,7 +85,9 @@ export default function ServiceGrid({
           <ServiceCard
             key={service.service}
             service={service.service}
+            name={(service as any).name}
             activationTypes={activationTypes}
+            provider={provider}
             onBuy={onBuy}
           />
         );

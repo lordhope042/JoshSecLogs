@@ -1,6 +1,7 @@
 "use client";
 
 import { ShoppingCart, Boxes } from "lucide-react";
+import type { Provider } from "@/services/marketplace";
 
 interface ActivationType {
   activationType: string;
@@ -12,7 +13,29 @@ interface ActivationType {
 interface ServiceCardProps {
   service: string;
 
+  /**
+   * Friendly display name (e.g. "WhatsApp") for providers whose raw
+   * service codes aren't human-readable (GrizzySMS uses short codes
+   * like "wa", "ub"). Falls back to `service` if not provided, so
+   * this stays backward-compatible with providers that already use
+   * readable codes (5sim).
+   *
+   * IMPORTANT: `service` (the code) is still what gets passed to
+   * onBuy() and ultimately sent to the backend for the purchase — the
+   * backend expects the raw code, not the display name. Only the text
+   * actually rendered on screen uses `name`.
+   */
+  name?: string;
+
   activationTypes: ActivationType[];
+
+  /**
+   * GrizzySMS prices in RUB, not USD — the backend still returns that
+   * figure in the `priceUsd` field for response-shape consistency, so
+   * the currency symbol shown next to it needs to match the actual
+   * provider rather than always assuming USD.
+   */
+  provider?: Provider;
 
   onBuy: (
     service: string,
@@ -23,9 +46,14 @@ interface ServiceCardProps {
 
 export default function ServiceCard({
   service,
+  name,
   activationTypes,
+  provider = "FIVESIM",
   onBuy,
 }: ServiceCardProps) {
+  const currencySymbol = provider === "GRIZZYSMS" ? "₽" : "$";
+  const displayName = name ?? service;
+
   return (
     <div className="rounded-3xl border border-gray-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-6 transition-all duration-300 hover:border-orange-500 hover:shadow-xl">
 
@@ -33,7 +61,7 @@ export default function ServiceCard({
 
         <div>
           <h3 className="text-xl font-bold capitalize text-gray-900 dark:text-white">
-            {service}
+            {displayName}
           </h3>
 
           <p className="text-sm text-gray-400 dark:text-zinc-500">
@@ -88,7 +116,7 @@ export default function ServiceCard({
                     </p>
 
                     <p className="text-xs text-gray-400 dark:text-zinc-500">
-                      ${activation.priceUsd.toFixed(2)}
+                      {currencySymbol}{activation.priceUsd.toFixed(2)}
                     </p>
 
                   </div>
