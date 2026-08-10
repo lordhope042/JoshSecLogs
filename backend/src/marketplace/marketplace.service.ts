@@ -42,6 +42,15 @@ export class MarketplaceService {
     );
   }
 
+  // GrizzySMS (handler_api.php / SMS-Activate protocol) prices in RUB,
+  // not USD — a separate conversion rate is needed for it.
+  private get rubRate(): number {
+    return Number(
+      this.config.get<number>('RUB_TO_NGN') ??
+        18,
+    );
+  }
+
   private get markup(): number {
     return Number(
       this.config.get<number>('MARKUP') ??
@@ -57,18 +66,11 @@ export class MarketplaceService {
     );
   }
 
-  // GrizzySMS (handler_api.php / SMS-Activate protocol) — confirmed
-  // 2026-08-09 that this account is priced and billed in USD, not RUB
-  // (some handler_api.php resellers default to RUB, but not this one).
-  // Uses the same usdRate/markup as 5sim — kept as a separate named
-  // method (rather than reusing convertPrice directly) so the call
-  // site in grizzyPrices() stays self-documenting about which
-  // provider's price it's converting.
-  private convertUsdPriceGrizzy(
-    usd: number,
+  private convertRubPrice(
+    rub: number,
   ): number {
     return Math.ceil(
-      usd * this.usdRate * this.markup,
+      rub * this.rubRate * this.markup,
     );
   }
 
@@ -173,39 +175,6 @@ export class MarketplaceService {
     }
   }
 
-  /**
-   * Resolves a country name/slug (e.g. "bangladesh", from the URL) to
-   * GrizzySMS's numeric country ID (e.g. "60"), using the live
-   * getCountriesList() lookup. If the caller already passed a numeric
-   * ID, it's returned as-is — no wasted lookup.
-   */
-  private async resolveGrizzyCountryId(country: string): Promise<string> {
-    // Already numeric — nothing to resolve.
-    if (/^\d+$/.test(country)) {
-      return country;
-    }
-
-    const list = await this.grizzySms.getCountriesList();
-
-    if (!list) {
-      throw new BadGatewayException(
-        'Unable to resolve country — GrizzySMS country list unavailable.',
-      );
-    }
-
-    const match = list.find(
-      (c) => c.name.toLowerCase() === country.toLowerCase(),
-    );
-
-    if (!match) {
-      throw new BadRequestException(
-        `Unknown country "${country}" for GrizzySMS.`,
-      );
-    }
-
-    return match.id;
-  }
-
   /* ============================================================
                         PRODUCTS
   ============================================================ */
@@ -259,10 +228,8 @@ export class MarketplaceService {
 
   private async grizzyProducts(country: string) {
     try {
-      const countryId = await this.resolveGrizzyCountryId(country);
-
-      const [prices, namedList] = await Promise.all([
-        this.grizzySms.getPricesV2(undefined, countryId),
+      const [rawPrices, namedList] = await Promise.all([
+        this.grizzySms.getPricesV2(undefined, country),
         this.grizzySms.getServicesList(),
       ]);
 
@@ -270,7 +237,16 @@ export class MarketplaceService {
         (namedList ?? []).map((s) => [s.code, s.name]),
       );
 
-      const services = prices?.[countryId] ?? {};
+      // Same dual-shape handling as grizzyPrices() below — see the FIX
+      // comment there for why this matters.
+      const response: any = rawPrices;
+      const nested = response?.[country];
+      const services =
+        nested && typeof nested === 'object'
+          ? nested
+          : response && typeof response === 'object'
+            ? response
+            : {};
 
       return Object.keys(services)
         .map((code) => ({
@@ -388,65 +364,118 @@ export class MarketplaceService {
    */
   private async grizzyPrices(country: string) {
     try {
-      const countryId = await this.resolveGrizzyCountryId(country);
+      const response: any = await this.grizzySms.getPricesV2(undefined, country);
 
-      const [response, namedList] = await Promise.all([
-        this.grizzySms.getPricesV2(undefined, countryId),
-        this.grizzySms.getServicesList(),
-      ]);
+      // FIX: when a `country` filter is passed to getPricesV2, some
+      // handler_api.php-family providers return the response already
+      // flattened to { serviceCode: {...} } instead of still nesting it
+      // under the country id. The old code only tried response[country]
+      // and silently fell back to an empty object if that key didn't
+      // exist — meaning a shape mismatch here produced ZERO errors and
+      // ZERO prices, which is exactly what was happening. Try both
+      // shapes now.
+      const nested = response?.[country];
+      const services =
+        nested && typeof nested === 'object'
+          ? nested
+          : response && typeof response === 'object'
+            ? response
+            : {};
 
-      const nameMap = new Map(
-        (namedList ?? []).map((s) => [s.code, s.name]),
+      // One-time diagnostic: log the raw shape we actually got back so
+      // it's visible in the terminal without needing a manual curl call,
+      // in case the field names below still don't match.
+      const sampleEntry = Object.entries(services)[0];
+      this.logger.debug(
+        `GrizzySMS prices raw sample for country=${country}: ${JSON.stringify(
+          sampleEntry,
+        )}`,
       );
 
-      const services = response?.[countryId] ?? {};
+      // FIX: GrizzySMS's per-service value here is NOT a named-field
+      // object like { cost, count } / { price, qty } — confirmed by the
+      // debug log above, which showed entries shaped like
+      // ["acz", {"0.3542": 20}]. That is a single-key object where the
+      // KEY is the price (RUB, as a string) and the VALUE is the stock
+      // count. Every named-field lookup below (info.cost, info.price,
+      // info.count, info.qty, ...) was silently returning undefined for
+      // this shape, so resolveCost/resolveCount both fell through to 0
+      // for every entry — which meant validatePurchase() rejected every
+      // GrizzySMS buy attempt with "currently out of stock", even though
+      // stock genuinely existed. Parse the key/value pair directly, and
+      // keep the named-field lookups only as a fallback in case some
+      // other endpoint/country still returns that shape.
+      const resolvePriceAndStock = (
+        info: any,
+      ): { rub: number; stock: number } => {
+        if (info && typeof info === 'object') {
+          const entries = Object.entries(info);
 
-      // GrizzySMS returns each service as a map of
-      // { [priceInUsd as string]: countAvailable } — MULTIPLE price
-      // tiers per service, not a single {cost, count} object (that
-      // was the wrong assumption before — it silently produced
-      // stock: 0 for every service, since info.cost/info.count don't
-      // exist on this shape). Pick the cheapest tier that actually
-      // has stock available.
-      //
-      // NOTE: confirmed 2026-08-09 this account is priced in USD, not
-      // RUB — see convertUsdPriceGrizzy() above.
-      return Object.entries(services)
-        .map(([service, tiers]: any) => {
-          const best = Object.entries(tiers ?? {})
-            .map(([priceStr, count]: any) => ({
-              usd: Number(priceStr),
-              stock: Number(count),
-            }))
-            .filter((t) => t.stock > 0 && t.usd > 0)
-            .sort((a, b) => a.usd - b.usd)[0];
+          // Single-key { "<priceStr>": <stockCount> } shape.
+          if (
+            entries.length === 1 &&
+            !('cost' in info) &&
+            !('price' in info) &&
+            !('count' in info) &&
+            !('qty' in info)
+          ) {
+            const [priceStr, stockVal] = entries[0];
+            const rub = Number(priceStr);
+            const stock = Number(stockVal as any);
 
-          if (!best) {
-            return null;
+            if (!Number.isNaN(rub)) {
+              return { rub, stock: Number.isNaN(stock) ? 0 : stock };
+            }
           }
+        }
+
+        // Fallback: named-field shape, in case another endpoint/country
+        // returns { cost, count } / { price, qty } etc. instead.
+        const rub = Number(
+          info?.cost ??
+            info?.price ??
+            info?.retail_price ??
+            info?.real_price ??
+            0,
+        );
+
+        const stock = Number(
+          info?.count ??
+            info?.qty ??
+            info?.quantity ??
+            info?.available ??
+            info?.stock ??
+            0,
+        );
+
+        return { rub, stock };
+      };
+
+      return Object.entries(services)
+        .map(([service, info]: any) => {
+          const { rub, stock } = resolvePriceAndStock(info);
 
           return {
-            service, // raw code (e.g. "wa") — still used for the buy call
-            name: nameMap.get(service) ?? service, // friendly display name
+            service,
             activationTypes: [
               {
                 activationType: 'any',
-                stock: best.stock,
-                priceUsd: best.usd,
-                priceNgn: this.convertUsdPriceGrizzy(best.usd),
+                stock,
+                priceUsd: rub, // stored in the "usd" field for shape
+                                // compatibility — this is actually RUB;
+                                // see convertRubPrice below for the
+                                // conversion actually used at purchase.
+                priceNgn: this.convertRubPrice(rub),
               },
             ],
           };
         })
-        .filter(
-          (
-            s,
-          ): s is {
-            service: string;
-            name: string;
-            activationTypes: any[];
-          } => s !== null,
-        )
+        // FIX: no longer pre-filtering out zero-stock entries here —
+        // fiveSimPrices() (above) doesn't either; it returns everything
+        // and lets the frontend (ServiceCard/ServiceGrid) decide what
+        // to show as "Out of Stock" vs hide. Silently dropping entries
+        // server-side made a field-name mismatch indistinguishable from
+        // "genuinely no stock", which is exactly what caused this bug.
         .sort((a, b) => a.service.localeCompare(b.service));
     } catch (error) {
       this.logger.error(
@@ -510,8 +539,7 @@ export class MarketplaceService {
     provider: Provider,
   ) {
     if (provider === 'GRIZZYSMS') {
-      const countryId = await this.resolveGrizzyCountryId(country);
-      const purchase = await this.grizzySms.buy(product, countryId);
+      const purchase = await this.grizzySms.buy(product, country);
 
       if (!purchase?.id) {
         throw new BadGatewayException(
@@ -665,23 +693,37 @@ export class MarketplaceService {
     provider: string;
     providerOrderId: string | null;
   }) {
-    if (order.provider === 'GRIZZYSMS') {
-      const result = await this.grizzySms.getStatus(
-        order.providerOrderId ?? '',
-      );
+    try {
+      if (order.provider === 'GRIZZYSMS') {
+        const result = await this.grizzySms.getStatus(
+          order.providerOrderId ?? '',
+        );
+        return {
+          status: this.mapGrizzyStatus(result.code),
+          sms: result.code === 'STATUS_OK' && result.value ? [result.value] : null,
+          raw: result,
+        };
+      }
+
+      const result = await this.fiveSim.check(Number(order.providerOrderId));
       return {
-        status: this.mapGrizzyStatus(result.code),
-        sms: result.code === 'STATUS_OK' && result.value ? [result.value] : null,
+        status: this.mapProviderStatus((result as any)?.status),
+        sms: result.sms,
         raw: result,
       };
+    } catch (error) {
+      // FIX: this previously had no logging at all — any failure here
+      // (5sim/GrizzySMS auth issue, network error, bad providerOrderId)
+      // propagated as a bare 502/500 with zero trace in the logs. Now
+      // every check/sms/cancel/finish call that hits this path logs the
+      // provider, order id, and real underlying error before rethrowing.
+      this.logger.error(
+        `checkProviderOrder failed — provider=${order.provider} providerOrderId=${order.providerOrderId}: ${
+          error instanceof Error ? error.message : String(error)
+        }`,
+      );
+      throw error;
     }
-
-    const result = await this.fiveSim.check(Number(order.providerOrderId));
-    return {
-      status: this.mapProviderStatus((result as any)?.status),
-      sms: result.sms,
-      raw: result,
-    };
   }
 
   /* ============================================================

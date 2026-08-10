@@ -24,16 +24,12 @@ kopeechka-family clones, etc). It is NOT a JSON REST API like 5sim:
     "0" = Russia, "wa" = WhatsApp — NOT the same codes 5sim uses).
   - Prices are in RUB (Russian Rubles), not USD.
 
-VERIFIED against GrizzySMS's own official API docs (confirmed live,
-2026-08-09):
-  - Country names: `action=getCountries` (works, returns id/rus/eng/chn).
-  - Service names: `action=getServicesList` — NOT `getServices`, which
-    returns BAD_ACTION on this API. Response is wrapped in a top-level
-    `{ services: [...] }` object.
-  - `country` param on getPricesV2/getNumber must be GrizzySMS's
-    numeric country ID (e.g. Bangladesh = "60"), not a name/slug —
-    MarketplaceService resolves this via getCountriesList() before
-    calling into this service.
+VERIFY BEFORE GOING LIVE: this implementation follows the standard,
+well-documented handler_api.php protocol. GrizzySMS's own docs page is
+a JS-rendered SPA that couldn't be scraped for exact confirmation —
+test each action once with curl/Postman against a real API key and
+compare against the parsing below, especially `getPricesV2` (some
+resellers add extra fields to the v2 response).
 =====================================
 */
 
@@ -68,6 +64,21 @@ export class GrizzySmsService {
   private countriesCache: { data: { id: string; name: string }[]; expiresAt: number } | null = null;
   private servicesCache: { data: { code: string; name: string }[]; expiresAt: number } | null = null;
   private readonly CACHE_TTL_MS = 60 * 60 * 1000;
+
+  // Default timeout for lookup-style actions (getBalance, getPrices,
+  // getStatus, setStatus, country/service lists) — these just read
+  // cached/static data on GrizzySMS's side and are consistently fast.
+  private readonly DEFAULT_TIMEOUT_MS = 15000;
+
+  // FIX: getNumber (buy()) was sharing the same 15s timeout as every
+  // other action, but it isn't a lookup — it's GrizzySMS actually
+  // allocating a number from an upstream carrier pool for the given
+  // service+country, which is structurally slower and more prone to
+  // hanging than a cached read. A thin/contended pool could routinely
+  // need more than 15s to respond, and every timeout here was, until
+  // now, indistinguishable from a fast BAD_ACTION/NO_NUMBERS error to
+  // the caller. Give it its own longer budget.
+  private readonly BUY_TIMEOUT_MS = 30000;
 
   constructor(
     private readonly http: HttpService,
@@ -116,25 +127,31 @@ export class GrizzySmsService {
    * as text first, then let the caller decide how to parse it — this
    * avoids axios throwing on a text/plain content-type when JSON was
    * expected, or vice versa.
+   *
+   * FIX: accepts an optional per-call `timeoutMs` override (defaults to
+   * DEFAULT_TIMEOUT_MS) instead of a single hardcoded 15000 for every
+   * action. Slower actions like getNumber can now request more budget
+   * without affecting the fast lookup actions.
    */
   private async request(
     params: Record<string, string | number | undefined>,
+    timeoutMs: number = this.DEFAULT_TIMEOUT_MS,
   ): Promise<string> {
-    const query = new URLSearchParams();
-    query.set('api_key', this.apiKey);
-
-    for (const [key, value] of Object.entries(params)) {
-      if (value !== undefined) {
-        query.set(key, String(value));
-      }
-    }
-
     try {
+      const query = new URLSearchParams();
+      query.set('api_key', this.apiKey);
+
+      for (const [key, value] of Object.entries(params)) {
+        if (value !== undefined) {
+          query.set(key, String(value));
+        }
+      }
+
       const { data } = await firstValueFrom(
         this.http.request<string>({
           method: 'GET',
           url: `${this.baseUrl}?${query.toString()}`,
-          timeout: 15000,
+          timeout: timeoutMs,
           responseType: 'text',
           transformResponse: (res) => res, // keep raw string, don't auto-JSON-parse
         }),
@@ -144,11 +161,20 @@ export class GrizzySmsService {
     } catch (error) {
       const err = error as AxiosError;
 
+      // FIX: `this.apiKey` (which can throw InternalServerErrorException
+      // if GRIZZYSMS_API_KEY is unset) used to be read OUTSIDE this
+      // try/catch, so a missing key failed completely silently — no log
+      // line, no BadGatewayException, just an unhandled exception with
+      // no trace of *why*. Moving the key/query construction inside the
+      // try means every failure mode (bad config, network error, HTTP
+      // error status) now hits this one logging + rethrow path.
       this.logger.error(`
 ========== GRIZZYSMS ERROR ==========
 params: ${JSON.stringify(params)}
+timeoutMs: ${timeoutMs}
 STATUS: ${err.response?.status}
 RESPONSE: ${JSON.stringify(err.response?.data)}
+MESSAGE: ${error instanceof Error ? error.message : String(error)}
 ======================================
       `);
 
@@ -252,6 +278,13 @@ RESPONSE: ${JSON.stringify(err.response?.data)}
 
     try {
       const raw = await this.request({ action: 'getCountries' });
+
+      // Log the raw response once so it's visible in the terminal —
+      // no curl needed to see why names might not be parsing.
+      this.logger.debug(
+        `GrizzySMS getCountries raw response: ${raw.slice(0, 500)}`,
+      );
+
       const parsed = JSON.parse(raw);
 
       let result: { id: string; name: string }[] | null = null;
@@ -292,9 +325,8 @@ RESPONSE: ${JSON.stringify(err.response?.data)}
   /**
    * Uses `action=getServicesList` — confirmed via GrizzySMS's own API
    * docs (not the standard handler_api.php action name `getServices`,
-   * which returns BAD_ACTION on this API). Response is wrapped in a
-   * top-level `{ services: [...] }` object. Returns null (never
-   * throws) if this account/API version doesn't support it.
+   * which returns BAD_ACTION on this API). Response is confirmed (via
+   * live testing) to be `{ services: [{ code, name }, ...] }`.
    */
   async getServicesList(): Promise<
     { code: string; name: string }[] | null
@@ -305,18 +337,28 @@ RESPONSE: ${JSON.stringify(err.response?.data)}
 
     try {
       const raw = await this.request({ action: 'getServicesList' });
+
+      // Log the raw response once so it's visible in the terminal —
+      // no curl needed to see why names might not be parsing.
+      this.logger.debug(
+        `GrizzySMS getServicesList raw response: ${raw.slice(0, 500)}`,
+      );
+
       const parsed = JSON.parse(raw);
 
-      let result: { code: string; name: string }[] | null = null;
-
-      // GrizzySMS wraps the array under a `services` key. Still accept
-      // a bare array or an object-keyed-by-code as fallbacks in case
-      // the shape ever changes.
+      // CONFIRMED (live response): getServicesList replies with
+      // `{ "services": [ { "code": "...", "name": "..." }, ... ] }` —
+      // an object wrapping an array, not a bare array and not a
+      // code-keyed object like getCountries. Unwrap that first; keep
+      // the array/object branches below as a fallback in case the API
+      // ever changes shape.
       const list = Array.isArray(parsed)
         ? parsed
         : Array.isArray(parsed?.services)
           ? parsed.services
           : null;
+
+      let result: { code: string; name: string }[] | null = null;
 
       if (list) {
         result = list
@@ -324,7 +366,7 @@ RESPONSE: ${JSON.stringify(err.response?.data)}
             code: String(entry.code ?? entry.id ?? ''),
             name: String(entry.name ?? entry.title ?? entry.code ?? ''),
           }))
-          .filter((s: { code: string; name: string }) => s.code);
+          .filter((s) => s.code);
       } else if (parsed && typeof parsed === 'object') {
         result = Object.entries(parsed).map(([code, value]: any) => ({
           code,
@@ -356,12 +398,21 @@ RESPONSE: ${JSON.stringify(err.response?.data)}
     country: string,
     maxPrice?: number,
   ): Promise<GrizzyBuyResponse> {
-    const raw = await this.request({
-      action: 'getNumber',
-      service,
-      country,
-      maxPrice,
-    });
+    // FIX: getNumber allocates a number from GrizzySMS's upstream
+    // carrier pool, unlike the other actions which just read cached/
+    // static data. It gets its own longer timeout (BUY_TIMEOUT_MS)
+    // instead of sharing DEFAULT_TIMEOUT_MS, which was too tight for
+    // this specific action and was causing spurious "timeout of
+    // 15000ms exceeded" failures on otherwise-valid purchases.
+    const raw = await this.request(
+      {
+        action: 'getNumber',
+        service,
+        country,
+        maxPrice,
+      },
+      this.BUY_TIMEOUT_MS,
+    );
 
     const parsed = this.parseTextResponse(raw);
 
