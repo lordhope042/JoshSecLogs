@@ -5,8 +5,8 @@ import { WalletModule } from '../wallet/wallet.module';
 
 import { PaymentsController } from './payments.controller';
 import { PaymentsService } from './payments.service';
-import { PaymentRepository } from './payment.repository';
-import { PaystackService } from './paystack.service';
+import { PocketFiService } from './pocketfi.service';
+import { VirtualAccountRepository } from './virtual-account.repository';
 
 @Module({
   imports: [
@@ -20,14 +20,13 @@ import { PaystackService } from './paystack.service';
 
   providers: [
     PaymentsService,
-    PaymentRepository,
-    PaystackService,
+    PocketFiService,
+    VirtualAccountRepository,
   ],
 
   exports: [
     PaymentsService,
-    PaymentRepository,
-    PaystackService,
+    PocketFiService,
   ],
 })
 export class PaymentsModule {}

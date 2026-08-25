@@ -25,6 +25,7 @@ model User {
   purchasedSocialLogs SocialLog[]         @relation("PurchasedSocialLogs")
   wallet              Wallet?
   transactions        WalletTransaction[]
+  virtualAccounts VirtualAccount[]
 
   @@index([email])
 }
@@ -62,6 +63,25 @@ model WalletTransaction {
   @@index([reference])
   @@index([status])
   @@index([createdAt])
+}
+
+
+model VirtualAccount {
+  id            String   @id @default(uuid())
+  userId        String
+  bank          String // "9psb" | "kuda"
+  accountNumber String   @unique
+  accountName   String
+  provider      String   @default("POCKETFI")
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // One account per bank per user — a user can hold both a 9psb AND a
+  // kuda account, but not two of the same bank.
+  @@unique([userId, bank])
+  @@index([userId])
+  @@index([accountNumber])
 }
 
 model SocialLog {

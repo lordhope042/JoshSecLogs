@@ -1,98 +1,43 @@
 import api from "@/lib/axios";
 
+export type PocketFiBank = "9psb" | "kuda";
+
+export interface VirtualAccount {
+  id: string;
+  userId: string;
+  bank: PocketFiBank | string;
+  accountNumber: string;
+  accountName: string;
+  provider: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export const PaymentsAPI = {
   /*
   =====================================
-      INITIALIZE PAYMENT
+      LIST VIRTUAL ACCOUNTS
+      Returns every virtual account the user already has (0, 1, or 2 —
+      one per bank). `api` already unwraps `response.data`, so this
+      resolves directly to the array.
   =====================================
   */
-
-  initialize(
-    amount: number,
-  ) {
-    return api.post(
-      "/payments/initialize",
-      {
-        amount,
-      },
-    );
+  listVirtualAccounts() {
+    return api.get<VirtualAccount[]>("/payments/virtual-accounts");
   },
 
   /*
   =====================================
-      VERIFY PAYMENT
+      CREATE (OR FETCH EXISTING) VIRTUAL ACCOUNT
+      `phone` is required by PocketFi the first time an account is
+      created for a given bank — safe to resend on subsequent calls,
+      it's ignored once an account already exists for that bank.
   =====================================
   */
-
-  verify(
-    reference: string,
-  ) {
-    return api.post(
-      "/payments/verify",
-      {
-        reference,
-      },
-    );
-  },
-
-  /*
-  =====================================
-      PAYMENT HISTORY
-  =====================================
-  */
-
-  history() {
-    return api.get("/payments");
-  },
-
-  /*
-  =====================================
-      SINGLE PAYMENT
-  =====================================
-  */
-
-  payment(
-    reference: string,
-  ) {
-    return api.get(
-      `/payments/${reference}`,
-    );
-  },
-
-  /*
-  =====================================
-      INITIALIZE + REDIRECT
-  =====================================
-  */
-
-  async redirect(
-    amount: number,
-  ) {
-    // `this.initialize()` calls `api.post(...)` — the shared axios instance
-    // already unwraps the response, so this resolves DIRECTLY to the
-    // backend payload (e.g. { success, reference, authorizationUrl, accessCode }).
-    // Destructuring `{ data }` off it again was silently producing
-    // `data === undefined` whenever the backend didn't nest under `data`,
-    // which meant this always threw "Unable to initialize payment." even on
-    // a successful call.
-    const result: any = await this.initialize(
-      amount,
-    );
-
-    const authUrl =
-      result?.authorizationUrl ??
-      result?.data?.authorizationUrl ??
-      result?.authorization_url ??
-      result?.data?.authorization_url;
-
-    if (!authUrl) {
-      throw new Error(
-        "Unable to initialize payment.",
-      );
-    }
-
-    window.location.assign(
-      authUrl,
-    );
+  createVirtualAccount(bank: PocketFiBank, phone: string) {
+    return api.post<VirtualAccount>("/payments/virtual-accounts", {
+      bank,
+      phone,
+    });
   },
 };
