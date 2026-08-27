@@ -16,7 +16,7 @@ interface DepositModalProps {
 
 const BANKS: { value: PocketFiBank; label: string }[] = [
   { value: "kuda", label: "Kuda" },
-  { value: "saveheaven", label: "SafeHaven" },
+  { value: "safeheaven", label: "SafeHaven" },
 ];
 
 export default function DepositModal({

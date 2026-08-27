@@ -1,6 +1,6 @@
 import api from "@/lib/axios";
 
-export type PocketFiBank = "kuda" | "saveheaven";
+export type PocketFiBank = "kuda" | "safeheaven";
 
 export interface VirtualAccount {
   id: string;

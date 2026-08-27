@@ -1,6 +1,6 @@
 import { IsIn, IsNotEmpty, IsString } from 'class-validator';
 
-export type PocketFiBank = 'kuda' | 'saveheaven';
+export type PocketFiBank = 'kuda' | 'safeheaven';
 
 export class CreateVirtualAccountDto {
   @IsIn(['kuda', 'saveheaven'])

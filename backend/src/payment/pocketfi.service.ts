@@ -8,7 +8,7 @@ import {
 import axios, { AxiosInstance } from 'axios';
 import { createHmac } from 'crypto';
 
-export type PocketFiBank = 'kuda' | 'saveheaven';
+export type PocketFiBank = 'kuda' | 'safehaven';
 
 @Injectable()
 export class PocketFiService {
@@ -41,13 +41,6 @@ export class PocketFiService {
     });
   }
 
-  /*
-  =====================================
-      CREATE STATIC VIRTUAL ACCOUNT
-      One permanent account per user per bank — funds sent to it at
-      any time trigger PocketFi's webhook.
-  =====================================
-  */
   async createStaticAccount(params: {
     firstName: string;
     lastName: string;
@@ -110,13 +103,6 @@ export class PocketFiService {
     }
   }
 
-  /*
-  =====================================
-      VERIFY WEBHOOK SIGNATURE
-      HMAC-SHA512 of the RAW request body, keyed with the secret key.
-      Compared against the signature header PocketFi sends.
-  =====================================
-  */
   verifyWebhook(payload: Buffer, signature: string): boolean {
     if (!signature) return false;
 
