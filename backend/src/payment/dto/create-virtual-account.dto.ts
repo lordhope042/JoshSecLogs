@@ -1,8 +1,8 @@
 import { IsIn, IsNotEmpty, IsString } from 'class-validator';
 
 export class CreateVirtualAccountDto {
-  @IsIn(['9psb', 'kuda'])
-  bank: '9psb' | 'kuda';
+  @IsIn(['kuda', 'saveheaven'])
+  bank: 'kuda' | 'saveheaven';
 
   @IsString()
   @IsNotEmpty()
