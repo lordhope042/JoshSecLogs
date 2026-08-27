@@ -30,9 +30,9 @@ interface Props {
   disabled?: boolean;
 }
 
-const PROVIDERS: { value: Provider; label: string }[] = [
+const PROVIDERS: { value: Provider; label: string; recommended?: boolean }[] = [
   { value: "FIVESIM", label: "Provider 1" },
-  { value: "GRIZZYSMS", label: "Provider 2" },
+  { value: "GRIZZYSMS", label: "Provider 2", recommended: true },
 ];
 
 export default function MarketplaceHeader({
@@ -73,19 +73,26 @@ export default function MarketplaceHeader({
 
         <div className="grid grid-cols-2 gap-3">
           {PROVIDERS.map((p) => (
-            <button
-              key={p.value}
-              type="button"
-              disabled={disabled}
-              onClick={() => onProviderChange(p.value)}
-              className={`h-12 rounded-xl border px-4 text-sm font-semibold transition ${
-                provider === p.value
-                  ? "border-orange-500 bg-orange-500/10 text-orange-500"
-                  : "border-gray-300 dark:border-zinc-700 bg-gray-50 dark:bg-[#0F172A] text-gray-500 dark:text-zinc-400 hover:border-orange-500/40"
-              } disabled:cursor-not-allowed disabled:opacity-60`}
-            >
-              {p.label}
-            </button>
+            <div key={p.value} className="flex flex-col gap-1">
+              <button
+                type="button"
+                disabled={disabled}
+                onClick={() => onProviderChange(p.value)}
+                className={`h-12 rounded-xl border px-4 text-sm font-semibold transition ${
+                  provider === p.value
+                    ? "border-orange-500 bg-orange-500/10 text-orange-500"
+                    : "border-gray-300 dark:border-zinc-700 bg-gray-50 dark:bg-[#0F172A] text-gray-500 dark:text-zinc-400 hover:border-orange-500/40"
+                } disabled:cursor-not-allowed disabled:opacity-60`}
+              >
+                {p.label}
+              </button>
+
+              {p.recommended && (
+                <span className="text-center text-xs font-medium text-orange-500">
+                  Recommended
+                </span>
+              )}
+            </div>
           ))}
         </div>
       </div>

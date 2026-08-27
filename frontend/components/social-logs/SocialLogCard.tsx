@@ -115,7 +115,7 @@ const STATIC_LISTING_TYPES: StaticListingType[] = [
   { category: "TWITTER_FOLLOWERS", followers: 100 },
   { category: "TWITTER_FOLLOWERS", followers: 200 },
   { category: "TWITTER_FOLLOWERS", followers: 500 },
-  { category: "TWITTER_FOLLOWERS", followers: 1000 },
+  
 
   // 4. INSTAGRAM_FOLLOWERS — 4 sub-types
   { category: "INSTAGRAM_FOLLOWERS", instagramSubType: "MONTHS_OLD" },
@@ -134,7 +134,7 @@ const STATIC_LISTING_TYPES: StaticListingType[] = [
   { category: "TEXTPLUS_NEXTPLUS", platform: "NEXTPLUS" },
 
   // 7. TIKTOK_FOLLOWERS — 4 tiers
-  { category: "TIKTOK_FOLLOWERS", followers: 100 },
+ 
   { category: "TIKTOK_FOLLOWERS", followers: 200 },
   { category: "TIKTOK_FOLLOWERS", followers: 500 },
   { category: "TIKTOK_FOLLOWERS", followers: 1000 },
