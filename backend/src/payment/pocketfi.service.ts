@@ -111,7 +111,17 @@ export class PocketFiService {
 
     const cleanSig = signature.toLowerCase().trim();
 
-    const candidates = [
+      const candidates = [
+      {
+        name: 'POCKETFI_PUBLIC_KEY (actual hex secret) + sha512',
+        secret: process.env.POCKETFI_PUBLIC_KEY,
+        algo: 'sha512',
+      },
+      {
+        name: 'POCKETFI_PUBLIC_KEY (actual hex secret) + sha256',
+        secret: process.env.POCKETFI_PUBLIC_KEY,
+        algo: 'sha256',
+      },
       {
         name: 'POCKETFI_SECRET_KEY + sha512',
         secret: process.env.POCKETFI_SECRET_KEY,
@@ -133,7 +143,6 @@ export class PocketFiService {
         algo: 'sha256',
       },
     ];
-
     const debugLines: string[] = [];
     debugLines.push(`Received signature: ${cleanSig}`);
 
