@@ -32,14 +32,6 @@ export class PaymentsController {
 
   // -----------------------------------------------------------------------
   // PUBLIC WEBHOOK — PocketFi calls this; must NOT be behind JWT guard.
-  // The raw request body is required for HMAC signature verification.
-  //
-  // Header name: PocketFi's own docs show the PHP example reading
-  // $_SERVER['HTTP_POCKETFI_SIGNATURE'] and the Node.js example reading
-  // req.headers['http_pocketfi_signature'] literally — neither matches
-  // standard HTTP header casing (Express normalizes real headers to
-  // lowercase-with-hyphens, e.g. 'pocketfi-signature' or
-  // 'x-pocketfi-signature'). We defensively check all three forms.
   // -----------------------------------------------------------------------
   @Post('webhook')
   @HttpCode(200)

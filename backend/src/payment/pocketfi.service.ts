@@ -8,7 +8,7 @@ import {
 import axios, { AxiosInstance } from 'axios';
 import { createHmac } from 'crypto';
 
-export type PocketFiBank = '9psb' | 'kuda';
+export type PocketFiBank = 'kuda' | 'saveheaven';
 
 @Injectable()
 export class PocketFiService {

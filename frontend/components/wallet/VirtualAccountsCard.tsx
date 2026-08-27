@@ -12,7 +12,7 @@ interface VirtualAccountsCardProps {
 }
 
 const BANK_LABEL: Record<string, string> = {
-  "9psb": "9PSB",
+  saveheaven: "SafeHaven",
   kuda: "Kuda",
 };
 
@@ -56,13 +56,13 @@ export default function VirtualAccountsCard({
 
       {loading ? (
         <div className="flex items-center justify-center py-10">
-          <Loader2 size={22} className="animate-spin text-emerald-500" />
+          <Loader2 size={22} className="animate-spin text-orange-500" />
         </div>
       ) : accounts.length === 0 ? (
         <button
           type="button"
           onClick={onAddBank}
-          className="flex w-full flex-col items-center justify-center gap-2 rounded-xl border border-dashed border-zinc-300 py-8 text-center transition hover:border-emerald-400 hover:bg-emerald-500/5 dark:border-white/15"
+          className="flex w-full flex-col items-center justify-center gap-2 rounded-xl border border-dashed border-zinc-300 py-8 text-center transition hover:border-orange-400 hover:bg-orange-500/5 dark:border-white/15"
         >
           <Landmark size={22} className="text-zinc-400 dark:text-zinc-500" />
           <span className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
@@ -99,7 +99,7 @@ export default function VirtualAccountsCard({
                   onClick={() =>
                     copyAccountNumber(account.bank, account.accountNumber)
                   }
-                  className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-emerald-500 text-white transition hover:bg-emerald-600"
+                  className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-orange-500 text-white transition hover:bg-orange-600"
                   title="Copy account number"
                 >
                   {copiedBank === account.bank ? (
@@ -116,7 +116,7 @@ export default function VirtualAccountsCard({
             <button
               type="button"
               onClick={onAddBank}
-              className="flex w-full items-center justify-center gap-1.5 rounded-xl border border-dashed border-zinc-300 py-3 text-sm font-medium text-zinc-500 transition hover:border-emerald-400 hover:text-emerald-500 dark:border-white/15 dark:text-zinc-400"
+              className="flex w-full items-center justify-center gap-1.5 rounded-xl border border-dashed border-zinc-300 py-3 text-sm font-medium text-zinc-500 transition hover:border-orange-400 hover:text-orange-500 dark:border-white/15 dark:text-zinc-400"
             >
               <Plus size={15} />
               Add another bank

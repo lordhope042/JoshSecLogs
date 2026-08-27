@@ -15,8 +15,8 @@ interface DepositModalProps {
 }
 
 const BANKS: { value: PocketFiBank; label: string }[] = [
-  { value: "9psb", label: "9PSB" },
   { value: "kuda", label: "Kuda" },
+  { value: "saveheaven", label: "SafeHaven" },
 ];
 
 export default function DepositModal({
@@ -28,14 +28,12 @@ export default function DepositModal({
   onCreateAccount,
 }: DepositModalProps) {
   const [phone, setPhone] = useState("");
-  const [selectedBank, setSelectedBank] = useState<PocketFiBank>("9psb");
+  const [selectedBank, setSelectedBank] = useState<PocketFiBank>("kuda");
 
   const banksWithoutAccount = BANKS.filter(
     (b) => !accounts.some((a) => a.bank === b.value),
   );
 
-  // Whenever the modal opens, default the bank picker to the first
-  // one the user doesn't already have.
   useEffect(() => {
     if (open) {
       setPhone("");
@@ -77,7 +75,7 @@ export default function DepositModal({
 
         {loading ? (
           <div className="flex items-center justify-center py-10">
-            <Loader2 size={24} className="animate-spin text-emerald-500" />
+            <Loader2 size={24} className="animate-spin text-orange-500" />
           </div>
         ) : noBanksLeft ? (
           <p className="py-6 text-center text-sm text-zinc-500 dark:text-zinc-400">
@@ -106,8 +104,8 @@ export default function DepositModal({
                     disabled={creating}
                     className={`rounded-lg border px-3 py-2 text-sm font-semibold transition disabled:opacity-50 ${
                       selectedBank === b.value
-                        ? "border-emerald-500 bg-emerald-500/10 text-emerald-500"
-                        : "border-zinc-200 text-zinc-600 hover:border-emerald-400 dark:border-white/10 dark:text-zinc-300"
+                        ? "border-orange-500 bg-orange-500/10 text-orange-500"
+                        : "border-zinc-200 text-zinc-600 hover:border-orange-400 dark:border-white/10 dark:text-zinc-300"
                     }`}
                   >
                     {b.label}
@@ -127,7 +125,7 @@ export default function DepositModal({
                 onChange={(e) => setPhone(e.target.value)}
                 placeholder="e.g. 09029163518"
                 disabled={creating}
-                className="w-full rounded-lg border border-zinc-200 bg-white px-3 py-2.5 text-zinc-900 outline-none transition focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 disabled:opacity-50 dark:border-white/10 dark:bg-white/5 dark:text-white"
+                className="w-full rounded-lg border border-zinc-200 bg-white px-3 py-2.5 text-zinc-900 outline-none transition focus:border-orange-500 focus:ring-2 focus:ring-orange-500/20 disabled:opacity-50 dark:border-white/10 dark:bg-white/5 dark:text-white"
               />
 
               {phone.length > 0 && !phoneValid && (
@@ -151,7 +149,7 @@ export default function DepositModal({
                 type="button"
                 onClick={submitCreate}
                 disabled={!phoneValid || creating}
-                className="flex-1 inline-flex items-center justify-center gap-2 rounded-lg bg-emerald-500 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-emerald-600 disabled:opacity-50"
+                className="flex-1 inline-flex items-center justify-center gap-2 rounded-lg bg-orange-500 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-orange-600 disabled:opacity-50"
               >
                 {creating && <Loader2 size={16} className="animate-spin" />}
                 {creating ? "Generating…" : "Generate Account"}
