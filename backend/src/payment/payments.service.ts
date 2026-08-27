@@ -66,58 +66,38 @@ export class PaymentsService {
   /*
   =====================================
       WEBHOOK — POCKETFI
-
-      Confirmed payload shape from logs:
-      {
-        "order": {
-          "amount": 100,
-          "settlement_amount": 99.1,
-          "fee": 0.9,
-          "description": "..."
-        },
-        "transaction": { "reference": "PFI|..." },
-        "account_number": "7005000264",
-        "customer": { "email": "...", ... }
-      }
   =====================================
   */
   async webhook(payload: any, signature: string, rawBody: Buffer) {
-    // --- 1. Log everything first ---
     this.logger.warn(
-      `=== POCKETFI WEBHOOK ===\n` +
-        `Signature: ${signature ?? 'MISSING'}\n` +
-        `Body: ${rawBody.toString()}`,
+      `=== POCKETFI WEBHOOK ===\nSignature: ${signature ?? 'MISSING'}\nBody: ${rawBody.toString()}`,
     );
 
-    // --- 2. Signature check (with emergency bypass) ---
-    let verified = false;
-    try {
-      verified = this.pocketfi.verifyWebhook(rawBody, signature);
-    } catch (err) {
-      this.logger.error(`Signature check error: ${(err as Error).message}`);
+    const { valid: verified, debug } = this.pocketfi.verifyWebhook(
+      rawBody,
+      signature,
+    );
+
+    if (!verified) {
+      this.logger.error(`SIGNATURE MISMATCH — Debug:\n${debug}`);
+
+      // EMERGENCY BYPASS: set this env var to process webhooks anyway
+      // while you contact PocketFi support for the correct secret.
+      if (process.env.POCKETFI_WEBHOOK_SECRET !== 'skip_verification') {
+        throw new BadRequestException('Invalid webhook signature.');
+      }
+
+      this.logger.warn(
+        '⚠️  BYPASSING signature verification (POCKETFI_WEBHOOK_SECRET=skip_verification)',
+      );
+    } else {
+      this.logger.log(`Signature OK — ${debug}`);
     }
 
-    // EMERGENCY BYPASS: if you set POCKETFI_WEBHOOK_SECRET=skip_verification
-    // in Railway/Render env vars, it will process the payment anyway.
-    // REMOVE THIS once signature verification is working.
-    const skipVerification =
-      process.env.POCKETFI_WEBHOOK_SECRET === 'skip_verification';
-
-    if (!verified && !skipVerification) {
-      this.logger.error('Webhook rejected: invalid signature');
-      throw new BadRequestException('Invalid webhook signature.');
-    }
-
-    if (skipVerification) {
-      this.logger.warn('⚠️  WEBHOOK SIGNATURE VERIFICATION IS DISABLED');
-    }
-
-    // --- 3. Extract confirmed fields ---
+    // Confirmed payload shape from your logs:
     const reference: string | undefined =
       payload?.transaction?.reference ?? payload?.reference;
 
-    // Use settlement_amount (what actually arrives) if available,
-    // otherwise fall back to gross amount.
     const amount: number | undefined =
       payload?.order?.settlement_amount ?? payload?.order?.amount;
 
@@ -133,7 +113,7 @@ export class PaymentsService {
       return { message: 'success' };
     }
 
-    // --- 4. Idempotency ---
+    // Idempotency
     const existing = await this.prisma.walletTransaction.findUnique({
       where: { reference },
     });
@@ -142,14 +122,13 @@ export class PaymentsService {
       return { message: 'success' };
     }
 
-    // --- 5. Find virtual account ---
+    // Find virtual account
     let virtualAccount = accountNumber
       ? await this.virtualAccountRepo.findByAccountNumber(
           String(accountNumber).trim(),
         )
       : null;
 
-    // Fallback: match by customer email if account number lookup fails
     if (!virtualAccount && customerEmail) {
       const user = await this.prisma.user.findUnique({
         where: { email: customerEmail.toLowerCase() },
@@ -163,12 +142,11 @@ export class PaymentsService {
 
     if (!virtualAccount) {
       this.logger.error(
-        `NO MATCH: ref=${reference}, account=${accountNumber}, email=${customerEmail}. Needs manual reconciliation.`,
+        `NO MATCH: ref=${reference}, account=${accountNumber}. Needs manual reconciliation.`,
       );
       return { message: 'success' };
     }
 
-    // --- 6. Credit wallet ---
     try {
       await this.walletService.creditWallet(
         virtualAccount.userId,
@@ -191,7 +169,6 @@ export class PaymentsService {
   /*
   =====================================
       MANUAL RECONCILIATION
-      For missed deposits while debugging.
   =====================================
   */
   async manualReconcile(

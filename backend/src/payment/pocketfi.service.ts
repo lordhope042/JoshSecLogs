@@ -97,28 +97,62 @@ export class PocketFiService {
   =====================================
       VERIFY WEBHOOK SIGNATURE
 
-      Tries POCKETFI_WEBHOOK_SECRET first (if PocketFi gives you a
-      separate webhook secret in the dashboard). Falls back to
-      POCKETFI_SECRET_KEY. Also strips "sha512=" prefix if present.
+      Tries every combination of secret + algorithm so we can figure
+      out what PocketFi actually uses. Logs all attempts for debugging.
   =====================================
   */
-  verifyWebhook(payload: Buffer, signature: string): boolean {
-    if (!signature) return false;
-
-    // Some providers prefix the signature: "sha512=abc123..."
-    const cleanSig = signature.replace(/^(sha512|sha256)=/, '');
-
-    const secret =
-      process.env.POCKETFI_WEBHOOK_SECRET || process.env.POCKETFI_SECRET_KEY;
-
-    if (!secret) {
-      this.logger.warn('No webhook secret available, skipping verification');
-      return true;
+  verifyWebhook(
+    payload: Buffer,
+    signature: string,
+  ): { valid: boolean; debug: string } {
+    if (!signature) {
+      return { valid: false, debug: 'Signature header is missing' };
     }
 
-    const hash = createHmac('sha512', secret).update(payload).digest('hex');
+    const cleanSig = signature.toLowerCase().trim();
 
-    // Try hex comparison (case-insensitive)
-    return hash.toLowerCase() === cleanSig.toLowerCase();
+    const candidates = [
+      {
+        name: 'POCKETFI_SECRET_KEY + sha512',
+        secret: process.env.POCKETFI_SECRET_KEY,
+        algo: 'sha512',
+      },
+      {
+        name: 'POCKETFI_SECRET_KEY + sha256',
+        secret: process.env.POCKETFI_SECRET_KEY,
+        algo: 'sha256',
+      },
+      {
+        name: 'POCKETFI_BUSINESS_ID + sha512',
+        secret: process.env.POCKETFI_BUSINESS_ID,
+        algo: 'sha512',
+      },
+      {
+        name: 'POCKETFI_BUSINESS_ID + sha256',
+        secret: process.env.POCKETFI_BUSINESS_ID,
+        algo: 'sha256',
+      },
+    ];
+
+    const debugLines: string[] = [];
+    debugLines.push(`Received signature: ${cleanSig}`);
+
+    for (const c of candidates) {
+      if (!c.secret) {
+        debugLines.push(`${c.name}: (secret not set)`);
+        continue;
+      }
+      const hash = createHmac(c.algo, c.secret)
+        .update(payload)
+        .digest('hex')
+        .toLowerCase();
+      debugLines.push(`${c.name}: ${hash}`);
+
+      if (hash === cleanSig) {
+        return { valid: true, debug: `Matched with ${c.name}` };
+      }
+    }
+
+    return { valid: false, debug: debugLines.join('\n') };
   }
 }
