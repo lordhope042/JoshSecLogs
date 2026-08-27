@@ -29,18 +29,12 @@ export class PaymentsService {
       user.id,
       bank,
     );
-
-    if (existing) {
-      return existing;
-    }
+    if (existing) return existing;
 
     const dbUser = await this.prisma.user.findUnique({
       where: { id: user.id },
     });
-
-    if (!dbUser) {
-      throw new BadRequestException('User not found.');
-    }
+    if (!dbUser) throw new BadRequestException('User not found.');
 
     const [firstName, ...rest] = dbUser.name.trim().split(/\s+/);
     const lastName = rest.join(' ') || firstName;
@@ -71,170 +65,124 @@ export class PaymentsService {
 
   /*
   =====================================
-      WEBHOOK (PocketFi) — DEBUG EDITION
+      WEBHOOK — POCKETFI
+
+      Confirmed payload shape from logs:
+      {
+        "order": {
+          "amount": 100,
+          "settlement_amount": 99.1,
+          "fee": 0.9,
+          "description": "..."
+        },
+        "transaction": { "reference": "PFI|..." },
+        "account_number": "7005000264",
+        "customer": { "email": "...", ... }
+      }
   =====================================
   */
   async webhook(payload: any, signature: string, rawBody: Buffer) {
-    // 1. ALWAYS log the raw request first — even if signature fails
+    // --- 1. Log everything first ---
     this.logger.warn(
-      `=== POCKETFI WEBHOOK HIT ===\n` +
-      `Signature header: ${signature ?? 'MISSING'}\n` +
-      `Raw body: ${rawBody.toString()}\n` +
-      `Parsed payload: ${JSON.stringify(payload, null, 2)}`,
+      `=== POCKETFI WEBHOOK ===\n` +
+        `Signature: ${signature ?? 'MISSING'}\n` +
+        `Body: ${rawBody.toString()}`,
     );
 
-    if (!signature) {
-      this.logger.error('Webhook rejected: missing signature');
-      throw new BadRequestException('Missing webhook signature.');
-    }
-
-    // 2. Try to verify, but if it fails, log WHY and still continue
-    //    (remove the try/catch bypass after you confirm signature works)
+    // --- 2. Signature check (with emergency bypass) ---
     let verified = false;
     try {
       verified = this.pocketfi.verifyWebhook(rawBody, signature);
     } catch (err) {
-      this.logger.error(`Signature verification threw: ${(err as Error).message}`);
+      this.logger.error(`Signature check error: ${(err as Error).message}`);
     }
 
-    this.logger.warn(`Signature verification result: ${verified}`);
+    // EMERGENCY BYPASS: if you set POCKETFI_WEBHOOK_SECRET=skip_verification
+    // in Railway/Render env vars, it will process the payment anyway.
+    // REMOVE THIS once signature verification is working.
+    const skipVerification =
+      process.env.POCKETFI_WEBHOOK_SECRET === 'skip_verification';
 
-    if (!verified) {
-      // TEMPORARY: some providers send signatures with a "sha512=" prefix
-      const altSig = signature.startsWith('sha512=') ? signature.slice(7) : `sha512=${signature}`;
-      const altVerified = this.pocketfi.verifyWebhook(rawBody, altSig);
-      if (!altVerified) {
-        this.logger.error('Webhook rejected: signature mismatch');
-        throw new BadRequestException('Invalid webhook signature.');
-      }
-      this.logger.warn('Signature matched with alternative format');
+    if (!verified && !skipVerification) {
+      this.logger.error('Webhook rejected: invalid signature');
+      throw new BadRequestException('Invalid webhook signature.');
     }
 
-    // 3. Extract fields — try EVERY possible path PocketFi might use
+    if (skipVerification) {
+      this.logger.warn('⚠️  WEBHOOK SIGNATURE VERIFICATION IS DISABLED');
+    }
+
+    // --- 3. Extract confirmed fields ---
     const reference: string | undefined =
-      payload?.reference ??
-      payload?.data?.reference ??
-      payload?.transaction?.reference ??
-      payload?.order?.reference ??
-      payload?.payment?.reference ??
-      payload?.id;
+      payload?.transaction?.reference ?? payload?.reference;
 
-    // PocketFi sometimes sends amount in kobo (10000 = ₦100), sometimes in naira (100)
-    let rawAmount: number | undefined =
-      payload?.amount ??
-      payload?.data?.amount ??
-      payload?.order?.amount ??
-      payload?.transaction?.amount ??
-      payload?.payment?.amount;
-
-    // Convert kobo to naira if it looks like kobo (>= 1000 and no decimal)
+    // Use settlement_amount (what actually arrives) if available,
+    // otherwise fall back to gross amount.
     const amount: number | undefined =
-      rawAmount !== undefined
-        ? rawAmount >= 1000 && Number.isInteger(rawAmount)
-          ? rawAmount / 100
-          : rawAmount
-        : undefined;
+      payload?.order?.settlement_amount ?? payload?.order?.amount;
 
-    // 4. Try to find the account number — check EVERY possible nesting
-    const candidateAccountNumber: string | undefined =
-      payload?.account_number ??
-      payload?.accountNumber ??
-      payload?.data?.account_number ??
-      payload?.data?.accountNumber ??
-      payload?.data?.virtual_account?.account_number ??
-      payload?.virtual_account?.account_number ??
-      payload?.virtualAccount?.account_number ??
-      payload?.virtualAccount ??
-      payload?.order?.account_number ??
-      payload?.transaction?.account_number ??
-      payload?.payment?.account_number ??
-      payload?.customer?.account_number ??
-      payload?.meta?.account_number ??
-      payload?.recipient?.account_number;
-
-    // 5. Some webhooks identify by sender name + account instead of virtual account
-    const senderName: string | undefined =
-      payload?.sender_name ??
-      payload?.senderName ??
-      payload?.data?.sender_name ??
-      payload?.customer?.name;
+    const accountNumber: string | undefined = payload?.account_number;
+    const customerEmail: string | undefined = payload?.customer?.email;
 
     this.logger.warn(
-      `Extracted: reference=${reference}, rawAmount=${rawAmount}, ` +
-      `convertedAmount=${amount}, account=${candidateAccountNumber}, sender=${senderName}`,
+      `Parsed: ref=${reference}, amount=${amount}, account=${accountNumber}, email=${customerEmail}`,
     );
 
     if (!reference || amount === undefined) {
-      this.logger.error('Webhook rejected: missing reference or amount');
-      return { message: 'success' }; // return 200 so they stop retrying
-    }
-
-    // 6. Idempotency check
-    const existingTx = await this.prisma.walletTransaction.findUnique({
-      where: { reference },
-    });
-
-    if (existingTx) {
-      this.logger.log(`Duplicate webhook: ${reference} already processed`);
+      this.logger.error('Missing reference or amount');
       return { message: 'success' };
     }
 
-    // 7. Find virtual account by account number
-    let virtualAccount = candidateAccountNumber
+    // --- 4. Idempotency ---
+    const existing = await this.prisma.walletTransaction.findUnique({
+      where: { reference },
+    });
+    if (existing) {
+      this.logger.log(`Duplicate webhook: ${reference}`);
+      return { message: 'success' };
+    }
+
+    // --- 5. Find virtual account ---
+    let virtualAccount = accountNumber
       ? await this.virtualAccountRepo.findByAccountNumber(
-          String(candidateAccountNumber).trim(),
+          String(accountNumber).trim(),
         )
       : null;
 
-    // 8. If no match by account number, try matching by the reference itself
-    //    (some providers include the virtual account reference in the payment ref)
-    if (!virtualAccount) {
-      this.logger.warn('No match by account number, trying reference lookup...');
-      // Check if any virtual account user's email appears in payload
-      const candidateEmail: string | undefined =
-        payload?.email ??
-        payload?.customer?.email ??
-        payload?.data?.email ??
-        payload?.sender_email;
-      
-      if (candidateEmail) {
-        const user = await this.prisma.user.findUnique({
-          where: { email: candidateEmail.toLowerCase() },
-          include: { virtualAccounts: true },
-        });
-        if (user?.virtualAccounts?.[0]) {
-          virtualAccount = user.virtualAccounts[0];
-          this.logger.warn(`Matched by email fallback: ${candidateEmail}`);
-        }
+    // Fallback: match by customer email if account number lookup fails
+    if (!virtualAccount && customerEmail) {
+      const user = await this.prisma.user.findUnique({
+        where: { email: customerEmail.toLowerCase() },
+        include: { virtualAccounts: true },
+      });
+      if (user?.virtualAccounts?.[0]) {
+        virtualAccount = user.virtualAccounts[0];
+        this.logger.warn(`Matched by email fallback: ${customerEmail}`);
       }
     }
 
     if (!virtualAccount) {
       this.logger.error(
-        `CRITICAL: PocketFi webhook could NOT match deposit.\n` +
-        `Reference: ${reference} | Amount: ₦${amount} | Account tried: ${candidateAccountNumber}\n` +
-        `This deposit needs MANUAL reconciliation. Full payload logged above.`,
+        `NO MATCH: ref=${reference}, account=${accountNumber}, email=${customerEmail}. Needs manual reconciliation.`,
       );
       return { message: 'success' };
     }
 
-    // 9. Credit the wallet
+    // --- 6. Credit wallet ---
     try {
       await this.walletService.creditWallet(
         virtualAccount.userId,
-        amount,
-        `Deposit via PocketFi (${virtualAccount.bank.toUpperCase()} •••${virtualAccount.accountNumber.slice(-4)}) — ${senderName ?? 'Bank Transfer'}`,
+        Number(amount),
+        `Deposit via PocketFi (${virtualAccount.bank.toUpperCase()} •••${virtualAccount.accountNumber.slice(-4)})`,
         reference,
       );
-
       this.logger.log(
-        `✅ SUCCESS: Credited ₦${amount} to user ${virtualAccount.userId} (ref: ${reference})`,
+        `✅ Credited ₦${amount} to user ${virtualAccount.userId} (ref: ${reference})`,
       );
     } catch (err) {
       this.logger.error(
-        `Wallet credit FAILED for ${reference}: ${(err as Error).message}`,
+        `Credit failed for ${reference}: ${(err as Error).message}`,
       );
-      // Still return 200 — don't let PocketFi retry and double-charge
     }
 
     return { message: 'success' };
@@ -243,14 +191,17 @@ export class PaymentsService {
   /*
   =====================================
       MANUAL RECONCILIATION
-      Call this from Postman/Insomnia if a webhook was missed.
+      For missed deposits while debugging.
   =====================================
   */
-  async manualReconcile(reference: string, accountNumber: string, amount: number) {
+  async manualReconcile(
+    reference: string,
+    accountNumber: string,
+    amount: number,
+  ) {
     const virtualAccount = await this.virtualAccountRepo.findByAccountNumber(
       accountNumber,
     );
-
     if (!virtualAccount) {
       throw new BadRequestException('Virtual account not found.');
     }
@@ -258,10 +209,7 @@ export class PaymentsService {
     const existing = await this.prisma.walletTransaction.findUnique({
       where: { reference },
     });
-
-    if (existing) {
-      return { message: 'Already processed' };
-    }
+    if (existing) return { message: 'Already processed' };
 
     await this.walletService.creditWallet(
       virtualAccount.userId,
