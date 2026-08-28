@@ -53,7 +53,7 @@ const platformColors: Record<string, string> = {
 
 const CATEGORY_LABELS: Record<SocialLogCategoryValue, string> = {
   FACEBOOK_PAGE: "Facebook — Page",
-  FACEBOOK_COUNTRY: "Facebook — By Country",
+  // REMOVE THIS LINE: FACEBOOK_COUNTRY: "Facebook — By Country",
   TWITTER_FOLLOWERS: "Twitter — Followers",
   INSTAGRAM_FOLLOWERS: "Instagram — Followers",
   VPN: "VPN",
