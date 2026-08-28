@@ -36,7 +36,7 @@ const platforms: SocialPlatform[] = [
 
 const categories: { value: SocialLogCategoryValue; label: string }[] = [
   { value: "FACEBOOK_PAGE", label: "Facebook — Page" },
-  { value: "FACEBOOK_COUNTRY", label: "Facebook — By Country" },
+  // { value: "FACEBOOK_COUNTRY", label: "Facebook — By Country" }, // REMOVED
   { value: "TWITTER_FOLLOWERS", label: "Twitter — Followers" },
   { value: "INSTAGRAM_FOLLOWERS", label: "Instagram — Followers" },
   { value: "VPN", label: "VPN" },

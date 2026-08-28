@@ -72,7 +72,7 @@ const PLATFORMS: SocialPlatform[] = [
 
 const CATEGORIES: { value: SocialLogCategoryValue; label: string }[] = [
   { value: "FACEBOOK_PAGE", label: "Facebook — Page" },
-  { value: "FACEBOOK_COUNTRY", label: "Facebook — By Country" },
+  // { value: "FACEBOOK_COUNTRY", label: "Facebook — By Country" }, // REMOVED
   { value: "TWITTER_FOLLOWERS", label: "Twitter — Followers" },
   { value: "INSTAGRAM_FOLLOWERS", label: "Instagram — Followers" },
   { value: "VPN", label: "VPN" },
@@ -120,15 +120,15 @@ const WEBSITE_TYPES: { value: WebsiteType; label: string }[] = [
   { value: "BOOSTING_WEBSITE", label: "Boosting Website" },
 ];
 
-// Fixed country lists for the *_COUNTRY categories — quick-pick buttons.
-const FACEBOOK_COUNTRIES: { value: string; label: string; followers: number }[] = [
-  { value: "USA", label: "USA", followers: 200 },
-  { value: "CANADA", label: "Canada", followers: 100 },
-  { value: "SPAIN", label: "Spain", followers: 100 },
-  { value: "AUSTRALIA", label: "Australia", followers: 100 },
-  { value: "NETHERLANDS", label: "Netherlands", followers: 100 },
-  { value: "BELGIUM", label: "Belgium", followers: 100 },
-];
+// REMOVED: FACEBOOK_COUNTRIES array
+// const FACEBOOK_COUNTRIES: { value: string; label: string; followers: number }[] = [
+//   { value: "USA", label: "USA", followers: 200 },
+//   { value: "CANADA", label: "Canada", followers: 100 },
+//   { value: "SPAIN", label: "Spain", followers: 100 },
+//   { value: "AUSTRALIA", label: "Australia", followers: 100 },
+//   { value: "NETHERLANDS", label: "Netherlands", followers: 100 },
+//   { value: "BELGIUM", label: "Belgium", followers: 100 },
+// ];
 
 const TIKTOK_COUNTRIES: { value: string; label: string }[] = [
   { value: "USA", label: "USA" },
@@ -158,7 +158,7 @@ const FOLLOWER_TIERS: Record<string, { value: number; label: string }[]> = {
 };
 
 const COUNTRY_CATEGORIES = new Set<SocialLogCategoryValue>([
-  "FACEBOOK_COUNTRY",
+  // "FACEBOOK_COUNTRY", // REMOVED
   "TIKTOK_COUNTRY",
 ]);
 
@@ -167,7 +167,9 @@ const FOLLOWER_CATEGORIES = new Set<SocialLogCategoryValue>([
   "TIKTOK_FOLLOWERS",
 ]);
 
-const FACEBOOK_COUNTRY_CATEGORY = "FACEBOOK_COUNTRY";
+// REMOVED: FACEBOOK_COUNTRY_CATEGORY constant
+// const FACEBOOK_COUNTRY_CATEGORY = "FACEBOOK_COUNTRY";
+
 const INSTAGRAM_CATEGORY = "INSTAGRAM_FOLLOWERS";
 const VPN_CATEGORY = "VPN";
 const TUTORIAL_CATEGORY = "TUTORIAL";
@@ -230,7 +232,8 @@ export default function SocialLogForm({
   const needsVpnType = values.category === VPN_CATEGORY;
   const needsTutorialType = values.category === TUTORIAL_CATEGORY;
   const needsWebsiteType = values.category === WEBSITE_CATEGORY;
-  const needsFacebookCountry = values.category === FACEBOOK_COUNTRY_CATEGORY;
+  // REMOVED: needsFacebookCountry
+  // const needsFacebookCountry = values.category === FACEBOOK_COUNTRY_CATEGORY;
   const needsTiktokCountry = values.category === "TIKTOK_COUNTRY";
   const tierOptions = values.category ? FOLLOWER_TIERS[values.category] : undefined;
 
@@ -247,7 +250,7 @@ export default function SocialLogForm({
       ...prev,
       category,
       country: category && COUNTRY_CATEGORIES.has(category) ? prev.country : "",
-      followers: category && (FOLLOWER_CATEGORIES.has(category) || category === FACEBOOK_COUNTRY_CATEGORY) ? prev.followers : "",
+      followers: category && FOLLOWER_CATEGORIES.has(category) ? prev.followers : "",
       pageType: category === "FACEBOOK_PAGE" ? prev.pageType : "",
       instagramSubType: category === INSTAGRAM_CATEGORY ? prev.instagramSubType : "",
       vpnType: category === VPN_CATEGORY ? prev.vpnType : "",
@@ -329,11 +332,9 @@ export default function SocialLogForm({
         username: values.username.trim(),
         age: Number(values.age),
         followers:
-          (needsFollowers || needsFacebookCountry) && values.followers !== "" && values.followers !== undefined
+          needsFollowers && values.followers !== "" && values.followers !== undefined
             ? Number(values.followers)
-            : needsFacebookCountry
-              ? 200 // default follower floor for Facebook-by-country
-              : undefined,
+            : undefined,
         instagramSubType:
           needsInstagramSubType && values.instagramSubType
             ? (values.instagramSubType as InstagramSubType)
@@ -465,27 +466,7 @@ export default function SocialLogForm({
           {/* Conditional: only for *_COUNTRY categories */}
           {needsCountry && (
             <Field label="Country" error={errors.country}>
-              {needsFacebookCountry ? (
-                <div className="flex flex-wrap gap-2">
-                  {FACEBOOK_COUNTRIES.map((c) => (
-                    <button
-                      key={c.value}
-                      type="button"
-                      onClick={() => {
-                        update("country", c.value);
-                        update("followers", c.followers);
-                      }}
-                      className={`rounded-xl border px-4 py-2.5 text-sm font-medium transition ${
-                        values.country === c.value
-                          ? "border-orange-500 bg-orange-500/10 text-orange-400"
-                          : "border-gray-300 dark:border-zinc-700 bg-gray-100 dark:bg-zinc-800 text-gray-500 dark:text-zinc-400 hover:border-zinc-600"
-                      }`}
-                    >
-                      {c.label} ({c.followers}+)
-                    </button>
-                  ))}
-                </div>
-              ) : needsTiktokCountry ? (
+              {needsTiktokCountry ? (
                 <div className="flex flex-wrap gap-2">
                   {TIKTOK_COUNTRIES.map((c) => (
                     <button
