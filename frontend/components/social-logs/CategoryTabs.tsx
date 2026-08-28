@@ -35,7 +35,7 @@ interface Props {
 
 const labels: Record<SocialLogCategoryValue, string> = {
   FACEBOOK_PAGE: "Facebook — Page",
-  FACEBOOK_COUNTRY: "Facebook — By Country",
+  // FACEBOOK_COUNTRY: "Facebook — By Country", // REMOVED
   TWITTER_FOLLOWERS: "Twitter — Followers",
   INSTAGRAM_FOLLOWERS: "Instagram — Followers",
   VPN: "VPN",
@@ -50,7 +50,7 @@ const labels: Record<SocialLogCategoryValue, string> = {
 
 const icons: Record<SocialLogCategoryValue, IconType> = {
   FACEBOOK_PAGE: FaFacebook,
-  FACEBOOK_COUNTRY: FaFacebook,
+  // FACEBOOK_COUNTRY: FaFacebook, // REMOVED
   TWITTER_FOLLOWERS: FaXTwitter,
   INSTAGRAM_FOLLOWERS: FaInstagram,
   VPN: FaShieldAlt,

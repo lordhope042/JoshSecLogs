@@ -102,13 +102,13 @@ const STATIC_LISTING_TYPES: StaticListingType[] = [
   { category: "FACEBOOK_PAGE", pageType: "MULTI_PAGE" },
   { category: "FACEBOOK_PAGE", pageType: "PAGE_WITH_FOLLOWERS" },
 
-  // 2. FACEBOOK_COUNTRY — 6 fixed countries
-  { category: "FACEBOOK_COUNTRY", country: "USA" },
-  { category: "FACEBOOK_COUNTRY", country: "CANADA" },
-  { category: "FACEBOOK_COUNTRY", country: "SPAIN" },
-  { category: "FACEBOOK_COUNTRY", country: "AUSTRALIA" },
-  { category: "FACEBOOK_COUNTRY", country: "NETHERLANDS" },
-  { category: "FACEBOOK_COUNTRY", country: "BELGIUM" },
+  // 2. FACEBOOK_COUNTRY — REMOVED
+  // { category: "FACEBOOK_COUNTRY", country: "USA" },
+  // { category: "FACEBOOK_COUNTRY", country: "CANADA" },
+  // { category: "FACEBOOK_COUNTRY", country: "SPAIN" },
+  // { category: "FACEBOOK_COUNTRY", country: "AUSTRALIA" },
+  // { category: "FACEBOOK_COUNTRY", country: "NETHERLANDS" },
+  // { category: "FACEBOOK_COUNTRY", country: "BELGIUM" },
 
   // 3. TWITTER_FOLLOWERS — 5 tiers (Empty Aged = 0)
   { category: "TWITTER_FOLLOWERS", followers: 0 },
@@ -158,7 +158,6 @@ const STATIC_LISTING_TYPES: StaticListingType[] = [
   { category: "WEBSITE_CREATION", websiteType: "BOTH_WEBSITE" },
   { category: "WEBSITE_CREATION", websiteType: "BOOSTING_WEBSITE" },
 ];
-
 /*
 =====================================
 FOLLOWER-TIER BUCKETING HELPERS

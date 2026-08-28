@@ -33,7 +33,6 @@ SocialPlatform directly (Facebook alone spans two).
 
 export type SocialLogCategoryValue =
   | "FACEBOOK_PAGE"
-  | "FACEBOOK_COUNTRY"
   | "TWITTER_FOLLOWERS"
   | "INSTAGRAM_FOLLOWERS"
   | "VPN"
