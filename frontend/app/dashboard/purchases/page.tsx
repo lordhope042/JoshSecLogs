@@ -14,6 +14,8 @@ import {
   KeyRound,
   MapPin,
   Users,
+  Link as LinkIcon,
+  Wrench,
 } from "lucide-react";
 
 import {
@@ -28,19 +30,11 @@ import type { SocialLog, PurchasedSocialLog } from "@/types/social-log";
 const money = (price?: string | number) =>
   `₦${Number(price ?? 0).toLocaleString()}`;
 
-/*
-A credential row shown in the purchased-log detail modal. Each field
-is optional — only rows whose `value` is non-empty are rendered, so
-the admin is free to leave any private detail blank.
-*/
 interface CredentialRow {
   label: string;
   value: string;
 }
 
-// Builds the ordered list of credential rows the buyer sees after
-// purchasing an account. Fields with no value are skipped so the UI
-// only shows what the admin actually filled in.
 function buildCredentialRows(log: PurchasedSocialLog): CredentialRow[] {
   const rows: CredentialRow[] = [];
 
@@ -73,26 +67,13 @@ function buildCredentialRows(log: PurchasedSocialLog): CredentialRow[] {
     rows.push({ label: "Cookies", value: cookieStr });
   }
 
+  // ADD THIS: Show tool link for working tools
+  if (log.toolLink) {
+    rows.push({ label: "Tool Link", value: log.toolLink });
+  }
+
   return rows;
 }
-
-/*
-=====================================
-BATCH GROUPING
-Buying N units in one "buy N" action on the marketplace creates N
-separate SocialLog rows — same category/pageType/country/price,
-purchased within moments of each other. Group those back together
-into one "bought together" card instead of showing N near-identical
-cards. Anything that doesn't share a near-simultaneous match with
-something else just renders as its own single card, same as before.
-
-Matching rule: same category + pageType + country + price, and
-purchased within BATCH_WINDOW_MS of the batch's *first* log (anchored
-to the first, not the most recent, so a slow trickle of individually
-unrelated same-price purchases can't chain into one giant batch just
-by each being within the window of the last).
-=====================================
-*/
 
 interface PurchaseBatch {
   key: string;
@@ -143,7 +124,6 @@ function groupPurchasesIntoBatches(purchases: SocialLog[]): PurchaseBatch[] {
     }
   }
 
-  // Most recent purchase/batch first
   return batches.reverse();
 }
 
@@ -153,19 +133,11 @@ export default function MyPurchasesPage() {
 
   const batches = useMemo(() => groupPurchasesIntoBatches(purchases), [purchases]);
 
-  /* ===============================
-          DETAIL MODAL — single account credentials
-  =============================== */
-
   const [detailOpen, setDetailOpen] = useState(false);
   const [detailLoading, setDetailLoading] = useState(false);
   const [selected, setSelected] = useState<PurchasedSocialLog | null>(null);
   const [revealed, setRevealed] = useState(false);
   const [copiedLabel, setCopiedLabel] = useState<string | null>(null);
-
-  /* ===============================
-          BATCH PICKER MODAL
-  =============================== */
 
   const [batchOpen, setBatchOpen] = useState(false);
   const [activeBatch, setActiveBatch] = useState<PurchaseBatch | null>(null);
@@ -186,8 +158,6 @@ export default function MyPurchasesPage() {
   }, []);
 
   async function openDetail(id: string) {
-    // If this was opened from the batch picker, close it behind us so
-    // there's only ever one modal on screen at a time.
     setBatchOpen(false);
     setDetailOpen(true);
     setDetailLoading(true);
@@ -246,7 +216,7 @@ export default function MyPurchasesPage() {
     <div className="space-y-6">
       <div>
         <h1 className="text-3xl font-bold text-gray-900 dark:text-white">My Purchases</h1>
-        <p className="text-gray-500 dark:text-zinc-400">Accounts you've bought</p>
+        <p className="text-gray-500 dark:text-zinc-400">Accounts and tools you've bought</p>
       </div>
 
       {batches.length === 0 ? (
@@ -259,6 +229,7 @@ export default function MyPurchasesPage() {
             const isBatch = batch.logs.length > 1;
             const representative = batch.logs[0];
             const categoryLabel = CATEGORY_LABELS[batch.category] ?? batch.platform;
+            const isWorkingTool = batch.category === "ALL_WORKING_TOOLS";
             const subLabel = batch.pageType
               ? PAGE_TYPE_LABELS[batch.pageType] ?? batch.pageType
               : batch.country ?? undefined;
@@ -273,7 +244,7 @@ export default function MyPurchasesPage() {
                 {/* Cover */}
                 <div className="relative flex h-40 items-center justify-center overflow-hidden bg-gradient-to-r from-orange-500 to-amber-500">
                   <span className="text-5xl font-black text-gray-900 dark:text-white">
-                    {batch.platform.charAt(0)}
+                    {isWorkingTool ? "🔧" : batch.platform.charAt(0)}
                   </span>
 
                   <div className="absolute left-4 top-4 rounded-full bg-black/40 px-3 py-1 text-xs font-semibold text-gray-900 dark:text-white backdrop-blur">
@@ -303,7 +274,7 @@ export default function MyPurchasesPage() {
                 <div className="space-y-4 p-5">
                   <div>
                     <h3 className="truncate text-lg font-bold text-gray-900 dark:text-white">
-                      {isBatch ? categoryLabel : `@${representative.username}`}
+                      {isBatch ? categoryLabel : isWorkingTool ? representative.username : `@${representative.username}`}
                     </h3>
                     {isBatch ? (
                       <p className="mt-1 text-sm text-gray-400 dark:text-zinc-500">
@@ -340,8 +311,8 @@ export default function MyPurchasesPage() {
                       onClick={() => (isBatch ? openBatch(batch) : openDetail(representative.id))}
                       className="flex items-center gap-2 rounded-xl bg-orange-500 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-orange-600"
                     >
-                      <KeyRound size={15} />
-                      {isBatch ? "View Accounts" : "View Login"}
+                      {isWorkingTool ? <LinkIcon size={15} /> : <KeyRound size={15} />}
+                      {isWorkingTool ? "View Link" : isBatch ? "View Accounts" : "View Login"}
                     </button>
                   </div>
                 </div>
@@ -351,7 +322,7 @@ export default function MyPurchasesPage() {
         </div>
       )}
 
-      {/* BATCH PICKER MODAL — lists each unit in a "bought together" batch */}
+      {/* BATCH PICKER MODAL */}
       {batchOpen && activeBatch && (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4"
@@ -386,7 +357,7 @@ export default function MyPurchasesPage() {
                 >
                   <div className="min-w-0">
                     <p className="truncate text-sm font-semibold text-gray-900 dark:text-white">
-                      @{log.username}
+                      {log.category === "ALL_WORKING_TOOLS" ? log.username : `@${log.username}`}
                     </p>
                     <p className="text-xs text-gray-400 dark:text-zinc-500">{money(log.price)}</p>
                   </div>
@@ -394,8 +365,8 @@ export default function MyPurchasesPage() {
                     onClick={() => openDetail(log.id)}
                     className="flex shrink-0 items-center gap-1.5 rounded-lg bg-orange-500 px-3 py-2 text-xs font-medium text-white transition hover:bg-orange-600"
                   >
-                    <KeyRound size={13} />
-                    View Login
+                    {log.category === "ALL_WORKING_TOOLS" ? <LinkIcon size={13} /> : <KeyRound size={13} />}
+                    {log.category === "ALL_WORKING_TOOLS" ? "View Link" : "View Login"}
                   </button>
                 </div>
               ))}
@@ -404,8 +375,7 @@ export default function MyPurchasesPage() {
         </div>
       )}
 
-      {/* DETAIL / CREDENTIALS MODAL — individual credential rows */}
-
+      {/* DETAIL / CREDENTIALS MODAL */}
       {detailOpen && (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4"
@@ -426,7 +396,7 @@ export default function MyPurchasesPage() {
                 <div className="flex items-start justify-between">
                   <div>
                     <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-                      @{selected.username}
+                      {selected.category === "ALL_WORKING_TOOLS" ? selected.username : `@${selected.username}`}
                     </h3>
                     <p className="mt-1 text-sm text-gray-500 dark:text-zinc-400">
                       {CATEGORY_LABELS[selected.category] ?? selected.platform}
@@ -443,8 +413,9 @@ export default function MyPurchasesPage() {
                 </div>
 
                 <div className="mt-3 rounded-lg bg-orange-500/10 px-3 py-2 text-xs font-medium text-orange-400">
-                  These credentials belong to you. Keep them private — anyone
-                  with this info can access the account.
+                  {selected.category === "ALL_WORKING_TOOLS"
+                    ? "This tool link belongs to you. Keep it private."
+                    : "These credentials belong to you. Keep them private — anyone with this info can access the account."}
                 </div>
 
                 <div className="mt-5">
@@ -454,8 +425,7 @@ export default function MyPurchasesPage() {
                     if (rows.length === 0) {
                       return (
                         <p className="py-6 text-center text-sm text-gray-400 dark:text-zinc-500">
-                          No credentials found for this account. Contact
-                          support if this looks wrong.
+                          No credentials found. Contact support if this looks wrong.
                         </p>
                       );
                     }
@@ -464,7 +434,7 @@ export default function MyPurchasesPage() {
                       <div className="rounded-xl border border-gray-200 dark:border-zinc-800 bg-white/60 dark:bg-zinc-900/60 p-4">
                         <div className="mb-3 flex items-center justify-between">
                           <p className="text-xs font-medium text-gray-400 dark:text-zinc-500">
-                            Account Details
+                            {selected.category === "ALL_WORKING_TOOLS" ? "Tool Details" : "Account Details"}
                           </p>
 
                           <div className="flex items-center gap-1">
@@ -473,11 +443,7 @@ export default function MyPurchasesPage() {
                               title={revealed ? "Hide all" : "Show all"}
                               className="rounded-lg p-2 text-gray-500 dark:text-zinc-400 transition hover:bg-gray-100 dark:hover:bg-zinc-800 hover:text-gray-900 dark:hover:text-white"
                             >
-                              {revealed ? (
-                                <EyeOff size={15} />
-                              ) : (
-                                <Eye size={15} />
-                              )}
+                              {revealed ? <EyeOff size={15} /> : <Eye size={15} />}
                             </button>
 
                             <button
@@ -485,11 +451,7 @@ export default function MyPurchasesPage() {
                               title="Copy all"
                               className="rounded-lg p-2 text-gray-500 dark:text-zinc-400 transition hover:bg-gray-100 dark:hover:bg-zinc-800 hover:text-gray-900 dark:hover:text-white"
                             >
-                              {copiedLabel === "ALL" ? (
-                                <Check size={15} className="text-green-400" />
-                              ) : (
-                                <Copy size={15} />
-                              )}
+                              {copiedLabel === "ALL" ? <Check size={15} className="text-green-400" /> : <Copy size={15} />}
                             </button>
                           </div>
                         </div>
@@ -497,9 +459,7 @@ export default function MyPurchasesPage() {
                         <div className="divide-y divide-gray-200 dark:divide-zinc-800">
                           {rows.map((row) => {
                             const hidden = !revealed;
-                            const masked = "•".repeat(
-                              Math.min(row.value.length, 32)
-                            );
+                            const masked = "•".repeat(Math.min(row.value.length, 32));
 
                             return (
                               <div
@@ -521,11 +481,7 @@ export default function MyPurchasesPage() {
                                   title={`Copy ${row.label}`}
                                   className="shrink-0 rounded-lg p-1.5 text-gray-400 dark:text-zinc-500 transition hover:bg-gray-200 dark:hover:bg-zinc-700 hover:text-gray-900 dark:hover:text-white"
                                 >
-                                  {copiedLabel === row.label ? (
-                                    <Check size={14} className="text-green-400" />
-                                  ) : (
-                                    <Copy size={14} />
-                                  )}
+                                  {copiedLabel === row.label ? <Check size={14} className="text-green-400" /> : <Copy size={14} />}
                                 </button>
                               </div>
                             );
@@ -537,12 +493,8 @@ export default function MyPurchasesPage() {
 
                   {selected.notes && (
                     <div className="mt-3 rounded-xl border border-gray-200 dark:border-zinc-800 bg-white/60 dark:bg-zinc-900/60 p-4">
-                      <p className="mb-1 text-xs font-medium text-gray-400 dark:text-zinc-500">
-                        Notes
-                      </p>
-                      <p className="text-sm text-gray-800 dark:text-zinc-200">
-                        {selected.notes}
-                      </p>
+                      <p className="mb-1 text-xs font-medium text-gray-400 dark:text-zinc-500">Notes</p>
+                      <p className="text-sm text-gray-800 dark:text-zinc-200">{selected.notes}</p>
                     </div>
                   )}
                 </div>
