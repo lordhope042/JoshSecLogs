@@ -33,7 +33,7 @@ const PURCHASED_SELECT = {
   purchasedAt: true,
   loginUsername: true,
   loginEmail: true,
-  emailPassword: true,   // add this line
+  emailPassword: true,
   loginPhone: true,
   password: true,
   twoFactorSecret: true,
@@ -45,6 +45,8 @@ const PURCHASED_SELECT = {
   vpnType: true,
   tutorialType: true,
   websiteType: true,
+  workingToolType: true,
+  toolLink: true,
 } as Prisma.SocialLogSelect;
 
 @Injectable()
@@ -59,9 +61,6 @@ export class SocialLogRepository {
   =====================================
   */
 
-  // Groups by the 10-item `category` enum — this is what
-  // CategoryTabs / useSocialLogs.loadCategories() should consume now,
-  // not the old platform grouping below.
   async categories() {
     return this.prisma.socialLog.groupBy({
       by: ["category"],
@@ -118,12 +117,10 @@ export class SocialLogRepository {
     return this.prisma.socialLog.findMany({
       where: {
         status: SocialLogStatus.AVAILABLE,
-
         ...(platform && {
           platform,
         }),
       },
-
       orderBy: {
         createdAt: "desc",
       },
@@ -193,7 +190,6 @@ export class SocialLogRepository {
       where: {
         id,
       },
-
       data: {
         ...rest,
         ...(accountPassword !== undefined && {
@@ -289,21 +285,12 @@ export class SocialLogRepository {
         await tx.walletTransaction.create({
           data: {
             userId: buyerId,
-
-            type:
-              TransactionType.PURCHASE,
-
-            status:
-              TransactionStatus.SUCCESS,
-
+            type: TransactionType.PURCHASE,
+            status: TransactionStatus.SUCCESS,
             amount: log.price,
-
             balanceBefore: balance,
-
             balanceAfter: newBalance,
-
             description: `${log.platform} account purchase`,
-
             reference: randomUUID(),
           },
         });
@@ -312,13 +299,9 @@ export class SocialLogRepository {
           where: {
             id,
           },
-
           data: {
-            status:
-              SocialLogStatus.SOLD,
-
+            status: SocialLogStatus.SOLD,
             purchasedAt: new Date(),
-
             buyer: {
               connect: {
                 id: buyerId,
@@ -327,17 +310,10 @@ export class SocialLogRepository {
           },
         });
 
-        /*
-        =====================================
-        RETURN LOGIN DETAILS
-        =====================================
-        */
-
         return tx.socialLog.findUnique({
           where: {
             id,
           },
-
           select: PURCHASED_SELECT,
         });
       },
@@ -358,13 +334,9 @@ export class SocialLogRepository {
       where: {
         id,
       },
-
       data: {
-        status:
-          SocialLogStatus.SOLD,
-
+        status: SocialLogStatus.SOLD,
         purchasedAt: new Date(),
-
         buyer: {
           connect: {
             id: buyerId,
@@ -387,10 +359,8 @@ export class SocialLogRepository {
     return this.prisma.socialLog.findFirst({
       where: {
         id,
-
         buyerId,
       },
-
       select: PURCHASED_SELECT,
     });
   }
@@ -408,11 +378,9 @@ export class SocialLogRepository {
       where: {
         buyerId,
       },
-
       orderBy: {
         updatedAt: "desc",
       },
-
       select: {
         id: true,
         platform: true,
@@ -429,6 +397,8 @@ export class SocialLogRepository {
         vpnType: true,
         tutorialType: true,
         websiteType: true,
+        workingToolType: true,
+        toolLink: true,
       },
     });
   }
