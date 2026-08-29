@@ -9,7 +9,6 @@ import {
   Mail,
   Phone,
   Layers,
-  Link as LinkIcon,
 } from "lucide-react";
 
 import { SocialLog, SocialLogCategoryValue, SocialLogPageType } from "@/types/social-log";
@@ -444,13 +443,7 @@ export default function SocialLogCard({ group, onView, searchQuery }: Props) {
           <p className="line-clamp-3 text-sm text-zinc-600 dark:text-zinc-400">{representative.description}</p>
         )}
 
-        {/* Tool Link display for working tools */}
-        {isWorkingTool && representative?.toolLink && (
-          <div className="flex items-center gap-2 text-sm text-blue-500">
-            <LinkIcon size={15} />
-            <span className="truncate">{representative.toolLink}</span>
-          </div>
-        )}
+        {/* REMOVED: Tool Link display - now hidden until purchase */}
 
         {representative && hasFollowers && (
           <div className="grid grid-cols-1 gap-3">
