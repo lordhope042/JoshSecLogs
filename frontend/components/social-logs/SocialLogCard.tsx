@@ -9,6 +9,7 @@ import {
   Mail,
   Phone,
   Layers,
+  Link as LinkIcon,
 } from "lucide-react";
 
 import { SocialLog, SocialLogCategoryValue, SocialLogPageType } from "@/types/social-log";
@@ -30,7 +31,7 @@ export function groupLogsIntoStock(logs: SocialLog[]): SocialLogStockGroup[] {
   const groups = new Map<string, SocialLog[]>();
 
   for (const log of logs) {
-    const key = `${log.platform}|${log.category}|${log.pageType ?? ""}|${log.country ?? ""}|${log.instagramSubType ?? ""}|${log.vpnType ?? ""}|${log.tutorialType ?? ""}|${log.websiteType ?? ""}|${log.followers ?? ""}`;
+    const key = `${log.platform}|${log.category}|${log.pageType ?? ""}|${log.country ?? ""}|${log.instagramSubType ?? ""}|${log.vpnType ?? ""}|${log.tutorialType ?? ""}|${log.websiteType ?? ""}|${log.workingToolType ?? ""}|${log.followers ?? ""}`;
     const existing = groups.get(key);
     if (existing) existing.push(log);
     else groups.set(key, [log]);
@@ -54,34 +55,6 @@ export function groupLogsIntoStock(logs: SocialLog[]): SocialLogStockGroup[] {
   });
 }
 
-/*
-=====================================
-STATIC LISTING TYPES
-The fixed set of "sellable types" that should always render a card,
-whether or not an admin has actually added stock for it yet.
-
-This encodes the full JoshSecLogs.com catalogue — 10 headings,
-40+ enumerated sub-categories — so every product the platform sells
-shows up in the grid even at zero stock.
-
-  - FACEBOOK_PAGE splits into its 4 known page types
-  - FACEBOOK_COUNTRY renders one card per fixed country (6)
-  - TWITTER_FOLLOWERS renders one card per follower tier (5, incl. Empty Aged)
-  - INSTAGRAM_FOLLOWERS renders one card per Instagram sub-type (4)
-  - VPN renders one card per provider/duration variant (4)
-  - TEXTPLUS_NEXTPLUS renders one card per app (2)
-  - TIKTOK_FOLLOWERS renders one card per follower tier (4)
-  - TIKTOK_COUNTRY renders one card per fixed country (5)
-  - TUTORIAL renders one card per ad-platform tutorial (4)
-  - WEBSITE_CREATION renders one card per website service (4)
-
-This is purely for what the CARD GRID displays. Actual purchase logic
-still runs against groupLogsIntoStock() per exact log, so a buyer
-grabbing units from a card only ever receives units matching the
-exact variant they opened in Details — never a mix.
-=====================================
-*/
-
 interface StaticListingType {
   category: SocialLogCategoryValue;
   pageType?: SocialLogPageType;
@@ -93,6 +66,7 @@ interface StaticListingType {
   vpnType?: string;
   tutorialType?: string;
   websiteType?: string;
+  workingToolType?: string;
 }
 
 const STATIC_LISTING_TYPES: StaticListingType[] = [
@@ -110,18 +84,18 @@ const STATIC_LISTING_TYPES: StaticListingType[] = [
   // { category: "FACEBOOK_COUNTRY", country: "NETHERLANDS" },
   // { category: "FACEBOOK_COUNTRY", country: "BELGIUM" },
 
-  // 3. TWITTER_FOLLOWERS — 5 tiers (Empty Aged = 0)
+  // 3. TWITTER_FOLLOWERS — 4 tiers (removed 1000)
   { category: "TWITTER_FOLLOWERS", followers: 0 },
   { category: "TWITTER_FOLLOWERS", followers: 100 },
   { category: "TWITTER_FOLLOWERS", followers: 200 },
   { category: "TWITTER_FOLLOWERS", followers: 500 },
-  
+  // { category: "TWITTER_FOLLOWERS", followers: 1000 }, // REMOVED
 
-  // 4. INSTAGRAM_FOLLOWERS — 4 sub-types
+  // 4. INSTAGRAM_FOLLOWERS — 3 sub-types (removed AGED_1K)
   { category: "INSTAGRAM_FOLLOWERS", instagramSubType: "MONTHS_OLD" },
   { category: "INSTAGRAM_FOLLOWERS", instagramSubType: "EMPTY_AGED" },
   { category: "INSTAGRAM_FOLLOWERS", instagramSubType: "AGED_500" },
-  { category: "INSTAGRAM_FOLLOWERS", instagramSubType: "AGED_1K" },
+  // { category: "INSTAGRAM_FOLLOWERS", instagramSubType: "AGED_1K" }, // REMOVED
 
   // 5. VPN — 4 provider/duration variants
   { category: "VPN", vpnType: "PIA_7D" },
@@ -133,8 +107,8 @@ const STATIC_LISTING_TYPES: StaticListingType[] = [
   { category: "TEXTPLUS_NEXTPLUS", platform: "TEXTPLUS" },
   { category: "TEXTPLUS_NEXTPLUS", platform: "NEXTPLUS" },
 
-  // 7. TIKTOK_FOLLOWERS — 4 tiers
- 
+  // 7. TIKTOK_FOLLOWERS — 3 tiers (removed 100)
+  // { category: "TIKTOK_FOLLOWERS", followers: 100 }, // REMOVED
   { category: "TIKTOK_FOLLOWERS", followers: 200 },
   { category: "TIKTOK_FOLLOWERS", followers: 500 },
   { category: "TIKTOK_FOLLOWERS", followers: 1000 },
@@ -157,33 +131,26 @@ const STATIC_LISTING_TYPES: StaticListingType[] = [
   { category: "WEBSITE_CREATION", websiteType: "SMS_WEBSITE" },
   { category: "WEBSITE_CREATION", websiteType: "BOTH_WEBSITE" },
   { category: "WEBSITE_CREATION", websiteType: "BOOSTING_WEBSITE" },
-    // 11. mails
-    { category: "MAIL", platform: "GMAIL" },
+
+  // 11. MAIL — 3 variants
+  { category: "MAIL", platform: "GMAIL" },
   { category: "MAIL", platform: "OUTLOOK" },
   { category: "MAIL", platform: "MAIL" },
-];
-/*
-=====================================
-FOLLOWER-TIER BUCKETING HELPERS
 
-The *_FOLLOWERS categories use a fixed set of tier "floors"
-(0, 100, 200, 500, 1000 for Twitter; 100, 200, 500, 1000 for
-TikTok). A real log may carry a `followers` value that doesn't
-exactly equal one of these floors (e.g. the admin typed 350, or
-the column is null because an older entry never set it). To make
-sure every follower-tier log still renders on a card, we bucket
-each log into the nearest tier floor >= its follower count, and
-null/undefined into the lowest tier.
-=====================================
-*/
+  // 12. ALL_WORKING_TOOLS — 3 generic tool boxes
+  { category: "ALL_WORKING_TOOLS", workingToolType: "TOOL_1" },
+  { category: "ALL_WORKING_TOOLS", workingToolType: "TOOL_2" },
+  { category: "ALL_WORKING_TOOLS", workingToolType: "TOOL_3" },
+];
+
 const FOLLOWER_TIER_FLOORS: Partial<Record<SocialLogCategoryValue, number>> = {
   TWITTER_FOLLOWERS: 0,
-  TIKTOK_FOLLOWERS: 100,
+  TIKTOK_FOLLOWERS: 200, // Updated since 100 is removed
 };
 
 const FOLLOWER_TIER_FLOORS_ARRAY: Partial<Record<SocialLogCategoryValue, number[]>> = {
-  TWITTER_FOLLOWERS: [0, 100, 200, 500, 1000],
-  TIKTOK_FOLLOWERS: [100, 200, 500, 1000],
+  TWITTER_FOLLOWERS: [0, 100, 200, 500], // Removed 1000
+  TIKTOK_FOLLOWERS: [200, 500, 1000], // Removed 100
 };
 
 export function buildStaticStockGroups(logs: SocialLog[]): SocialLogStockGroup[] {
@@ -197,19 +164,13 @@ export function buildStaticStockGroups(logs: SocialLog[]): SocialLogStockGroup[]
       if (type.vpnType && l.vpnType !== type.vpnType) return false;
       if (type.tutorialType && l.tutorialType !== type.tutorialType) return false;
       if (type.websiteType && l.websiteType !== type.websiteType) return false;
-      // For *_FOLLOWERS tiers we need resilient bucketing: a log whose
-      // `followers` is null OR doesn't exactly equal the tier value would
-      // otherwise be invisible. Bucket it into the nearest tier so every
-      // Twitter / TikTok / follower-tier log always renders on a card.
+      if (type.workingToolType && l.workingToolType !== type.workingToolType) return false;
       if (type.followers !== undefined) {
         const lf = l.followers;
         if (lf === null || lf === undefined) {
-          // null/undefined followers only match the lowest tier (0 / 100)
           return type.followers === FOLLOWER_TIER_FLOORS[type.category];
         }
         if (lf === type.followers) return true;
-        // Bucket into the nearest tier: a log with 350 followers should
-        // show on the 200 tier (the next-lower tier floor).
         const floors = FOLLOWER_TIER_FLOORS_ARRAY[type.category];
         if (floors) {
           const nearest = floors.filter((f) => lf >= f).pop() ?? floors[0];
@@ -227,7 +188,7 @@ export function buildStaticStockGroups(logs: SocialLog[]): SocialLogStockGroup[]
     const first = sorted[0];
 
     return {
-      key: `${type.category}|${type.pageType ?? ""}|${type.country ?? ""}|${type.platform ?? ""}|${type.instagramSubType ?? ""}|${type.vpnType ?? ""}|${type.tutorialType ?? ""}|${type.websiteType ?? ""}|${type.followers ?? ""}`,
+      key: `${type.category}|${type.pageType ?? ""}|${type.country ?? ""}|${type.platform ?? ""}|${type.instagramSubType ?? ""}|${type.vpnType ?? ""}|${type.tutorialType ?? ""}|${type.websiteType ?? ""}|${type.workingToolType ?? ""}|${type.followers ?? ""}`,
       platform: first?.platform ?? type.platform ?? type.category,
       category: type.category,
       pageType: type.pageType ?? null,
@@ -275,6 +236,7 @@ export const CATEGORY_LABELS: Record<string, string> = {
   TIKTOK_FOLLOWERS: "TikTok",
   WEBSITE_CREATION: "Website Creation",
   MAIL: "Mail",
+  ALL_WORKING_TOOLS: "All Working Tools",
 };
 
 export const PAGE_TYPE_LABELS: Record<string, string> = {
@@ -298,7 +260,6 @@ export const VPN_TYPE_LABELS: Record<string, string> = {
   NORD_1M: "Nord VPN One Month",
 };
 
-/** VPN brand name used as the card heading (e.g. "Express VPN"). */
 export const VPN_HEADING_LABELS: Record<string, string> = {
   PIA_7D: "PIA VPN",
   EXPRESS_1M: "Express VPN",
@@ -332,22 +293,19 @@ export const COUNTRY_LABELS: Record<string, string> = {
   RANDOM: "Random Country",
 };
 
-/** Renders a follower tier the way it's picked in the form — "100+",
- *  "1k+", "Empty" for the 0 tier. */
 export function formatFollowersTier(value: number): string {
   if (value === 0) return "Empty Aged";
   if (value >= 1000) return `${(value / 1000).toString().replace(/\.0$/, "")}K+`;
   return `${value}+`;
 }
 
-/** Sub-line label for a live (non-static) stock group, derived from
- *  whichever sub-type axis its first log populates. */
 function subTypeLabel(log: SocialLog): string | null {
   if (log.pageType) return PAGE_TYPE_LABELS[log.pageType] ?? log.pageType;
   if (log.instagramSubType) return INSTAGRAM_SUBTYPE_LABELS[log.instagramSubType] ?? log.instagramSubType;
   if (log.vpnType) return VPN_TYPE_LABELS[log.vpnType] ?? log.vpnType;
   if (log.tutorialType) return TUTORIAL_TYPE_LABELS[log.tutorialType] ?? log.tutorialType;
   if (log.websiteType) return WEBSITE_TYPE_LABELS[log.websiteType] ?? log.websiteType;
+  if (log.workingToolType) return "Available Tool";
   if (log.country) return COUNTRY_LABELS[log.country] ?? log.country;
   if (typeof log.followers === "number" && log.followers >= 0) return formatFollowersTier(log.followers);
   if (log.platform === "TEXTPLUS") return "TextPlus";
@@ -355,13 +313,13 @@ function subTypeLabel(log: SocialLog): string | null {
   return null;
 }
 
-/** Sub-line label for a static (zero-stock) listing type. */
 function staticSubTypeLabel(type: StaticListingType): string | null {
   if (type.pageType) return PAGE_TYPE_LABELS[type.pageType] ?? type.pageType;
   if (type.instagramSubType) return INSTAGRAM_SUBTYPE_LABELS[type.instagramSubType] ?? type.instagramSubType;
   if (type.vpnType) return VPN_TYPE_LABELS[type.vpnType] ?? type.vpnType;
   if (type.tutorialType) return TUTORIAL_TYPE_LABELS[type.tutorialType] ?? type.tutorialType;
   if (type.websiteType) return WEBSITE_TYPE_LABELS[type.websiteType] ?? type.websiteType;
+  if (type.workingToolType) return "Available Tool";
   if (type.country) return COUNTRY_LABELS[type.country] ?? type.country;
   if (type.followers !== undefined) return formatFollowersTier(type.followers);
   if (type.platform === "TEXTPLUS") return "TextPlus";
@@ -375,21 +333,12 @@ export default function SocialLogCard({ group, onView, searchQuery }: Props) {
   const isSold = count === 0;
 
   const hasFollowers = typeof representative?.followers === "number" && (representative.followers ?? 0) > 0;
+  const isWorkingTool = group.category === "ALL_WORKING_TOOLS";
 
   const categoryLabel = CATEGORY_LABELS[group.category] ?? group.platform;
   const subLabel = group.subType ?? (group.pageType ? PAGE_TYPE_LABELS[group.pageType] ?? group.pageType : group.country ?? undefined);
 
-  /*
-  Card heading — the specific, distinguishable name for the listing.
-  For most categories this is the same as the category label, but for
-  three categories we override it so cards under the same tab aren't
-  all titled identically:
-    • VPN            → brand name (Express VPN, HMA VPN, …)
-    • TIKTOK_COUNTRY → "Country TikTok" (USA TikTok, UK TikTok, …)
-    • TEXTPLUS_NEXTPLUS → app name (TextPlus / NextPlus)
-  The badge on the cover always keeps the generic category label.
-  */
-    const heading = (() => {
+  const heading = (() => {
     if (group.category === "VPN" && group.vpnType) {
       return VPN_HEADING_LABELS[group.vpnType] ?? categoryLabel;
     }
@@ -405,6 +354,10 @@ export default function SocialLogCard({ group, onView, searchQuery }: Props) {
       if (group.platform === "GMAIL") return "Gmail Account";
       if (group.platform === "OUTLOOK") return "Outlook Account";
       return "Mail Account";
+    }
+    if (group.category === "ALL_WORKING_TOOLS") {
+      // Use the username/label from the representative log if available
+      return representative?.username || "Working Tool";
     }
     return categoryLabel;
   })();
@@ -452,7 +405,9 @@ export default function SocialLogCard({ group, onView, searchQuery }: Props) {
           />
         ) : (
           <div className="flex h-full items-center justify-center bg-gradient-to-r from-orange-500 to-amber-500">
-            <span className="text-5xl font-black text-gray-900 dark:text-white">{group.platform.charAt(0)}</span>
+            <span className="text-5xl font-black text-gray-900 dark:text-white">
+              {isWorkingTool ? "🔧" : group.platform.charAt(0)}
+            </span>
           </div>
         )}
 
@@ -489,9 +444,14 @@ export default function SocialLogCard({ group, onView, searchQuery }: Props) {
           <p className="line-clamp-3 text-sm text-zinc-600 dark:text-zinc-400">{representative.description}</p>
         )}
 
-        {/* Age removed from the default card view — still visible in the
-            details modal's "View full details" section. Followers stays
-            here since it's a stronger at-a-glance signal for buyers. */}
+        {/* Tool Link display for working tools */}
+        {isWorkingTool && representative?.toolLink && (
+          <div className="flex items-center gap-2 text-sm text-blue-500">
+            <LinkIcon size={15} />
+            <span className="truncate">{representative.toolLink}</span>
+          </div>
+        )}
+
         {representative && hasFollowers && (
           <div className="grid grid-cols-1 gap-3">
             <div className="rounded-xl bg-zinc-100 p-3 dark:bg-zinc-800">
@@ -504,7 +464,7 @@ export default function SocialLogCard({ group, onView, searchQuery }: Props) {
           </div>
         )}
 
-        {representative && (
+        {representative && !isWorkingTool && (
           <div className="flex flex-wrap gap-2">
             {representative.verified && (
               <span className="flex items-center gap-1 rounded-full bg-green-100 px-3 py-1 text-xs font-medium text-green-700 dark:bg-green-500/15 dark:text-green-400">

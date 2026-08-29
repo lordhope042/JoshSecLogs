@@ -13,6 +13,7 @@ import type {
   VpnType,
   TutorialType,
   WebsiteType,
+  WorkingToolType,
 } from "@/types/social-log";
 import { WIZARD_GROUPS, getGroup, type WizardGroup } from "@/shared/category-tree";
 
@@ -20,28 +21,16 @@ type WizardStep = 1 | 2 | 3 | 4;
 
 const STEP_LABELS = ["Platform", "Category", "Audience", "Details"];
 
-/*
-=====================================
-FOLLOWER TIER QUICK-PICKS
-
-These mirror the exact tier "floors" the buyer-side card grid
-(buildStaticStockGroups in SocialLogCard.tsx) uses to render one
-card per tier. Constraining the admin wizard to these values
-guarantees that every Twitter / TikTok log created lands on a
-visible card on the user side — a free-text number that doesn't
-exactly equal one of these floors would otherwise be invisible.
-=====================================
-*/
 const TWITTER_FOLLOWER_TIERS: { value: number; label: string }[] = [
   { value: 0, label: "Empty Aged" },
   { value: 100, label: "100+" },
   { value: 200, label: "200+" },
   { value: 500, label: "500+" },
-  { value: 1000, label: "1K+" },
+  // { value: 1000, label: "1K+" }, // REMOVED
 ];
 
 const TIKTOK_FOLLOWER_TIERS: { value: number; label: string }[] = [
-  { value: 100, label: "100+" },
+  // { value: 100, label: "100+" }, // REMOVED
   { value: 200, label: "200+" },
   { value: 500, label: "500+" },
   { value: 1000, label: "1K+" },
@@ -79,6 +68,7 @@ interface Submission {
   vpnType?: VpnType;
   tutorialType?: TutorialType;
   websiteType?: WebsiteType;
+  workingToolType?: WorkingToolType;
   label: string;
 }
 
@@ -94,6 +84,7 @@ export default function AddSocialLogModal({ open, onClose, onCreated }: AddSocia
   const [submitting, setSubmitting] = useState(false);
 
   const group = wizard.group ? getGroup(wizard.group) : undefined;
+  const isWorkingTool = group?.value === "WORKING_TOOLS";
   const needsPlatformChoice =
     (group?.platforms.length ?? 0) > 1 &&
     group?.value !== "FACEBOOK" &&
@@ -112,18 +103,6 @@ export default function AddSocialLogModal({ open, onClose, onCreated }: AddSocia
         followers: pt === "PAGE_WITH_FOLLOWERS" ? (wizard.followers ?? 1000) : undefined,
         label: group.pageTypes?.find((p) => p.value === pt)?.label ?? pt,
       }));
-      for (const c of wizard.selectedCountries) {
-        const cfg = group.countries?.find((x) => x.value === c);
-        const range = cfg?.followerRange ?? "";
-        const minFollowers = parseInt(range, 10) || 100;
-        subs.push({
-          platform: "FACEBOOK",
-          category: "FACEBOOK_COUNTRY",
-          country: c,
-          followers: minFollowers,
-          label: `${cfg?.label ?? c}${range ? ` (${range})` : ""}`,
-        });
-      }
       return subs;
     }
 
@@ -134,7 +113,7 @@ export default function AddSocialLogModal({ open, onClose, onCreated }: AddSocia
         subs.push({
           platform: "TIKTOK",
           category: "TIKTOK_FOLLOWERS",
-          followers: wizard.followers ?? 100,
+          followers: wizard.followers ?? 200,
           label: "Follower Tier",
         });
       }
@@ -177,11 +156,10 @@ export default function AddSocialLogModal({ open, onClose, onCreated }: AddSocia
       });
     }
 
-    // TUTORIAL — ad-platform tutorial variants (no platform choice needed)
+    // TUTORIAL — ad-platform tutorial variants
     if (group.value === "TUTORIAL" && group.tutorialTypes) {
       return wizard.selectedSubTypes.map((st) => {
         const cfg = group.tutorialTypes?.find((x) => x.value === st);
-        // Map tutorial type → platform for storage
         const platformMap: Record<TutorialType, SocialPlatform> = {
           FACEBOOK_ADS: "FACEBOOK",
           INSTAGRAM_ADS: "INSTAGRAM",
@@ -210,7 +188,20 @@ export default function AddSocialLogModal({ open, onClose, onCreated }: AddSocia
       });
     }
 
-    // TEXTING_APP — platform choice (TextPlus / NextPlus)
+    // WORKING_TOOLS — 3 tool boxes
+    if (group.value === "WORKING_TOOLS" && group.workingToolTypes) {
+      return wizard.selectedSubTypes.map((st) => {
+        const cfg = group.workingToolTypes?.find((x) => x.value === st);
+        return {
+          platform: "TOOL" as SocialPlatform,
+          category: "ALL_WORKING_TOOLS",
+          workingToolType: st as WorkingToolType,
+          label: cfg?.label ?? st,
+        };
+      });
+    }
+
+    // TEXTING_APP / MAIL — platform choice
     if (needsPlatformChoice) {
       return wizard.selectedPlatforms.map((p) => ({
         platform: p,
@@ -219,9 +210,7 @@ export default function AddSocialLogModal({ open, onClose, onCreated }: AddSocia
       }));
     }
 
-    // Default fallback — covers TWITTER, TELEGRAM, MAIL, etc.
-    // Carry the selected follower tier (if any) so follower-based
-    // categories like TWITTER_FOLLOWERS land on the right card.
+    // Default fallback — TWITTER, TELEGRAM, etc.
     const fallbackFollowers =
       group.hasFollowers && wizard.followers !== undefined ? wizard.followers : undefined;
     return [
@@ -234,7 +223,7 @@ export default function AddSocialLogModal({ open, onClose, onCreated }: AddSocia
     ];
   }, [group, needsPlatformChoice, wizard]);
 
-  const needsSubTypeChoice = !!(group?.instagramSubTypes || group?.vpnTypes || group?.tutorialTypes || group?.websiteTypes);
+  const needsSubTypeChoice = !!(group?.instagramSubTypes || group?.vpnTypes || group?.tutorialTypes || group?.websiteTypes || group?.workingToolTypes);
 
   const showFollowers =
     group?.value === "TWITTER" ||
@@ -319,7 +308,9 @@ export default function AddSocialLogModal({ open, onClose, onCreated }: AddSocia
           vpnType: sub.vpnType,
           tutorialType: sub.tutorialType,
           websiteType: sub.websiteType,
-          age: wizard.age ?? 0,
+          workingToolType: sub.workingToolType,
+          toolLink: isWorkingTool ? wizard.details.toolLink : undefined,
+          age: isWorkingTool ? 0 : (wizard.age ?? 0),
           ...wizard.details,
         } as CreateSocialLogDto;
 
@@ -401,75 +392,39 @@ export default function AddSocialLogModal({ open, onClose, onCreated }: AddSocia
 
           {step === 2 && group && (
             <div className="space-y-5">
+              {/* Facebook page types */}
               {group.value === "FACEBOOK" && group.pageTypes && (
-                <>
-                  <div>
-                    <p className="mb-2 text-sm font-medium text-gray-700 dark:text-zinc-300">Page Types — select any that apply</p>
-                    <div className="grid grid-cols-2 gap-3">
-                      {group.pageTypes.map((pt) => {
-                        const checked = wizard.selectedPageTypes.includes(pt.value);
-                        return (
-                          <button
-                            key={pt.value}
-                            onClick={() => togglePageType(pt.value)}
-                            className={`flex items-center gap-2 rounded-xl border px-4 py-4 text-left text-sm font-medium transition ${
-                              checked
-                                ? "border-orange-500 bg-gray-100 dark:bg-zinc-800 text-gray-900 dark:text-white"
-                                : "border-gray-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-gray-700 dark:text-zinc-300 hover:border-zinc-500"
+                <div>
+                  <p className="mb-2 text-sm font-medium text-gray-700 dark:text-zinc-300">Page Types — select any that apply</p>
+                  <div className="grid grid-cols-2 gap-3">
+                    {group.pageTypes.map((pt) => {
+                      const checked = wizard.selectedPageTypes.includes(pt.value);
+                      return (
+                        <button
+                          key={pt.value}
+                          onClick={() => togglePageType(pt.value)}
+                          className={`flex items-center gap-2 rounded-xl border px-4 py-4 text-left text-sm font-medium transition ${
+                            checked
+                              ? "border-orange-500 bg-gray-100 dark:bg-zinc-800 text-gray-900 dark:text-white"
+                              : "border-gray-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-gray-700 dark:text-zinc-300 hover:border-zinc-500"
+                          }`}
+                        >
+                          <span
+                            className={`flex h-4 w-4 shrink-0 items-center justify-center rounded border ${
+                              checked ? "border-orange-500 bg-orange-500" : "border-zinc-600"
                             }`}
                           >
-                            <span
-                              className={`flex h-4 w-4 shrink-0 items-center justify-center rounded border ${
-                                checked ? "border-orange-500 bg-orange-500" : "border-zinc-600"
-                              }`}
-                            >
-                              {checked && <span className="h-2 w-2 rounded-sm bg-white" />}
-                            </span>
-                            {pt.label}
-                          </button>
-                        );
-                      })}
-                    </div>
+                            {checked && <span className="h-2 w-2 rounded-sm bg-white" />}
+                          </span>
+                          {pt.label}
+                        </button>
+                      );
+                    })}
                   </div>
-
-                  <div>
-                    <label className="mb-2 block text-sm font-medium text-gray-700 dark:text-zinc-300">
-                      Countries — adds a Facebook-by-Country listing for each selected country
-                    </label>
-                    <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-                      {group.countries?.map((c) => {
-                        const checked = wizard.selectedCountries.includes(c.value);
-                        return (
-                          <button
-                            key={c.value}
-                            onClick={() => toggleCountry(c.value)}
-                            className={`flex items-center justify-between rounded-xl border px-4 py-3 text-left text-sm font-medium transition ${
-                              checked
-                                ? "border-orange-500 bg-gray-100 dark:bg-zinc-800 text-gray-900 dark:text-white"
-                                : "border-gray-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-gray-700 dark:text-zinc-300 hover:border-zinc-500"
-                            }`}
-                          >
-                            <span>
-                              {c.label}
-                              {c.followerRange && (
-                                <span className="ml-1 text-xs text-gray-400 dark:text-zinc-500">{c.followerRange}</span>
-                              )}
-                            </span>
-                            <span
-                              className={`flex h-4 w-4 shrink-0 items-center justify-center rounded border ${
-                                checked ? "border-orange-500 bg-orange-500" : "border-zinc-600"
-                              }`}
-                            >
-                              {checked && <span className="h-2 w-2 rounded-sm bg-white" />}
-                            </span>
-                          </button>
-                        );
-                      })}
-                    </div>
-                  </div>
-                </>
+                </div>
               )}
 
+              {/* TikTok */}
               {group.value === "TIKTOK" && (
                 <>
                   <label className="flex items-center gap-2 text-sm text-gray-700 dark:text-zinc-300">
@@ -514,11 +469,14 @@ export default function AddSocialLogModal({ open, onClose, onCreated }: AddSocia
                 </>
               )}
 
-              {needsSubTypeChoice && group.instagramSubTypes && (
+              {/* Instagram, VPN, Tutorial, Website, Working Tools sub-types */}
+              {needsSubTypeChoice && (group.instagramSubTypes || group.vpnTypes || group.tutorialTypes || group.websiteTypes || group.workingToolTypes) && (
                 <div>
-                  <p className="mb-2 text-sm font-medium text-gray-700 dark:text-zinc-300">Instagram Sub-Types — select any that apply</p>
+                  <p className="mb-2 text-sm font-medium text-gray-700 dark:text-zinc-300">
+                    {isWorkingTool ? "Tool Boxes — select any that apply" : "Select any that apply"}
+                  </p>
                   <div className="grid grid-cols-2 gap-3">
-                    {group.instagramSubTypes.map((st) => {
+                    {(group.instagramSubTypes || group.vpnTypes || group.tutorialTypes || group.websiteTypes || group.workingToolTypes || []).map((st: any) => {
                       const checked = wizard.selectedSubTypes.includes(st.value);
                       return (
                         <button
@@ -545,99 +503,7 @@ export default function AddSocialLogModal({ open, onClose, onCreated }: AddSocia
                 </div>
               )}
 
-              {needsSubTypeChoice && group.vpnTypes && (
-                <div>
-                  <p className="mb-2 text-sm font-medium text-gray-700 dark:text-zinc-300">VPN Variants — select any that apply</p>
-                  <div className="grid grid-cols-2 gap-3">
-                    {group.vpnTypes.map((st) => {
-                      const checked = wizard.selectedSubTypes.includes(st.value);
-                      return (
-                        <button
-                          key={st.value}
-                          onClick={() => toggleSubType(st.value)}
-                          className={`flex items-center justify-between rounded-xl border px-4 py-4 text-left text-sm font-medium transition ${
-                            checked
-                              ? "border-orange-500 bg-gray-100 dark:bg-zinc-800 text-gray-900 dark:text-white"
-                              : "border-gray-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-gray-700 dark:text-zinc-300 hover:border-zinc-500"
-                          }`}
-                        >
-                          {st.label}
-                          <span
-                            className={`flex h-4 w-4 shrink-0 items-center justify-center rounded border ${
-                              checked ? "border-orange-500 bg-orange-500" : "border-zinc-600"
-                            }`}
-                          >
-                            {checked && <span className="h-2 w-2 rounded-sm bg-white" />}
-                          </span>
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-              )}
-
-              {needsSubTypeChoice && group.tutorialTypes && (
-                <div>
-                  <p className="mb-2 text-sm font-medium text-gray-700 dark:text-zinc-300">Tutorial Types — select any that apply</p>
-                  <div className="grid grid-cols-2 gap-3">
-                    {group.tutorialTypes.map((st) => {
-                      const checked = wizard.selectedSubTypes.includes(st.value);
-                      return (
-                        <button
-                          key={st.value}
-                          onClick={() => toggleSubType(st.value)}
-                          className={`flex items-center justify-between rounded-xl border px-4 py-4 text-left text-sm font-medium transition ${
-                            checked
-                              ? "border-orange-500 bg-gray-100 dark:bg-zinc-800 text-gray-900 dark:text-white"
-                              : "border-gray-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-gray-700 dark:text-zinc-300 hover:border-zinc-500"
-                          }`}
-                        >
-                          {st.label}
-                          <span
-                            className={`flex h-4 w-4 shrink-0 items-center justify-center rounded border ${
-                              checked ? "border-orange-500 bg-orange-500" : "border-zinc-600"
-                            }`}
-                          >
-                            {checked && <span className="h-2 w-2 rounded-sm bg-white" />}
-                          </span>
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-              )}
-
-              {needsSubTypeChoice && group.websiteTypes && (
-                <div>
-                  <p className="mb-2 text-sm font-medium text-gray-700 dark:text-zinc-300">Website Services — select any that apply</p>
-                  <div className="grid grid-cols-2 gap-3">
-                    {group.websiteTypes.map((st) => {
-                      const checked = wizard.selectedSubTypes.includes(st.value);
-                      return (
-                        <button
-                          key={st.value}
-                          onClick={() => toggleSubType(st.value)}
-                          className={`flex items-center justify-between rounded-xl border px-4 py-4 text-left text-sm font-medium transition ${
-                            checked
-                              ? "border-orange-500 bg-gray-100 dark:bg-zinc-800 text-gray-900 dark:text-white"
-                              : "border-gray-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-gray-700 dark:text-zinc-300 hover:border-zinc-500"
-                          }`}
-                        >
-                          {st.label}
-                          <span
-                            className={`flex h-4 w-4 shrink-0 items-center justify-center rounded border ${
-                              checked ? "border-orange-500 bg-orange-500" : "border-zinc-600"
-                            }`}
-                          >
-                            {checked && <span className="h-2 w-2 rounded-sm bg-white" />}
-                          </span>
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-              )}
-
+              {/* Platform choice for Texting App / Mail */}
               {needsPlatformChoice && (
                 <div>
                   <p className="mb-2 text-sm font-medium text-gray-700 dark:text-zinc-300">Select any that apply</p>
@@ -692,7 +558,7 @@ export default function AddSocialLogModal({ open, onClose, onCreated }: AddSocia
                 </button>
                 <button
                   disabled={!step2Complete}
-                  onClick={() => setStep(3)}
+                  onClick={() => setStep(isWorkingTool ? 4 : 3)}
                   className="rounded-xl bg-orange-600 px-5 py-2.5 text-sm font-medium text-white disabled:opacity-40"
                 >
                   Continue
@@ -701,7 +567,8 @@ export default function AddSocialLogModal({ open, onClose, onCreated }: AddSocia
             </div>
           )}
 
-          {step === 3 && group && (
+          {/* Step 3 - Audience (skip for working tools) */}
+          {step === 3 && group && !isWorkingTool && (
             <div className="space-y-4">
               {showFollowers && (
                 <div>
@@ -772,6 +639,7 @@ export default function AddSocialLogModal({ open, onClose, onCreated }: AddSocia
             </div>
           )}
 
+          {/* Step 4 - Details */}
           {step === 4 && group && (
             <div className="space-y-4">
               <div className="rounded-xl border border-gray-200 dark:border-zinc-800 bg-gray-100/50 dark:bg-zinc-800/50 p-4">
@@ -783,21 +651,31 @@ export default function AddSocialLogModal({ open, onClose, onCreated }: AddSocia
                     <li key={i}>• {s.label}</li>
                   ))}
                 </ul>
-                {submissions.length > 1 && (
-                  <p className="mt-2 text-xs text-gray-400 dark:text-zinc-500">
-                    The fields below apply to all of them — username/price/credentials are shared.
-                  </p>
-                )}
               </div>
 
               <div>
-                <label className="mb-2 block text-sm font-medium text-gray-700 dark:text-zinc-300">Username / Label</label>
+                <label className="mb-2 block text-sm font-medium text-gray-700 dark:text-zinc-300">
+                  {isWorkingTool ? "Label / Tool Name" : "Username / Label"}
+                </label>
                 <input
                   value={wizard.details.username ?? ""}
                   onChange={(e) => setDetail("username", e.target.value)}
                   className="w-full rounded-xl border border-gray-300 dark:border-zinc-700 bg-gray-100 dark:bg-zinc-800 px-4 py-3 text-gray-900 dark:text-white"
                 />
               </div>
+
+              {isWorkingTool && (
+                <div>
+                  <label className="mb-2 block text-sm font-medium text-gray-700 dark:text-zinc-300">Tool Link (URL)</label>
+                  <input
+                    value={wizard.details.toolLink ?? ""}
+                    onChange={(e) => setDetail("toolLink", e.target.value)}
+                    placeholder="https://..."
+                    className="w-full rounded-xl border border-gray-300 dark:border-zinc-700 bg-gray-100 dark:bg-zinc-800 px-4 py-3 text-gray-900 dark:text-white"
+                  />
+                </div>
+              )}
+
               <div>
                 <label className="mb-2 block text-sm font-medium text-gray-700 dark:text-zinc-300">Price (₦)</label>
                 <input
@@ -808,18 +686,21 @@ export default function AddSocialLogModal({ open, onClose, onCreated }: AddSocia
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
-                {["emailAttached", "phoneAttached", "twoFactor", "ogEmail", "verified"].map((flag) => (
-                  <label key={flag} className="flex items-center gap-2 text-sm text-gray-700 dark:text-zinc-300">
-                    <input
-                      type="checkbox"
-                      checked={!!wizard.details[flag]}
-                      onChange={(e) => setDetail(flag, e.target.checked)}
-                    />
-                    {flag}
-                  </label>
-                ))}
-              </div>
+              {/* Only show flags for non-working tools */}
+              {!isWorkingTool && (
+                <div className="grid grid-cols-2 gap-3">
+                  {["emailAttached", "phoneAttached", "twoFactor", "ogEmail", "verified"].map((flag) => (
+                    <label key={flag} className="flex items-center gap-2 text-sm text-gray-700 dark:text-zinc-300">
+                      <input
+                        type="checkbox"
+                        checked={!!wizard.details[flag]}
+                        onChange={(e) => setDetail(flag, e.target.checked)}
+                      />
+                      {flag}
+                    </label>
+                  ))}
+                </div>
+              )}
 
               <div>
                 <label className="mb-2 block text-sm font-medium text-gray-700 dark:text-zinc-300">Description</label>
@@ -831,76 +712,55 @@ export default function AddSocialLogModal({ open, onClose, onCreated }: AddSocia
                 />
               </div>
 
-              <p className="pt-2 text-xs font-semibold uppercase tracking-wide text-gray-400 dark:text-zinc-500">
-                Private details — only revealed to the buyer after purchase
-              </p>
+              {/* Only show private details for non-working tools */}
+              {!isWorkingTool && (
+                <>
+                  <p className="pt-2 text-xs font-semibold uppercase tracking-wide text-gray-400 dark:text-zinc-500">
+                    Private details — only revealed to the buyer after purchase
+                  </p>
 
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="mb-2 block text-sm font-medium text-gray-700 dark:text-zinc-300">Username</label>
-                  <input
-                    value={wizard.details.loginUsername ?? ""}
-                    onChange={(e) => setDetail("loginUsername", e.target.value)}
-                    placeholder="Login username"
-                    className="w-full rounded-xl border border-gray-300 dark:border-zinc-700 bg-gray-100 dark:bg-zinc-800 px-4 py-3 text-gray-900 dark:text-white"
-                  />
-                </div>
-                <div>
-                  <label className="mb-2 block text-sm font-medium text-gray-700 dark:text-zinc-300">Login Email</label>
-                  <input
-                    value={wizard.details.loginEmail ?? ""}
-                    onChange={(e) => setDetail("loginEmail", e.target.value)}
-                    className="w-full rounded-xl border border-gray-300 dark:border-zinc-700 bg-gray-100 dark:bg-zinc-800 px-4 py-3 text-gray-900 dark:text-white"
-                  />
-                </div>
-                <div>
-                  <label className="mb-2 block text-sm font-medium text-gray-700 dark:text-zinc-300">Email Password</label>
-                  <input
-                    type="password"
-                    value={wizard.details.emailPassword ?? ""}
-                    onChange={(e) => setDetail("emailPassword", e.target.value)}
-                    className="w-full rounded-xl border border-gray-300 dark:border-zinc-700 bg-gray-100 dark:bg-zinc-800 px-4 py-3 text-gray-900 dark:text-white"
-                  />
-                </div>
-                <div>
-                  <label className="mb-2 block text-sm font-medium text-gray-700 dark:text-zinc-300">Account Password</label>
-                  <input
-                    type="password"
-                    value={wizard.details.accountPassword ?? ""}
-                    onChange={(e) => setDetail("accountPassword", e.target.value)}
-                    className="w-full rounded-xl border border-gray-300 dark:border-zinc-700 bg-gray-100 dark:bg-zinc-800 px-4 py-3 text-gray-900 dark:text-white"
-                  />
-                </div>
-                <div>
-                  <label className="mb-2 block text-sm font-medium text-gray-700 dark:text-zinc-300">2FA Secret</label>
-                  <input
-                    value={wizard.details.twoFactorSecret ?? ""}
-                    onChange={(e) => setDetail("twoFactorSecret", e.target.value)}
-                    className="w-full rounded-xl border border-gray-300 dark:border-zinc-700 bg-gray-100 dark:bg-zinc-800 px-4 py-3 text-gray-900 dark:text-white"
-                  />
-                </div>
-                <div>
-                  <label className="mb-2 block text-sm font-medium text-gray-700 dark:text-zinc-300">Recovery Email</label>
-                  <input
-                    value={wizard.details.recoveryEmail ?? ""}
-                    onChange={(e) => setDetail("recoveryEmail", e.target.value)}
-                    className="w-full rounded-xl border border-gray-300 dark:border-zinc-700 bg-gray-100 dark:bg-zinc-800 px-4 py-3 text-gray-900 dark:text-white"
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="mb-2 block text-sm font-medium text-gray-700 dark:text-zinc-300">Notes</label>
-                <textarea
-                  value={wizard.details.notes ?? ""}
-                  onChange={(e) => setDetail("notes", e.target.value)}
-                  rows={2}
-                  className="w-full rounded-xl border border-gray-300 dark:border-zinc-700 bg-gray-100 dark:bg-zinc-800 px-4 py-3 text-gray-900 dark:text-white"
-                />
-              </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="mb-2 block text-sm font-medium text-gray-700 dark:text-zinc-300">Username</label>
+                      <input
+                        value={wizard.details.loginUsername ?? ""}
+                        onChange={(e) => setDetail("loginUsername", e.target.value)}
+                        placeholder="Login username"
+                        className="w-full rounded-xl border border-gray-300 dark:border-zinc-700 bg-gray-100 dark:bg-zinc-800 px-4 py-3 text-gray-900 dark:text-white"
+                      />
+                    </div>
+                    <div>
+                      <label className="mb-2 block text-sm font-medium text-gray-700 dark:text-zinc-300">Login Email</label>
+                      <input
+                        value={wizard.details.loginEmail ?? ""}
+                        onChange={(e) => setDetail("loginEmail", e.target.value)}
+                        className="w-full rounded-xl border border-gray-300 dark:border-zinc-700 bg-gray-100 dark:bg-zinc-800 px-4 py-3 text-gray-900 dark:text-white"
+                      />
+                    </div>
+                    <div>
+                      <label className="mb-2 block text-sm font-medium text-gray-700 dark:text-zinc-300">Email Password</label>
+                      <input
+                        type="password"
+                        value={wizard.details.emailPassword ?? ""}
+                        onChange={(e) => setDetail("emailPassword", e.target.value)}
+                        className="w-full rounded-xl border border-gray-300 dark:border-zinc-700 bg-gray-100 dark:bg-zinc-800 px-4 py-3 text-gray-900 dark:text-white"
+                      />
+                    </div>
+                    <div>
+                      <label className="mb-2 block text-sm font-medium text-gray-700 dark:text-zinc-300">Account Password</label>
+                      <input
+                        type="password"
+                        value={wizard.details.accountPassword ?? ""}
+                        onChange={(e) => setDetail("accountPassword", e.target.value)}
+                        className="w-full rounded-xl border border-gray-300 dark:border-zinc-700 bg-gray-100 dark:bg-zinc-800 px-4 py-3 text-gray-900 dark:text-white"
+                      />
+                    </div>
+                  </div>
+                </>
+              )}
 
               <div className="flex justify-between pt-2">
-                <button onClick={() => setStep(3)} className="text-sm text-gray-500 dark:text-zinc-400 hover:text-gray-900 dark:hover:text-white">
+                <button onClick={() => setStep(isWorkingTool ? 2 : 3)} className="text-sm text-gray-500 dark:text-zinc-400 hover:text-gray-900 dark:hover:text-white">
                   Back
                 </button>
                 <button

@@ -12,6 +12,7 @@ import type {
   VpnType,
   TutorialType,
   WebsiteType,
+  WorkingToolType,
 } from "@/types/social-log";
 
 interface FormValues {
@@ -26,6 +27,8 @@ interface FormValues {
   vpnType?: VpnType | "";
   tutorialType?: TutorialType | "";
   websiteType?: WebsiteType | "";
+  workingToolType?: WorkingToolType | "";
+  toolLink?: string;
   price: number | "";
   emailAttached: boolean;
   phoneAttached: boolean;
@@ -68,11 +71,11 @@ const PLATFORMS: SocialPlatform[] = [
   "TEXTPLUS",
   "NEXTPLUS",
   "MAIL",
+  "TOOL",
 ];
 
 const CATEGORIES: { value: SocialLogCategoryValue; label: string }[] = [
   { value: "FACEBOOK_PAGE", label: "Facebook — Page" },
-  // { value: "FACEBOOK_COUNTRY", label: "Facebook — By Country" }, // REMOVED
   { value: "TWITTER_FOLLOWERS", label: "Twitter — Followers" },
   { value: "INSTAGRAM_FOLLOWERS", label: "Instagram — Followers" },
   { value: "VPN", label: "VPN" },
@@ -83,6 +86,7 @@ const CATEGORIES: { value: SocialLogCategoryValue; label: string }[] = [
   { value: "TIKTOK_FOLLOWERS", label: "TikTok — Followers" },
   { value: "WEBSITE_CREATION", label: "Website Creation" },
   { value: "MAIL", label: "Mail" },
+  { value: "ALL_WORKING_TOOLS", label: "All Working Tools" },
 ];
 
 const PAGE_TYPES: { value: SocialLogPageType; label: string }[] = [
@@ -96,7 +100,7 @@ const INSTAGRAM_SUB_TYPES: { value: InstagramSubType; label: string; followers: 
   { value: "MONTHS_OLD", label: "Months Old", followers: 0 },
   { value: "EMPTY_AGED", label: "Empty Aged", followers: 0 },
   { value: "AGED_500", label: "Aged with 500+", followers: 500 },
-  { value: "AGED_1K", label: "Aged with 1K+", followers: 1000 },
+  // { value: "AGED_1K", label: "Aged with 1K+", followers: 1000 }, // REMOVED
 ];
 
 const VPN_TYPES: { value: VpnType; label: string }[] = [
@@ -120,15 +124,11 @@ const WEBSITE_TYPES: { value: WebsiteType; label: string }[] = [
   { value: "BOOSTING_WEBSITE", label: "Boosting Website" },
 ];
 
-// REMOVED: FACEBOOK_COUNTRIES array
-// const FACEBOOK_COUNTRIES: { value: string; label: string; followers: number }[] = [
-//   { value: "USA", label: "USA", followers: 200 },
-//   { value: "CANADA", label: "Canada", followers: 100 },
-//   { value: "SPAIN", label: "Spain", followers: 100 },
-//   { value: "AUSTRALIA", label: "Australia", followers: 100 },
-//   { value: "NETHERLANDS", label: "Netherlands", followers: 100 },
-//   { value: "BELGIUM", label: "Belgium", followers: 100 },
-// ];
+const WORKING_TOOL_TYPES: { value: WorkingToolType; label: string }[] = [
+  { value: "TOOL_1", label: "Tool Box 1" },
+  { value: "TOOL_2", label: "Tool Box 2" },
+  { value: "TOOL_3", label: "Tool Box 3" },
+];
 
 const TIKTOK_COUNTRIES: { value: string; label: string }[] = [
   { value: "USA", label: "USA" },
@@ -138,19 +138,16 @@ const TIKTOK_COUNTRIES: { value: string; label: string }[] = [
   { value: "RANDOM", label: "Random Country" },
 ];
 
-// Tier thresholds shown as quick-pick buttons when the category needs
-// a followers tier. Values match what's stored on the `followers`
-// column — 0 doubles as "Empty Aged" for Twitter/TikTok.
 const FOLLOWER_TIERS: Record<string, { value: number; label: string }[]> = {
   TWITTER_FOLLOWERS: [
     { value: 0, label: "Empty Aged" },
     { value: 100, label: "100+" },
     { value: 200, label: "200+" },
     { value: 500, label: "500+" },
-    { value: 1000, label: "1K+" },
+    // { value: 1000, label: "1K+" }, // REMOVED
   ],
   TIKTOK_FOLLOWERS: [
-    { value: 100, label: "100+" },
+    // { value: 100, label: "100+" }, // REMOVED
     { value: 200, label: "200+" },
     { value: 500, label: "500+" },
     { value: 1000, label: "1K+" },
@@ -158,7 +155,6 @@ const FOLLOWER_TIERS: Record<string, { value: number; label: string }[]> = {
 };
 
 const COUNTRY_CATEGORIES = new Set<SocialLogCategoryValue>([
-  // "FACEBOOK_COUNTRY", // REMOVED
   "TIKTOK_COUNTRY",
 ]);
 
@@ -167,13 +163,11 @@ const FOLLOWER_CATEGORIES = new Set<SocialLogCategoryValue>([
   "TIKTOK_FOLLOWERS",
 ]);
 
-// REMOVED: FACEBOOK_COUNTRY_CATEGORY constant
-// const FACEBOOK_COUNTRY_CATEGORY = "FACEBOOK_COUNTRY";
-
 const INSTAGRAM_CATEGORY = "INSTAGRAM_FOLLOWERS";
 const VPN_CATEGORY = "VPN";
 const TUTORIAL_CATEGORY = "TUTORIAL";
 const WEBSITE_CATEGORY = "WEBSITE_CREATION";
+const WORKING_TOOLS_CATEGORY = "ALL_WORKING_TOOLS";
 
 const EMPTY_FORM: FormValues = {
   platform: "",
@@ -187,6 +181,8 @@ const EMPTY_FORM: FormValues = {
   vpnType: "",
   tutorialType: "",
   websiteType: "",
+  workingToolType: "",
+  toolLink: "",
   price: "",
   emailAttached: false,
   phoneAttached: false,
@@ -232,9 +228,9 @@ export default function SocialLogForm({
   const needsVpnType = values.category === VPN_CATEGORY;
   const needsTutorialType = values.category === TUTORIAL_CATEGORY;
   const needsWebsiteType = values.category === WEBSITE_CATEGORY;
-  // REMOVED: needsFacebookCountry
-  // const needsFacebookCountry = values.category === FACEBOOK_COUNTRY_CATEGORY;
   const needsTiktokCountry = values.category === "TIKTOK_COUNTRY";
+  const needsWorkingToolType = values.category === WORKING_TOOLS_CATEGORY;
+  const isWorkingTool = values.category === WORKING_TOOLS_CATEGORY;
   const tierOptions = values.category ? FOLLOWER_TIERS[values.category] : undefined;
 
   function update<K extends keyof FormValues>(key: K, value: FormValues[K]) {
@@ -243,9 +239,6 @@ export default function SocialLogForm({
   }
 
   function updateCategory(category: SocialLogCategoryValue | "") {
-    // Clear whichever conditional fields no longer apply so a stray
-    // country/pageType/followers/sub-type value from a previous
-    // category can't sneak through on submit.
     setValues((prev) => ({
       ...prev,
       category,
@@ -256,40 +249,64 @@ export default function SocialLogForm({
       vpnType: category === VPN_CATEGORY ? prev.vpnType : "",
       tutorialType: category === TUTORIAL_CATEGORY ? prev.tutorialType : "",
       websiteType: category === WEBSITE_CATEGORY ? prev.websiteType : "",
+      workingToolType: category === WORKING_TOOLS_CATEGORY ? prev.workingToolType : "",
+      toolLink: category === WORKING_TOOLS_CATEGORY ? prev.toolLink : "",
     }));
     setErrors((prev) => ({ ...prev, category: undefined }));
   }
-function updatePlatform(platform: SocialPlatform) {
-  setValues((prev) => {
-    const updates: Partial<FormValues> = { platform };
-    
-    // Auto-set category to MAIL for GMAIL/OUTLOOK/MAIL platforms
-    if (platform === "GMAIL" || platform === "OUTLOOK" || platform === "MAIL") {
-      updates.category = "MAIL";
-      // Clear other conditional fields
-      updates.country = "";
-      updates.followers = "";
-      updates.pageType = "";
-      updates.instagramSubType = "";
-      updates.vpnType = "";
-      updates.tutorialType = "";
-      updates.websiteType = "";
-    }
-    
-    return { ...prev, ...updates };
-  });
-  setErrors((prev) => ({ ...prev, platform: undefined, category: undefined }));
-}
+
+  function updatePlatform(platform: SocialPlatform) {
+    setValues((prev) => {
+      const updates: Partial<FormValues> = { platform };
+      
+      // Auto-set category to MAIL for GMAIL/OUTLOOK/MAIL platforms
+      if (platform === "GMAIL" || platform === "OUTLOOK" || platform === "MAIL") {
+        updates.category = "MAIL";
+        updates.country = "";
+        updates.followers = "";
+        updates.pageType = "";
+        updates.instagramSubType = "";
+        updates.vpnType = "";
+        updates.tutorialType = "";
+        updates.websiteType = "";
+        updates.workingToolType = "";
+        updates.toolLink = "";
+      }
+      
+      // Auto-set category to ALL_WORKING_TOOLS for TOOL platform
+      if (platform === "TOOL") {
+        updates.category = "ALL_WORKING_TOOLS";
+        updates.country = "";
+        updates.followers = "";
+        updates.pageType = "";
+        updates.instagramSubType = "";
+        updates.vpnType = "";
+        updates.tutorialType = "";
+        updates.websiteType = "";
+      }
+      
+      return { ...prev, ...updates };
+    });
+    setErrors((prev) => ({ ...prev, platform: undefined, category: undefined }));
+  }
+
   function validate(): boolean {
     const next: Partial<Record<keyof FormValues, string>> = {};
 
     if (!values.platform) next.platform = "Platform is required.";
     if (!values.category) next.category = "Category is required.";
-    if (!values.username.trim()) next.username = "Username is required.";
-    if (values.age === "" || Number(values.age) <= 0)
+    if (!values.username.trim()) next.username = isWorkingTool ? "Label is required." : "Username is required.";
+    
+    // Only require age for non-working-tool categories
+    if (!isWorkingTool && (values.age === "" || Number(values.age) <= 0))
       next.age = "Enter a valid age.";
+    
     if (values.price === "" || Number(values.price) <= 0)
       next.price = "Enter a valid price in NGN.";
+
+    // Only require toolLink for working tools
+    if (isWorkingTool && !values.toolLink?.trim())
+      next.toolLink = "Tool link is required.";
 
     if (needsCountry && !values.country.trim())
       next.country = "Country is required for this category.";
@@ -312,8 +329,14 @@ function updatePlatform(platform: SocialPlatform) {
     if (needsWebsiteType && !values.websiteType)
       next.websiteType = "Select a website service.";
 
+    if (needsWorkingToolType && !values.workingToolType)
+      next.workingToolType = "Select a tool box.";
+
     if (values.image?.trim() && !URL_PATTERN.test(values.image.trim()))
       next.image = "Must be a valid URL starting with http:// or https://";
+
+    if (values.toolLink?.trim() && !URL_PATTERN.test(values.toolLink.trim()))
+      next.toolLink = "Must be a valid URL starting with http:// or https://";
 
     if (values.loginEmail?.trim() && !EMAIL_PATTERN.test(values.loginEmail.trim()))
       next.loginEmail = "Enter a valid email address.";
@@ -350,7 +373,7 @@ function updatePlatform(platform: SocialPlatform) {
             : undefined,
         country: needsCountry && values.country.trim() ? values.country.trim() : undefined,
         username: values.username.trim(),
-        age: Number(values.age),
+        age: isWorkingTool ? 0 : Number(values.age),
         followers:
           needsFollowers && values.followers !== "" && values.followers !== undefined
             ? Number(values.followers)
@@ -371,6 +394,11 @@ function updatePlatform(platform: SocialPlatform) {
           needsWebsiteType && values.websiteType
             ? (values.websiteType as WebsiteType)
             : undefined,
+        workingToolType:
+          needsWorkingToolType && values.workingToolType
+            ? (values.workingToolType as WorkingToolType)
+            : undefined,
+        toolLink: isWorkingTool && values.toolLink?.trim() ? values.toolLink.trim() : undefined,
         price: Number(values.price),
         emailAttached: values.emailAttached,
         phoneAttached: values.phoneAttached,
@@ -427,42 +455,76 @@ function updatePlatform(platform: SocialPlatform) {
               ))}
             </select>
           </Field>
-<Field label="Platform" error={errors.platform}>
-  <select
-    value={values.platform}
-    onChange={(e) => updatePlatform(e.target.value as SocialPlatform)}
-    className={inputClass(!!errors.platform)}
-  >
-    <option value="">Select platform</option>
-    {PLATFORMS.map((p) => (
-      <option key={p} value={p}>
-        {p.charAt(0) + p.slice(1).toLowerCase()}
-      </option>
-    ))}
-  </select>
-</Field>
 
-          <Field label="Username" error={errors.username}>
+          <Field label="Platform" error={errors.platform}>
+            <select
+              value={values.platform}
+              onChange={(e) => updatePlatform(e.target.value as SocialPlatform)}
+              className={inputClass(!!errors.platform)}
+            >
+              <option value="">Select platform</option>
+              {PLATFORMS.map((p) => (
+                <option key={p} value={p}>
+                  {p.charAt(0) + p.slice(1).toLowerCase()}
+                </option>
+              ))}
+            </select>
+          </Field>
+
+          <Field label={isWorkingTool ? "Label" : "Username"} error={errors.username}>
             <input
               type="text"
               value={values.username}
               onChange={(e) => update("username", e.target.value)}
-              placeholder="e.g. johndoe123"
+              placeholder={isWorkingTool ? "e.g. Premium Tool Access" : "e.g. johndoe123"}
               className={inputClass(!!errors.username)}
             />
           </Field>
 
-          <Field label="Age (account age, years)" error={errors.age}>
-            <input
-              type="number"
-              min={0}
-              value={values.age}
-              onChange={(e) =>
-                update("age", e.target.value === "" ? "" : Number(e.target.value))
-              }
-              className={inputClass(!!errors.age)}
-            />
-          </Field>
+          {/* Only show Age for non-working-tool categories */}
+          {!isWorkingTool && (
+            <Field label="Age (account age, years)" error={errors.age}>
+              <input
+                type="number"
+                min={0}
+                value={values.age}
+                onChange={(e) =>
+                  update("age", e.target.value === "" ? "" : Number(e.target.value))
+                }
+                className={inputClass(!!errors.age)}
+              />
+            </Field>
+          )}
+
+          {/* Conditional: only for ALL_WORKING_TOOLS */}
+          {isWorkingTool && (
+            <>
+              <Field label="Tool Box" error={errors.workingToolType}>
+                <select
+                  value={values.workingToolType}
+                  onChange={(e) => update("workingToolType", e.target.value as WorkingToolType)}
+                  className={inputClass(!!errors.workingToolType)}
+                >
+                  <option value="">Select tool box</option>
+                  {WORKING_TOOL_TYPES.map((t) => (
+                    <option key={t.value} value={t.value}>
+                      {t.label}
+                    </option>
+                  ))}
+                </select>
+              </Field>
+
+              <Field label="Tool Link" error={errors.toolLink}>
+                <input
+                  type="text"
+                  value={values.toolLink}
+                  onChange={(e) => update("toolLink", e.target.value)}
+                  placeholder="https://..."
+                  className={inputClass(!!errors.toolLink)}
+                />
+              </Field>
+            </>
+          )}
 
           {/* Conditional: only for FACEBOOK_PAGE */}
           {needsPageType && (
@@ -677,155 +739,153 @@ function updatePlatform(platform: SocialPlatform) {
             value={values.description}
             onChange={(e) => update("description", e.target.value)}
             rows={3}
-            placeholder="Any notes about the account's history, niche, engagement, etc."
+            placeholder={isWorkingTool ? "Describe what this tool does..." : "Any notes about the account's history, niche, engagement, etc."}
             className={inputClass(false)}
           />
         </Field>
 
       </div>
 
-      {/* ============================
-                SECURITY BADGES
-      ============================ */}
+      {/* Only show Security Badges for non-working-tool categories */}
+      {!isWorkingTool && (
+        <div>
+          <h3 className="mb-4 text-sm font-semibold uppercase tracking-wide text-gray-400 dark:text-zinc-500">
+            Security & Attributes
+          </h3>
 
-      <div>
-        <h3 className="mb-4 text-sm font-semibold uppercase tracking-wide text-gray-400 dark:text-zinc-500">
-          Security & Attributes
-        </h3>
-
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-          <Toggle
-            label="Verified"
-            checked={values.verified}
-            onChange={(v) => update("verified", v)}
-          />
-          <Toggle
-            label="OG Email"
-            checked={values.ogEmail}
-            onChange={(v) => update("ogEmail", v)}
-          />
-          <Toggle
-            label="2FA Enabled"
-            checked={values.twoFactor}
-            onChange={(v) => update("twoFactor", v)}
-          />
-          <Toggle
-            label="Email Attached"
-            checked={values.emailAttached}
-            onChange={(v) => update("emailAttached", v)}
-          />
-          <Toggle
-            label="Phone Attached"
-            checked={values.phoneAttached}
-            onChange={(v) => update("phoneAttached", v)}
-          />
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+            <Toggle
+              label="Verified"
+              checked={values.verified}
+              onChange={(v) => update("verified", v)}
+            />
+            <Toggle
+              label="OG Email"
+              checked={values.ogEmail}
+              onChange={(v) => update("ogEmail", v)}
+            />
+            <Toggle
+              label="2FA Enabled"
+              checked={values.twoFactor}
+              onChange={(v) => update("twoFactor", v)}
+            />
+            <Toggle
+              label="Email Attached"
+              checked={values.emailAttached}
+              onChange={(v) => update("emailAttached", v)}
+            />
+            <Toggle
+              label="Phone Attached"
+              checked={values.phoneAttached}
+              onChange={(v) => update("phoneAttached", v)}
+            />
+          </div>
         </div>
-      </div>
+      )}
 
-      {/* ============================
-                CREDENTIALS
-      ============================ */}
+      {/* Only show Credentials for non-working-tool categories */}
+      {!isWorkingTool && (
+        <div>
+          <h3 className="mb-1 text-sm font-semibold uppercase tracking-wide text-gray-400 dark:text-zinc-500">
+            Login Credentials
+          </h3>
+          <p className="mb-4 text-xs text-gray-400 dark:text-zinc-500">
+            These are handed to the buyer after purchase.
+          </p>
 
-      <div>
-        <h3 className="mb-1 text-sm font-semibold uppercase tracking-wide text-gray-400 dark:text-zinc-500">
-          Login Credentials
-        </h3>
-        <p className="mb-4 text-xs text-gray-400 dark:text-zinc-500">
-          These are handed to the buyer after purchase.
-        </p>
+          <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
 
-        <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
+            <Field label="Username">
+              <input
+                type="text"
+                value={values.loginUsername}
+                onChange={(e) => update("loginUsername", e.target.value)}
+                placeholder="Login username for the account"
+                className={inputClass(false)}
+              />
+            </Field>
 
-          <Field label="Username">
-            <input
-              type="text"
-              value={values.loginUsername}
-              onChange={(e) => update("loginUsername", e.target.value)}
-              placeholder="Login username for the account"
-              className={inputClass(false)}
+            <Field label="Login Email" error={errors.loginEmail}>
+              <input
+                type="text"
+                value={values.loginEmail}
+                onChange={(e) => update("loginEmail", e.target.value)}
+                placeholder="name@example.com"
+                className={inputClass(!!errors.loginEmail)}
+              />
+            </Field>
+
+            <Field label="Email Password">
+              <input
+                type="password"
+                value={values.emailPassword}
+                onChange={(e) => update("emailPassword", e.target.value)}
+                className={inputClass(false)}
+              />
+            </Field>
+
+            <Field label="Account Password" error={errors.accountPassword}>
+              <input
+                type="password"
+                value={values.accountPassword}
+                onChange={(e) => update("accountPassword", e.target.value)}
+                className={inputClass(!!errors.accountPassword)}
+              />
+            </Field>
+
+            <Field label="Recovery Email" error={errors.recoveryEmail}>
+              <input
+                type="text"
+                value={values.recoveryEmail}
+                onChange={(e) => update("recoveryEmail", e.target.value)}
+                placeholder="name@example.com"
+                className={inputClass(!!errors.recoveryEmail)}
+              />
+            </Field>
+
+            <Field label="2FA Secret (optional)">
+              <input
+                type="text"
+                value={values.twoFactorSecret}
+                onChange={(e) => update("twoFactorSecret", e.target.value)}
+                className={inputClass(false)}
+              />
+            </Field>
+
+            <Field label="Backup Codes (comma separated)">
+              <input
+                type="text"
+                value={values.backupCodes}
+                onChange={(e) => update("backupCodes", e.target.value)}
+                placeholder="code1, code2, code3"
+                className={inputClass(false)}
+              />
+            </Field>
+
+          </div>
+
+          <Field label="Cookies (optional, valid JSON)" error={errors.cookies} className="mt-5">
+            <textarea
+              value={values.cookies}
+              onChange={(e) => update("cookies", e.target.value)}
+              rows={3}
+              placeholder='{"sessionid": "..."}'
+              className={`${inputClass(!!errors.cookies)} font-mono text-xs`}
             />
           </Field>
 
-          <Field label="Login Email" error={errors.loginEmail}>
-            <input
-              type="text"
-              value={values.loginEmail}
-              onChange={(e) => update("loginEmail", e.target.value)}
-              placeholder="name@example.com"
-              className={inputClass(!!errors.loginEmail)}
-            />
-          </Field>
-
-          <Field label="Email Password">
-            <input
-              type="password"
-              value={values.emailPassword}
-              onChange={(e) => update("emailPassword", e.target.value)}
-              className={inputClass(false)}
-            />
-          </Field>
-
-          <Field label="Account Password" error={errors.accountPassword}>
-            <input
-              type="password"
-              value={values.accountPassword}
-              onChange={(e) => update("accountPassword", e.target.value)}
-              className={inputClass(!!errors.accountPassword)}
-            />
-          </Field>
-
-          <Field label="Recovery Email" error={errors.recoveryEmail}>
-            <input
-              type="text"
-              value={values.recoveryEmail}
-              onChange={(e) => update("recoveryEmail", e.target.value)}
-              placeholder="name@example.com"
-              className={inputClass(!!errors.recoveryEmail)}
-            />
-          </Field>
-
-          <Field label="2FA Secret (optional)">
-            <input
-              type="text"
-              value={values.twoFactorSecret}
-              onChange={(e) => update("twoFactorSecret", e.target.value)}
-              className={inputClass(false)}
-            />
-          </Field>
-
-          <Field label="Backup Codes (comma separated)">
-            <input
-              type="text"
-              value={values.backupCodes}
-              onChange={(e) => update("backupCodes", e.target.value)}
-              placeholder="code1, code2, code3"
+          <Field label="Internal Notes (optional)" className="mt-5">
+            <textarea
+              value={values.notes}
+              onChange={(e) => update("notes", e.target.value)}
+              rows={2}
+              placeholder="Admin-only notes, not shown to buyer"
               className={inputClass(false)}
             />
           </Field>
 
         </div>
-
-        <Field label="Cookies (optional, valid JSON)" error={errors.cookies} className="mt-5">
-          <textarea
-            value={values.cookies}
-            onChange={(e) => update("cookies", e.target.value)}
-            rows={3}
-            placeholder='{"sessionid": "..."}'
-            className={`${inputClass(!!errors.cookies)} font-mono text-xs`}
-          />
-        </Field>
-
-        <Field label="Internal Notes (optional)" className="mt-5">
-          <textarea
-            value={values.notes}
-            onChange={(e) => update("notes", e.target.value)}
-            rows={2}
-            placeholder="Admin-only notes, not shown to buyer"
-            className={inputClass(false)}
-          />
-        </Field>
-
-      </div>
+      )}
 
       {/* ============================
                 SUBMIT

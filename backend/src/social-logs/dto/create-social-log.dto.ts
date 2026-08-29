@@ -24,6 +24,7 @@ import {
   VpnType,
   TutorialType,
   WebsiteType,
+  WorkingToolType,
 } from "@prisma/client";
 
 export class CreateSocialLogDto {
@@ -36,12 +37,12 @@ export class CreateSocialLogDto {
   @IsEnum(SocialPlatform)
   platform!: SocialPlatform;
 
-  // Which of the 10 sellable listing types this row belongs to.
+  // Which of the sellable listing types this row belongs to.
   // Drives which of country / pageType / followers are meaningful.
   @IsEnum(SocialLogCategory)
   category!: SocialLogCategory;
 
-  // Only required for FACEBOOK_COUNTRY and TIKTOK_COUNTRY — optional
+  // Only required for TIKTOK_COUNTRY — optional
   // everywhere else now that the column is nullable.
   @IsOptional()
   @IsString()
@@ -109,6 +110,23 @@ export class CreateSocialLogDto {
 
   /*
   =====================================
+  WORKING TOOL FIELDS
+  =====================================
+  */
+
+  // Only meaningful when category = ALL_WORKING_TOOLS
+  @IsOptional()
+  @IsEnum(WorkingToolType)
+  workingToolType?: WorkingToolType;
+
+  // Tool link — only for ALL_WORKING_TOOLS category
+  @IsOptional()
+  @IsString()
+  @IsUrl()
+  toolLink?: string;
+
+  /*
+  =====================================
   PRIVATE LOGIN DETAILS
   =====================================
   */
@@ -141,8 +159,8 @@ export class CreateSocialLogDto {
   loginEmail?: string;
 
   @IsOptional()
-@IsString()
-emailPassword?: string;
+  @IsString()
+  emailPassword?: string;
 
   @IsOptional()
   @IsPhoneNumber()

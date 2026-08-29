@@ -32,6 +32,7 @@ const platforms: SocialPlatform[] = [
   "TEXTPLUS",
   "NEXTPLUS",
   "MAIL",
+  "TOOL",
 ];
 
 const categories: { value: SocialLogCategoryValue; label: string }[] = [
@@ -47,6 +48,7 @@ const categories: { value: SocialLogCategoryValue; label: string }[] = [
   { value: "TIKTOK_FOLLOWERS", label: "TikTok — Followers" },
   { value: "WEBSITE_CREATION", label: "Website Creation" },
   { value: "MAIL", label: "Mail" },
+  { value: "ALL_WORKING_TOOLS", label: "All Working Tools" },
 ];
 
 const statuses: SocialLogStatus[] = [
@@ -155,7 +157,7 @@ export default function SocialLogFilters({
               key={platform}
               value={platform}
             >
-              {platform}
+              {platform.charAt(0) + platform.slice(1).toLowerCase()}
             </option>
           ))}
         </select>

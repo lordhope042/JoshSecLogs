@@ -20,14 +20,12 @@ export type SocialPlatform =
   | "VPN"
   | "TEXTPLUS"
   | "NEXTPLUS"
-  | "MAIL";
+  | "MAIL"
+  | "TOOL"; // ADD THIS for All Working Tools
 
 /*
 ========================================================
-CATEGORY — the 10-item sellable listing catalogue.
-Each SocialLog belongs to exactly one of these; this is
-what CategoryTabs / useSocialLogs filter on now, not
-SocialPlatform directly (Facebook alone spans two).
+CATEGORY — the sellable listing catalogue.
 ========================================================
 */
 
@@ -42,7 +40,8 @@ export type SocialLogCategoryValue =
   | "TIKTOK_COUNTRY"
   | "TIKTOK_FOLLOWERS"
   | "WEBSITE_CREATION"
-  | "MAIL";
+  | "MAIL"
+  | "ALL_WORKING_TOOLS"; // ADD THIS
 
 // Only meaningful when category = FACEBOOK_PAGE
 export type SocialLogPageType =
@@ -54,10 +53,6 @@ export type SocialLogPageType =
 /*
 ========================================================
 SUB-TYPE ENUMS
-Each sells a fixed, enumerated set of variants within a
-single heading. These drive the admin form's quick-pick
-buttons and the buyer card grid's one-card-per-variant
-behaviour (STATIC_LISTING_TYPES in SocialLogCard).
 ========================================================
 */
 
@@ -89,9 +84,13 @@ export type WebsiteType =
   | "BOTH_WEBSITE"
   | "BOOSTING_WEBSITE";
 
-// FACEBOOK_COUNTRY — the 6 fixed countries, each tied to a
-// follower range. Used by the admin form's country picker
-// and the card grid so every country always renders.
+// ADD THIS — Working Tool Type for the 3 boxes
+export type WorkingToolType =
+  | "TOOL_1"
+  | "TOOL_2"
+  | "TOOL_3";
+
+// FACEBOOK_COUNTRY — the 6 fixed countries.
 export type FacebookCountry =
   | "USA"
   | "CANADA"
@@ -162,24 +161,29 @@ export interface SocialLog {
   // Only populated for FACEBOOK_PAGE
   pageType: SocialLogPageType | null;
 
-  // INSTAGRAM_FOLLOWERS sub-category (Months Old / Empty Aged / Aged 500+ / Aged 1K+)
+  // INSTAGRAM_FOLLOWERS sub-category
   instagramSubType: InstagramSubType | null;
 
   // VPN provider / duration variant
   vpnType: VpnType | null;
 
-  // TUTORIAL variant (which platform's ads tutorial)
+  // TUTORIAL variant
   tutorialType: TutorialType | null;
 
-  // WEBSITE_CREATION variant (which website build service)
+  // WEBSITE_CREATION variant
   websiteType: WebsiteType | null;
+
+  // ADD THIS — Working Tool Type
+  workingToolType: WorkingToolType | null;
+
+  // ADD THIS — Tool Link
+  toolLink: string | null;
 
   username: string;
 
   age: number;
 
-  // Tier threshold — only populated for TWITTER_FOLLOWERS /
-  // INSTAGRAM_FOLLOWERS / TIKTOK_FOLLOWERS
+  // Tier threshold
   followers: number | null;
 
   price: number;
@@ -212,14 +216,6 @@ export interface SocialLog {
 /*
 ========================================================
 PURCHASED ACCOUNT
-Returned ONLY after purchase or from
-GET /social-logs/my-purchases/:id
-
-NOTE: field is `password`, not `accountPassword` —
-the repository's select returns the raw Prisma column
-name on read. `accountPassword` is only used as the
-*input* field name in CreateSocialLogDto/UpdateSocialLogDto
-when submitting a new password, never on read.
 ========================================================
 */
 
@@ -239,6 +235,12 @@ export interface PurchasedSocialLog {
   tutorialType: TutorialType | null;
 
   websiteType: WebsiteType | null;
+
+  // ADD THIS
+  workingToolType: WorkingToolType | null;
+
+  // ADD THIS
+  toolLink: string | null;
 
   followers: number | null;
 
@@ -302,6 +304,12 @@ export interface CreateSocialLogDto {
   // WEBSITE_CREATION variant
   websiteType?: WebsiteType;
 
+  // ADD THIS
+  workingToolType?: WorkingToolType;
+
+  // ADD THIS
+  toolLink?: string;
+
   username: string;
 
   age: number;
@@ -359,15 +367,12 @@ export interface UpdateSocialLogDto
 /*
 ========================================================
 CATEGORY TAB SUMMARY
-GET /social-logs/categories — one entry per tab, grouped
-by the `category` field.
 ========================================================
 */
 
 export interface SocialLogCategory {
   count: number;
   category: SocialLogCategoryValue;
-
   total: number;
 }
 
@@ -379,19 +384,12 @@ FILTERS
 
 export interface SocialLogFilters {
   platform?: SocialPlatform;
-
   category?: SocialLogCategoryValue;
-
   country?: string;
-
   status?: SocialLogStatus;
-
   search?: string;
-
   sort?: SocialLogSort;
-
   page?: number;
-
   limit?: number;
 }
 
@@ -403,11 +401,8 @@ STATS
 
 export interface SocialLogStats {
   total: number;
-
   available: number;
-
   sold: number;
-
   revenue: number;
 }
 
@@ -419,9 +414,7 @@ PURCHASE RESPONSE
 
 export interface PurchaseSocialLogResponse {
   success: boolean;
-
   message: string;
-
   account: PurchasedSocialLog;
 }
 
@@ -433,17 +426,13 @@ PAGINATION
 
 export interface PaginationMeta {
   page: number;
-
   limit: number;
-
   total: number;
-
   totalPages: number;
 }
 
 export interface PaginatedSocialLogs {
   data: SocialLog[];
-
   meta: PaginationMeta;
 }
 
@@ -455,8 +444,6 @@ GENERIC API RESPONSE
 
 export interface ApiResponse<T> {
   success: boolean;
-
   message?: string;
-
   data: T;
 }

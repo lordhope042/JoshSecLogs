@@ -6,13 +6,14 @@ import type {
   VpnType,
   TutorialType,
   WebsiteType,
+  WorkingToolType,
 } from "@/types/social-log";
 
 /**
  * Drives the admin wizard only. The buyer page doesn't need this —
  * it already renders whatever getSocialLogCategories() returns.
  *
- * The 10 headings map 1:1 to the user's JoshSecLogs.com spec:
+ * The headings map 1:1 to the user's JoshSecLogs.com spec:
  *   1. FACEBOOK        → FACEBOOK_PAGE (4 page types) + FACEBOOK_COUNTRY (6 countries)
  *   2. TWITTER         → TWITTER_FOLLOWERS (5 tiers)
  *   3. INSTAGRAM       → INSTAGRAM_FOLLOWERS (4 sub-types)
@@ -21,6 +22,8 @@ import type {
  *   6. TEXTING_APP     → TEXTPLUS_NEXTPLUS (2 apps)
  *   7. TUTORIAL        → TUTORIAL (4 ad-platform tutorials)
  *   8. WEBSITE         → WEBSITE_CREATION (4 website services)
+ *   9. MAIL            → MAIL (Gmail / Outlook / Generic Mail)
+ *  10. WORKING_TOOLS   → ALL_WORKING_TOOLS (3 tool boxes)
  */
 
 export type WizardGroup =
@@ -33,7 +36,8 @@ export type WizardGroup =
   | "TELEGRAM"
   | "TUTORIAL"
   | "WEBSITE"
-  | "MAIL";
+  | "MAIL"
+  | "WORKING_TOOLS";
 
 export interface PageTypeOption {
   value: SocialLogPageType;
@@ -59,6 +63,8 @@ export interface GroupConfig {
   tutorialTypes?: { value: TutorialType; label: string }[];
   /** Website creation service variants */
   websiteTypes?: { value: WebsiteType; label: string }[];
+  /** Working tool box variants */
+  workingToolTypes?: { value: WorkingToolType; label: string }[];
   /** Fixed country list for *_COUNTRY categories */
   countries?: { value: string; label: string; followerRange?: string }[];
 }
@@ -68,7 +74,7 @@ export const WIZARD_GROUPS: GroupConfig[] = [
     value: "FACEBOOK",
     label: "Facebook",
     platforms: ["FACEBOOK"],
-    category: "FACEBOOK_PAGE", // overridden to FACEBOOK_COUNTRY when country axis picked
+    category: "FACEBOOK_PAGE",
     hasTypeCountrySplit: true,
     pageTypes: [
       { value: "CREATE_PAGE", label: "Create Page Facebook" },
@@ -84,7 +90,7 @@ export const WIZARD_GROUPS: GroupConfig[] = [
       { value: "NETHERLANDS", label: "Netherlands", followerRange: "100-200+" },
       { value: "BELGIUM", label: "Belgium", followerRange: "100-200+" },
     ],
-    hasFollowers: true, // only true when pageType === PAGE_WITH_FOLLOWERS or for country listings
+    hasFollowers: true,
   },
   {
     value: "TWITTER",
@@ -103,14 +109,14 @@ export const WIZARD_GROUPS: GroupConfig[] = [
       { value: "MONTHS_OLD", label: "Months Old Instagram" },
       { value: "EMPTY_AGED", label: "Empty Aged Instagram", followers: 0 },
       { value: "AGED_500", label: "Aged Instagram with 500+", followers: 500 },
-      { value: "AGED_1K", label: "Aged Instagram with 1K+", followers: 1000 },
+      // { value: "AGED_1K", label: "Aged Instagram with 1K+", followers: 1000 }, // REMOVED
     ],
   },
   {
     value: "TIKTOK",
     label: "TikTok",
     platforms: ["TIKTOK"],
-    category: "TIKTOK_FOLLOWERS", // overridden to TIKTOK_COUNTRY when country axis picked
+    category: "TIKTOK_FOLLOWERS",
     hasTypeCountrySplit: true,
     hasFollowers: true,
     countries: [
@@ -160,7 +166,7 @@ export const WIZARD_GROUPS: GroupConfig[] = [
   {
     value: "WEBSITE",
     label: "Website Creation",
-    platforms: ["VPN"], // no real platform fits; VPN is a generic DIGITAL_PRODUCT placeholder
+    platforms: ["VPN"],
     category: "WEBSITE_CREATION",
     websiteTypes: [
       { value: "LOGS_WEBSITE", label: "Logs Website" },
@@ -174,6 +180,17 @@ export const WIZARD_GROUPS: GroupConfig[] = [
     label: "Mail",
     platforms: ["GMAIL", "OUTLOOK", "MAIL"],
     category: "MAIL",
+  },
+  {
+    value: "WORKING_TOOLS",
+    label: "All Working Tools",
+    platforms: ["TOOL"],
+    category: "ALL_WORKING_TOOLS",
+    workingToolTypes: [
+      { value: "TOOL_1", label: "Tool Box 1" },
+      { value: "TOOL_2", label: "Tool Box 2" },
+      { value: "TOOL_3", label: "Tool Box 3" },
+    ],
   },
 ];
 

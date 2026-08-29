@@ -20,6 +20,8 @@ import {
   MapPin,
   DollarSign,
   Layers,
+  Link as LinkIcon,
+  Wrench,
 } from "lucide-react";
 
 import type { SocialLog, SocialLogCategoryValue } from "@/types/social-log";
@@ -49,11 +51,11 @@ const platformColors: Record<string, string> = {
   TEXTPLUS: "bg-lime-500/10 text-lime-400 border-lime-500/20",
   NEXTPLUS: "bg-lime-500/10 text-lime-400 border-lime-500/20",
   MAIL: "bg-red-400/10 text-red-300 border-red-400/20",
+  TOOL: "bg-amber-500/10 text-amber-400 border-amber-500/20",
 };
 
 const CATEGORY_LABELS: Record<SocialLogCategoryValue, string> = {
   FACEBOOK_PAGE: "Facebook — Page",
-  // REMOVE THIS LINE: FACEBOOK_COUNTRY: "Facebook — By Country",
   TWITTER_FOLLOWERS: "Twitter — Followers",
   INSTAGRAM_FOLLOWERS: "Instagram — Followers",
   VPN: "VPN",
@@ -64,6 +66,7 @@ const CATEGORY_LABELS: Record<SocialLogCategoryValue, string> = {
   TIKTOK_FOLLOWERS: "TikTok — Followers",
   WEBSITE_CREATION: "Website Creation",
   MAIL: "Mail",
+  ALL_WORKING_TOOLS: "All Working Tools",
 };
 
 const PAGE_TYPE_LABELS: Record<string, string> = {
@@ -98,6 +101,11 @@ const SUB_TYPE_LABELS: Record<string, Record<string, string>> = {
     BOTH_WEBSITE: "Both Logs & SMS",
     BOOSTING_WEBSITE: "Boosting Website",
   },
+  ALL_WORKING_TOOLS: {
+    TOOL_1: "Tool Box 1",
+    TOOL_2: "Tool Box 2",
+    TOOL_3: "Tool Box 3",
+  },
 };
 
 const statusConfig = {
@@ -127,13 +135,14 @@ function formatFollowersTier(value: number): string {
   return `${value}+`;
 }
 
-// Resolve a sub-type tag for a log (Instagram / VPN / Tutorial / Website),
+// Resolve a sub-type tag for a log (Instagram / VPN / Tutorial / Website / Working Tool),
 // or null if the category doesn't use a sub-type axis.
 function subTypeTag(log: SocialLog): string | null {
   if (log.instagramSubType) return SUB_TYPE_LABELS.INSTAGRAM_FOLLOWERS[log.instagramSubType] ?? log.instagramSubType;
   if (log.vpnType) return SUB_TYPE_LABELS.VPN[log.vpnType] ?? log.vpnType;
   if (log.tutorialType) return SUB_TYPE_LABELS.TUTORIAL[log.tutorialType] ?? log.tutorialType;
   if (log.websiteType) return SUB_TYPE_LABELS.WEBSITE_CREATION[log.websiteType] ?? log.websiteType;
+  if (log.workingToolType) return SUB_TYPE_LABELS.ALL_WORKING_TOOLS[log.workingToolType] ?? log.workingToolType;
   return null;
 }
 
@@ -185,6 +194,7 @@ export default function SocialLogsTable({
         const statusStyle =
           statusConfig[log.status as keyof typeof statusConfig] || statusConfig.AVAILABLE;
         const categoryLabel = CATEGORY_LABELS[log.category] ?? log.category;
+        const isWorkingTool = log.category === "ALL_WORKING_TOOLS";
 
         return (
           <div
@@ -207,7 +217,11 @@ export default function SocialLogsTable({
                   />
                 ) : (
                   <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-gray-100 dark:bg-zinc-800 ring-2 ring-zinc-700">
-                    <ImageIcon size={24} className="text-gray-400 dark:text-zinc-500" />
+                    {isWorkingTool ? (
+                      <Wrench size={24} className="text-amber-400" />
+                    ) : (
+                      <ImageIcon size={24} className="text-gray-400 dark:text-zinc-500" />
+                    )}
                   </div>
                 )}
                 <div
@@ -219,12 +233,12 @@ export default function SocialLogsTable({
               <div className="min-w-0 flex-1">
                 <div className="flex items-center gap-2">
                   <h3 className="truncate text-base font-bold text-gray-900 dark:text-white">
-                    @{log.username}
+                    {isWorkingTool ? log.username : `@${log.username}`}
                   </h3>
-                  {log.verified && (
+                  {log.verified && !isWorkingTool && (
                     <BadgeCheck size={16} className="flex-shrink-0 text-blue-400" />
                   )}
-                  {log.ogEmail && (
+                  {log.ogEmail && !isWorkingTool && (
                     <span className="flex-shrink-0 rounded-md bg-purple-500/10 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-purple-400">
                       OG
                     </span>
@@ -241,6 +255,12 @@ export default function SocialLogsTable({
                     <Globe size={11} />
                     {log.platform}
                   </span>
+                  {log.toolLink && (
+                    <span className="inline-flex items-center gap-1 text-blue-400">
+                      <LinkIcon size={11} />
+                      {log.toolLink}
+                    </span>
+                  )}
                   {log.country && (
                     <span className="inline-flex items-center gap-1">
                       <MapPin size={11} />
@@ -265,7 +285,7 @@ export default function SocialLogsTable({
                       {formatFollowersTier(log.followers)}
                     </span>
                   )}
-                  {log.age > 0 && (
+                  {log.age > 0 && !isWorkingTool && (
                     <span className="inline-flex items-center gap-1">
                       <Calendar size={11} />
                       {log.age}y
@@ -336,6 +356,9 @@ export default function SocialLogsTable({
                     <div className="grid grid-cols-2 gap-3">
                       <DetailItem icon={<Layers size={14} />} label="Category" value={categoryLabel} />
                       <DetailItem icon={<Globe size={14} />} label="Platform" value={log.platform} />
+                      {log.toolLink && (
+                        <DetailItem icon={<LinkIcon size={14} />} label="Tool Link" value={log.toolLink} />
+                      )}
                       {log.country && (
                         <DetailItem icon={<MapPin size={14} />} label="Country" value={log.country} />
                       )}
@@ -375,14 +398,16 @@ export default function SocialLogsTable({
                       />
                     </div>
 
-                    {/* Feature Badges */}
-                    <div className="flex flex-wrap gap-2 pt-2">
-                      <FeatureBadge active={log.emailAttached} label="Email Attached" icon={<Mail size={12} />} />
-                      <FeatureBadge active={log.phoneAttached} label="Phone Attached" icon={<Phone size={12} />} />
-                      <FeatureBadge active={log.twoFactor} label="2FA Enabled" icon={<Shield size={12} />} />
-                      <FeatureBadge active={log.verified} label="Verified" icon={<BadgeCheck size={12} />} />
-                      <FeatureBadge active={log.ogEmail} label="OG Email" icon={<Lock size={12} />} />
-                    </div>
+                    {/* Feature Badges - Only show for non-working-tool logs */}
+                    {!isWorkingTool && (
+                      <div className="flex flex-wrap gap-2 pt-2">
+                        <FeatureBadge active={log.emailAttached} label="Email Attached" icon={<Mail size={12} />} />
+                        <FeatureBadge active={log.phoneAttached} label="Phone Attached" icon={<Phone size={12} />} />
+                        <FeatureBadge active={log.twoFactor} label="2FA Enabled" icon={<Shield size={12} />} />
+                        <FeatureBadge active={log.verified} label="Verified" icon={<BadgeCheck size={12} />} />
+                        <FeatureBadge active={log.ogEmail} label="OG Email" icon={<Lock size={12} />} />
+                      </div>
+                    )}
                   </div>
 
                   {/* Description & Notes Column */}
@@ -391,7 +416,7 @@ export default function SocialLogsTable({
                       <div>
                         <h4 className="mb-2 flex items-center gap-2 text-sm font-bold uppercase tracking-wider text-gray-500 dark:text-zinc-400">
                           <Tag size={14} />
-                          Marketplace Description
+                          {isWorkingTool ? "Tool Description" : "Marketplace Description"}
                         </h4>
                         <p className="rounded-2xl border border-gray-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-4 text-sm leading-relaxed text-gray-700 dark:text-zinc-300">
                           {log.description}
@@ -399,22 +424,24 @@ export default function SocialLogsTable({
                       </div>
                     )}
 
-                    {/* Hidden Credentials Notice */}
-                    <div className="rounded-2xl border border-orange-500/20 bg-orange-500/5 p-4">
-                      <div className="flex items-start gap-3">
-                        <Lock size={18} className="mt-0.5 flex-shrink-0 text-orange-400" />
-                        <div>
-                          <p className="text-sm font-semibold text-orange-300">
-                            Login Credentials Hidden
-                          </p>
-                          <p className="mt-1 text-xs leading-relaxed text-gray-500 dark:text-zinc-400">
-                            Login email, password, 2FA secrets, recovery info, backup codes, 
-                            and cookies are hidden from this view. They are only revealed to 
-                            the buyer after successful purchase.
-                          </p>
+                    {/* Hidden Credentials Notice - Only show for non-working-tool logs */}
+                    {!isWorkingTool && (
+                      <div className="rounded-2xl border border-orange-500/20 bg-orange-500/5 p-4">
+                        <div className="flex items-start gap-3">
+                          <Lock size={18} className="mt-0.5 flex-shrink-0 text-orange-400" />
+                          <div>
+                            <p className="text-sm font-semibold text-orange-300">
+                              Login Credentials Hidden
+                            </p>
+                            <p className="mt-1 text-xs leading-relaxed text-gray-500 dark:text-zinc-400">
+                              Login email, password, 2FA secrets, recovery info, backup codes, 
+                              and cookies are hidden from this view. They are only revealed to 
+                              the buyer after successful purchase.
+                            </p>
+                          </div>
                         </div>
                       </div>
-                    </div>
+                    )}
                   </div>
                 </div>
 

@@ -121,6 +121,8 @@ model SocialLog {
   vpnType         VpnType?
   tutorialType    TutorialType?
   websiteType     WebsiteType?
+  workingToolType WorkingToolType?
+  toolLink        String?
   buyer           User?              @relation("PurchasedSocialLogs", fields: [buyerId], references: [id])
 
   @@index([buyerId])
@@ -131,6 +133,7 @@ model SocialLog {
   @@index([instagramSubType])
   @@index([tutorialType])
   @@index([websiteType])
+  @@index([workingToolType])
 }
 
 model Order {
@@ -300,6 +303,7 @@ enum SocialPlatform {
   TEXTPLUS
   NEXTPLUS
   MAIL
+  TOOL
 }
 
 enum SocialLogCategory {
@@ -315,6 +319,7 @@ enum SocialLogCategory {
   TUTORIAL
   WEBSITE_CREATION
   MAIL
+  ALL_WORKING_TOOLS
 }
 
 enum SocialLogPageType {
@@ -350,6 +355,12 @@ enum WebsiteType {
   SMS_WEBSITE
   BOTH_WEBSITE
   BOOSTING_WEBSITE
+}
+
+enum WorkingToolType {
+  TOOL_1
+  TOOL_2
+  TOOL_3
 }
 
 enum SocialLogStatus {
