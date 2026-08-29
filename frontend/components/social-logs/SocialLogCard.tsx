@@ -157,6 +157,10 @@ const STATIC_LISTING_TYPES: StaticListingType[] = [
   { category: "WEBSITE_CREATION", websiteType: "SMS_WEBSITE" },
   { category: "WEBSITE_CREATION", websiteType: "BOTH_WEBSITE" },
   { category: "WEBSITE_CREATION", websiteType: "BOOSTING_WEBSITE" },
+    // 11. mails
+    { category: "MAIL", platform: "GMAIL" },
+  { category: "MAIL", platform: "OUTLOOK" },
+  { category: "MAIL", platform: "MAIL" },
 ];
 /*
 =====================================
@@ -385,7 +389,7 @@ export default function SocialLogCard({ group, onView, searchQuery }: Props) {
     • TEXTPLUS_NEXTPLUS → app name (TextPlus / NextPlus)
   The badge on the cover always keeps the generic category label.
   */
-  const heading = (() => {
+    const heading = (() => {
     if (group.category === "VPN" && group.vpnType) {
       return VPN_HEADING_LABELS[group.vpnType] ?? categoryLabel;
     }
@@ -396,6 +400,11 @@ export default function SocialLogCard({ group, onView, searchQuery }: Props) {
     if (group.category === "TEXTPLUS_NEXTPLUS") {
       if (group.platform === "TEXTPLUS") return "TextPlus";
       if (group.platform === "NEXTPLUS") return "NextPlus";
+    }
+    if (group.category === "MAIL") {
+      if (group.platform === "GMAIL") return "Gmail Account";
+      if (group.platform === "OUTLOOK") return "Outlook Account";
+      return "Mail Account";
     }
     return categoryLabel;
   })();

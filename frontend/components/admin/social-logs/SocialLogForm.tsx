@@ -259,7 +259,27 @@ export default function SocialLogForm({
     }));
     setErrors((prev) => ({ ...prev, category: undefined }));
   }
-
+function updatePlatform(platform: SocialPlatform) {
+  setValues((prev) => {
+    const updates: Partial<FormValues> = { platform };
+    
+    // Auto-set category to MAIL for GMAIL/OUTLOOK/MAIL platforms
+    if (platform === "GMAIL" || platform === "OUTLOOK" || platform === "MAIL") {
+      updates.category = "MAIL";
+      // Clear other conditional fields
+      updates.country = "";
+      updates.followers = "";
+      updates.pageType = "";
+      updates.instagramSubType = "";
+      updates.vpnType = "";
+      updates.tutorialType = "";
+      updates.websiteType = "";
+    }
+    
+    return { ...prev, ...updates };
+  });
+  setErrors((prev) => ({ ...prev, platform: undefined, category: undefined }));
+}
   function validate(): boolean {
     const next: Partial<Record<keyof FormValues, string>> = {};
 
@@ -407,21 +427,20 @@ export default function SocialLogForm({
               ))}
             </select>
           </Field>
-
-          <Field label="Platform" error={errors.platform}>
-            <select
-              value={values.platform}
-              onChange={(e) => update("platform", e.target.value as SocialPlatform)}
-              className={inputClass(!!errors.platform)}
-            >
-              <option value="">Select platform</option>
-              {PLATFORMS.map((p) => (
-                <option key={p} value={p}>
-                  {p.charAt(0) + p.slice(1).toLowerCase()}
-                </option>
-              ))}
-            </select>
-          </Field>
+<Field label="Platform" error={errors.platform}>
+  <select
+    value={values.platform}
+    onChange={(e) => updatePlatform(e.target.value as SocialPlatform)}
+    className={inputClass(!!errors.platform)}
+  >
+    <option value="">Select platform</option>
+    {PLATFORMS.map((p) => (
+      <option key={p} value={p}>
+        {p.charAt(0) + p.slice(1).toLowerCase()}
+      </option>
+    ))}
+  </select>
+</Field>
 
           <Field label="Username" error={errors.username}>
             <input
