@@ -300,7 +300,33 @@ export default function AddSocialLogModal({ open, onClose, onCreated }: AddSocia
           workingToolType: sub.workingToolType,
           toolLink: isWorkingTool ? wizard.details.toolLink : undefined,
           age: isWorkingTool ? 0 : (wizard.age ?? 0),
-          ...wizard.details,
+          username: wizard.details.username,
+          price: wizard.details.price,
+          description: wizard.details.description,
+          emailAttached: wizard.details.emailAttached,
+          phoneAttached: wizard.details.phoneAttached,
+          twoFactor: wizard.details.twoFactor,
+          ogEmail: wizard.details.ogEmail,
+          verified: wizard.details.verified,
+          loginUsername: wizard.details.loginUsername,
+          loginEmail: wizard.details.loginEmail,
+          emailPassword: wizard.details.emailPassword,
+          accountPassword: wizard.details.accountPassword,
+          twoFactorSecret: wizard.details.twoFactorSecret,
+          recoveryEmail: wizard.details.recoveryEmail,
+          backupCodes: wizard.details.backupCodes
+            ? wizard.details.backupCodes.split(",").map((c: string) => c.trim()).filter(Boolean)
+            : undefined,
+          cookies: wizard.details.cookies
+            ? (() => {
+                try {
+                  return JSON.parse(wizard.details.cookies);
+                } catch {
+                  return undefined;
+                }
+              })()
+            : undefined,
+          notes: wizard.details.notes,
         } as CreateSocialLogDto;
 
         await createSocialLog(payload);
@@ -316,7 +342,7 @@ export default function AddSocialLogModal({ open, onClose, onCreated }: AddSocia
       setSubmitting(false);
     }
   }
-
+  
   function setDetail(key: string, value: any) {
     setWizard((s) => ({ ...s, details: { ...s.details, [key]: value } }));
   }
