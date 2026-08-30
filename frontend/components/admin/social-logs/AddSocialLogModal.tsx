@@ -26,11 +26,9 @@ const TWITTER_FOLLOWER_TIERS: { value: number; label: string }[] = [
   { value: 100, label: "100+" },
   { value: 200, label: "200+" },
   { value: 500, label: "500+" },
-  // { value: 1000, label: "1K+" }, // REMOVED
 ];
 
 const TIKTOK_FOLLOWER_TIERS: { value: number; label: string }[] = [
-  // { value: 100, label: "100+" }, // REMOVED
   { value: 200, label: "200+" },
   { value: 500, label: "500+" },
   { value: 1000, label: "1K+" },
@@ -94,7 +92,6 @@ export default function AddSocialLogModal({ open, onClose, onCreated }: AddSocia
   const submissions: Submission[] = useMemo(() => {
     if (!group) return [];
 
-    // FACEBOOK — page types + multi-country
     if (group.value === "FACEBOOK") {
       const subs: Submission[] = wizard.selectedPageTypes.map((pt) => ({
         platform: "FACEBOOK",
@@ -106,7 +103,6 @@ export default function AddSocialLogModal({ open, onClose, onCreated }: AddSocia
       return subs;
     }
 
-    // TIKTOK — follower tier + multi-country
     if (group.value === "TIKTOK") {
       const subs: Submission[] = [];
       if (wizard.includeFollowerTier) {
@@ -129,7 +125,6 @@ export default function AddSocialLogModal({ open, onClose, onCreated }: AddSocia
       return subs;
     }
 
-    // INSTAGRAM — sub-types (each maps to a followers value)
     if (group.value === "INSTAGRAM" && group.instagramSubTypes) {
       return wizard.selectedSubTypes.map((st) => {
         const cfg = group.instagramSubTypes?.find((x) => x.value === st);
@@ -143,7 +138,6 @@ export default function AddSocialLogModal({ open, onClose, onCreated }: AddSocia
       });
     }
 
-    // VPN — provider / duration variants
     if (group.value === "VPN" && group.vpnTypes) {
       return wizard.selectedSubTypes.map((st) => {
         const cfg = group.vpnTypes?.find((x) => x.value === st);
@@ -156,7 +150,6 @@ export default function AddSocialLogModal({ open, onClose, onCreated }: AddSocia
       });
     }
 
-    // TUTORIAL — ad-platform tutorial variants
     if (group.value === "TUTORIAL" && group.tutorialTypes) {
       return wizard.selectedSubTypes.map((st) => {
         const cfg = group.tutorialTypes?.find((x) => x.value === st);
@@ -175,7 +168,6 @@ export default function AddSocialLogModal({ open, onClose, onCreated }: AddSocia
       });
     }
 
-    // WEBSITE — website build service variants
     if (group.value === "WEBSITE" && group.websiteTypes) {
       return wizard.selectedSubTypes.map((st) => {
         const cfg = group.websiteTypes?.find((x) => x.value === st);
@@ -188,7 +180,6 @@ export default function AddSocialLogModal({ open, onClose, onCreated }: AddSocia
       });
     }
 
-    // WORKING_TOOLS — 3 tool boxes
     if (group.value === "WORKING_TOOLS" && group.workingToolTypes) {
       return wizard.selectedSubTypes.map((st) => {
         const cfg = group.workingToolTypes?.find((x) => x.value === st);
@@ -201,7 +192,6 @@ export default function AddSocialLogModal({ open, onClose, onCreated }: AddSocia
       });
     }
 
-    // TEXTING_APP / MAIL — platform choice
     if (needsPlatformChoice) {
       return wizard.selectedPlatforms.map((p) => ({
         platform: p,
@@ -210,7 +200,6 @@ export default function AddSocialLogModal({ open, onClose, onCreated }: AddSocia
       }));
     }
 
-    // Default fallback — TWITTER, TELEGRAM, etc.
     const fallbackFollowers =
       group.hasFollowers && wizard.followers !== undefined ? wizard.followers : undefined;
     return [
@@ -392,7 +381,6 @@ export default function AddSocialLogModal({ open, onClose, onCreated }: AddSocia
 
           {step === 2 && group && (
             <div className="space-y-5">
-              {/* Facebook page types */}
               {group.value === "FACEBOOK" && group.pageTypes && (
                 <div>
                   <p className="mb-2 text-sm font-medium text-gray-700 dark:text-zinc-300">Page Types — select any that apply</p>
@@ -424,7 +412,6 @@ export default function AddSocialLogModal({ open, onClose, onCreated }: AddSocia
                 </div>
               )}
 
-              {/* TikTok */}
               {group.value === "TIKTOK" && (
                 <>
                   <label className="flex items-center gap-2 text-sm text-gray-700 dark:text-zinc-300">
@@ -469,7 +456,6 @@ export default function AddSocialLogModal({ open, onClose, onCreated }: AddSocia
                 </>
               )}
 
-              {/* Instagram, VPN, Tutorial, Website, Working Tools sub-types */}
               {needsSubTypeChoice && (group.instagramSubTypes || group.vpnTypes || group.tutorialTypes || group.websiteTypes || group.workingToolTypes) && (
                 <div>
                   <p className="mb-2 text-sm font-medium text-gray-700 dark:text-zinc-300">
@@ -503,7 +489,6 @@ export default function AddSocialLogModal({ open, onClose, onCreated }: AddSocia
                 </div>
               )}
 
-              {/* Platform choice for Texting App / Mail */}
               {needsPlatformChoice && (
                 <div>
                   <p className="mb-2 text-sm font-medium text-gray-700 dark:text-zinc-300">Select any that apply</p>
@@ -567,7 +552,6 @@ export default function AddSocialLogModal({ open, onClose, onCreated }: AddSocia
             </div>
           )}
 
-          {/* Step 3 - Audience (skip for working tools) */}
           {step === 3 && group && !isWorkingTool && (
             <div className="space-y-4">
               {showFollowers && (
@@ -639,7 +623,6 @@ export default function AddSocialLogModal({ open, onClose, onCreated }: AddSocia
             </div>
           )}
 
-          {/* Step 4 - Details */}
           {step === 4 && group && (
             <div className="space-y-4">
               <div className="rounded-xl border border-gray-200 dark:border-zinc-800 bg-gray-100/50 dark:bg-zinc-800/50 p-4">
@@ -651,6 +634,11 @@ export default function AddSocialLogModal({ open, onClose, onCreated }: AddSocia
                     <li key={i}>• {s.label}</li>
                   ))}
                 </ul>
+                {submissions.length > 1 && (
+                  <p className="mt-2 text-xs text-gray-400 dark:text-zinc-500">
+                    The fields below apply to all of them — username/price/credentials are shared.
+                  </p>
+                )}
               </div>
 
               <div>
@@ -686,7 +674,6 @@ export default function AddSocialLogModal({ open, onClose, onCreated }: AddSocia
                 />
               </div>
 
-              {/* Only show flags for non-working tools */}
               {!isWorkingTool && (
                 <div className="grid grid-cols-2 gap-3">
                   {["emailAttached", "phoneAttached", "twoFactor", "ogEmail", "verified"].map((flag) => (
@@ -712,7 +699,6 @@ export default function AddSocialLogModal({ open, onClose, onCreated }: AddSocia
                 />
               </div>
 
-              {/* Only show private details for non-working tools */}
               {!isWorkingTool && (
                 <>
                   <p className="pt-2 text-xs font-semibold uppercase tracking-wide text-gray-400 dark:text-zinc-500">
@@ -729,6 +715,7 @@ export default function AddSocialLogModal({ open, onClose, onCreated }: AddSocia
                         className="w-full rounded-xl border border-gray-300 dark:border-zinc-700 bg-gray-100 dark:bg-zinc-800 px-4 py-3 text-gray-900 dark:text-white"
                       />
                     </div>
+
                     <div>
                       <label className="mb-2 block text-sm font-medium text-gray-700 dark:text-zinc-300">Login Email</label>
                       <input
@@ -737,6 +724,7 @@ export default function AddSocialLogModal({ open, onClose, onCreated }: AddSocia
                         className="w-full rounded-xl border border-gray-300 dark:border-zinc-700 bg-gray-100 dark:bg-zinc-800 px-4 py-3 text-gray-900 dark:text-white"
                       />
                     </div>
+
                     <div>
                       <label className="mb-2 block text-sm font-medium text-gray-700 dark:text-zinc-300">Email Password</label>
                       <input
@@ -746,6 +734,7 @@ export default function AddSocialLogModal({ open, onClose, onCreated }: AddSocia
                         className="w-full rounded-xl border border-gray-300 dark:border-zinc-700 bg-gray-100 dark:bg-zinc-800 px-4 py-3 text-gray-900 dark:text-white"
                       />
                     </div>
+
                     <div>
                       <label className="mb-2 block text-sm font-medium text-gray-700 dark:text-zinc-300">Account Password</label>
                       <input
@@ -755,6 +744,65 @@ export default function AddSocialLogModal({ open, onClose, onCreated }: AddSocia
                         className="w-full rounded-xl border border-gray-300 dark:border-zinc-700 bg-gray-100 dark:bg-zinc-800 px-4 py-3 text-gray-900 dark:text-white"
                       />
                     </div>
+
+                    <div>
+                      <label className="mb-2 block text-sm font-medium text-gray-700 dark:text-zinc-300">2FA Secret</label>
+                      <input
+                        value={wizard.details.twoFactorSecret ?? ""}
+                        onChange={(e) => setDetail("twoFactorSecret", e.target.value)}
+                        className="w-full rounded-xl border border-gray-300 dark:border-zinc-700 bg-gray-100 dark:bg-zinc-800 px-4 py-3 text-gray-900 dark:text-white"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="mb-2 block text-sm font-medium text-gray-700 dark:text-zinc-300">Recovery Email</label>
+                      <input
+                        value={wizard.details.recoveryEmail ?? ""}
+                        onChange={(e) => setDetail("recoveryEmail", e.target.value)}
+                        className="w-full rounded-xl border border-gray-300 dark:border-zinc-700 bg-gray-100 dark:bg-zinc-800 px-4 py-3 text-gray-900 dark:text-white"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="mb-2 block text-sm font-medium text-gray-700 dark:text-zinc-300">Backup Codes (comma separated)</label>
+                      <input
+                        value={wizard.details.backupCodes ?? ""}
+                        onChange={(e) => setDetail("backupCodes", e.target.value)}
+                        placeholder="code1, code2, code3"
+                        className="w-full rounded-xl border border-gray-300 dark:border-zinc-700 bg-gray-100 dark:bg-zinc-800 px-4 py-3 text-gray-900 dark:text-white"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="mb-2 block text-sm font-medium text-gray-700 dark:text-zinc-300">Login Phone</label>
+                      <input
+                        value={wizard.details.loginPhone ?? ""}
+                        onChange={(e) => setDetail("loginPhone", e.target.value)}
+                        placeholder="+234..."
+                        className="w-full rounded-xl border border-gray-300 dark:border-zinc-700 bg-gray-100 dark:bg-zinc-800 px-4 py-3 text-gray-900 dark:text-white"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="mb-2 block text-sm font-medium text-gray-700 dark:text-zinc-300">Cookies (optional, valid JSON)</label>
+                    <textarea
+                      value={wizard.details.cookies ?? ""}
+                      onChange={(e) => setDetail("cookies", e.target.value)}
+                      rows={2}
+                      placeholder='{"sessionid": "..."}'
+                      className="w-full rounded-xl border border-gray-300 dark:border-zinc-700 bg-gray-100 dark:bg-zinc-800 px-4 py-3 text-gray-900 dark:text-white font-mono text-xs"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="mb-2 block text-sm font-medium text-gray-700 dark:text-zinc-300">Notes</label>
+                    <textarea
+                      value={wizard.details.notes ?? ""}
+                      onChange={(e) => setDetail("notes", e.target.value)}
+                      rows={2}
+                      className="w-full rounded-xl border border-gray-300 dark:border-zinc-700 bg-gray-100 dark:bg-zinc-800 px-4 py-3 text-gray-900 dark:text-white"
+                    />
                   </div>
                 </>
               )}
