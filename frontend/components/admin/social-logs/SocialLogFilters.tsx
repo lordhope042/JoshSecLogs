@@ -33,6 +33,7 @@ const platforms: SocialPlatform[] = [
   "NEXTPLUS",
   "MAIL",
   "TOOL",
+  "ICLOUD",
 ];
 
 const categories: { value: SocialLogCategoryValue; label: string }[] = [
@@ -49,6 +50,7 @@ const categories: { value: SocialLogCategoryValue; label: string }[] = [
   { value: "WEBSITE_CREATION", label: "Website Creation" },
   { value: "MAIL", label: "Mail" },
   { value: "ALL_WORKING_TOOLS", label: "All Working Tools" },
+  { value: "ICLOUD", label: "iCloud — USA" },
 ];
 
 const statuses: SocialLogStatus[] = [

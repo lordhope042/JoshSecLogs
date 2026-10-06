@@ -1,17 +1,7 @@
+import BrandLoader from "@/components/brand/BrandLoader";
+
+// Inside the dashboard the sidebar and topbar stay on screen, so the
+// loader only fills the content area instead of covering everything.
 export default function DashboardLoading() {
-  return (
-    <div className="flex min-h-screen items-center justify-center bg-white dark:bg-[#050B18]">
-      <div className="flex flex-col items-center gap-5">
-        <div className="h-14 w-14 animate-spin rounded-full border-4 border-orange-500 border-t-transparent" />
-
-        <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
-          Loading Dashboard...
-        </h2>
-
-        <p className="text-sm text-gray-500 dark:text-zinc-400">
-          Please wait while we prepare your workspace.
-        </p>
-      </div>
-    </div>
-  );
+  return <BrandLoader fullscreen={false} label="Loading dashboard" />;
 }

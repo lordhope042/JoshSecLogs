@@ -1,14 +1,27 @@
 "use client";
 
-import { Wallet as WalletIcon, RefreshCw, Plus, Loader2 } from "lucide-react";
+import { useState } from "react";
+import {
+  Eye,
+  EyeOff,
+  Plus,
+  RefreshCw,
+  Wallet as WalletIcon,
+} from "lucide-react";
 
 import type { Wallet } from "@/hooks/useWallet";
 
-function formatCurrency(amount: number, currency = "₦") {
-  return `${currency}${Number(amount || 0).toLocaleString("en-NG", {
+function formatAmount(amount: number) {
+  return Number(amount || 0).toLocaleString("en-NG", {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
-  })}`;
+  });
+}
+
+// "NGN" / empty -> ₦, a single symbol is used as-is, anything else gets a space.
+function resolveSymbol(currency?: string | null) {
+  if (!currency || currency.toUpperCase() === "NGN") return "₦";
+  return currency.length <= 1 ? currency : `${currency} `;
 }
 
 interface WalletBalanceProps {
@@ -26,56 +39,96 @@ export default function WalletBalance({
   onRefresh,
   onDeposit,
 }: WalletBalanceProps) {
+  const [hidden, setHidden] = useState(false);
+
   const balance = wallet?.balance ?? 0;
-  const currency = wallet?.currency || "₦";
+  const symbol = resolveSymbol(wallet?.currency);
 
   return (
-    <div className="relative overflow-hidden rounded-2xl border border-zinc-200/60 bg-white p-6 shadow-sm dark:border-white/10 dark:bg-[#0B1322] dark:shadow-none">
-      <div className="flex flex-col gap-6 sm:flex-row sm:items-center sm:justify-between">
-        <div className="flex items-center gap-4">
-          <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-emerald-500/10 text-emerald-500 dark:bg-emerald-400/10 dark:text-emerald-400">
-            <WalletIcon size={24} />
+    <section
+      aria-label="Wallet balance"
+      className="relative overflow-hidden rounded-2xl border border-slate-800 bg-gradient-to-br from-[#0e2038] via-[#0a1725] to-[#071321] p-6 text-white shadow-[0_18px_45px_rgba(7,19,33,0.28)] sm:p-7"
+    >
+      {/* Decorative rings, same motif as the landing hero */}
+      <div
+        aria-hidden
+        className="pointer-events-none absolute -right-24 -top-24 h-72 w-72 rounded-full border border-orange-500/20"
+      />
+      <div
+        aria-hidden
+        className="pointer-events-none absolute -right-10 -top-10 h-44 w-44 rounded-full border border-orange-500/15"
+      />
+      <div
+        aria-hidden
+        className="pointer-events-none absolute -bottom-20 -left-16 h-52 w-52 rounded-full bg-orange-500/10 blur-3xl"
+      />
+
+      <div className="relative">
+        <div className="flex items-center justify-between gap-3">
+          <div className="flex items-center gap-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-orange-500/15 text-orange-400">
+              <WalletIcon size={20} />
+            </div>
+
+            <p className="text-sm font-medium text-slate-300">
+              Available balance
+            </p>
           </div>
 
-          <div>
-            <p className="text-sm font-medium text-zinc-500 dark:text-zinc-400">
-              Wallet Balance
-            </p>
+          <div className="flex items-center gap-1.5">
+            <button
+              type="button"
+              onClick={() => setHidden((value) => !value)}
+              aria-label={hidden ? "Show balance" : "Hide balance"}
+              aria-pressed={hidden}
+              className="flex h-9 w-9 items-center justify-center rounded-lg text-slate-400 transition hover:bg-white/10 hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-orange-400"
+            >
+              {hidden ? <EyeOff size={17} /> : <Eye size={17} />}
+            </button>
 
-            {loading ? (
-              <div className="mt-1 flex items-center gap-2">
-                <Loader2 size={20} className="animate-spin text-zinc-400" />
-                <span className="text-sm text-zinc-400">Loading…</span>
-              </div>
-            ) : (
-              <p className="text-3xl font-bold text-zinc-900 dark:text-white">
-                {formatCurrency(balance, currency)}
-              </p>
-            )}
+            <button
+              type="button"
+              onClick={onRefresh}
+              disabled={refreshing || loading}
+              aria-label="Refresh balance"
+              className="flex h-9 w-9 items-center justify-center rounded-lg text-slate-400 transition hover:bg-white/10 hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-orange-400 disabled:opacity-50"
+            >
+              <RefreshCw
+                size={17}
+                className={refreshing ? "animate-spin" : ""}
+              />
+            </button>
           </div>
         </div>
 
-        <div className="flex items-center gap-3">
-          <button
-            type="button"
-            onClick={onRefresh}
-            disabled={refreshing || loading}
-            className="inline-flex items-center gap-2 rounded-lg border border-zinc-200 px-3 py-2 text-sm font-medium text-zinc-700 transition hover:bg-zinc-50 disabled:opacity-50 dark:border-white/10 dark:text-zinc-200 dark:hover:bg-white/5"
-          >
-            <RefreshCw size={16} className={refreshing ? "animate-spin" : ""} />
-            Refresh
-          </button>
+        <div className="mt-6 min-h-[56px]" aria-live="polite" aria-busy={loading}>
+          {loading ? (
+            <div className="h-12 w-56 animate-pulse rounded-lg bg-white/10" />
+          ) : (
+            <p className="flex items-baseline gap-1 text-[40px] font-black leading-none tracking-tight tabular-nums sm:text-5xl">
+              <span className="text-2xl font-bold text-orange-400 sm:text-3xl">
+                {symbol.trim()}
+              </span>
+              <span>{hidden ? "••••••" : formatAmount(balance)}</span>
+            </p>
+          )}
+        </div>
 
+        <div className="mt-7 flex flex-col gap-3 sm:flex-row sm:items-center">
           <button
             type="button"
             onClick={onDeposit}
-            className="inline-flex items-center gap-2 rounded-lg bg-emerald-500 px-4 py-2 text-sm font-semibold text-white transition hover:bg-emerald-600"
+            className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-orange-500 px-6 text-sm font-bold text-white shadow-[0_10px_25px_rgba(249,115,22,0.3)] transition hover:bg-orange-600 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-orange-300"
           >
-            <Plus size={16} />
-            Deposit
+            <Plus size={17} />
+            Deposit funds
           </button>
+
+          <p className="text-xs leading-5 text-slate-400">
+            Transfers to your deposit account reach your wallet automatically.
+          </p>
         </div>
       </div>
-    </div>
+    </section>
   );
 }

@@ -135,11 +135,14 @@ const STATIC_LISTING_TYPES: StaticListingType[] = [
   { category: "MAIL", platform: "GMAIL" },
   { category: "MAIL", platform: "OUTLOOK" },
   { category: "MAIL", platform: "MAIL" },
-
+  // 13. ICLOUD — USA iCloud logs
+  { category: "ICLOUD", country: "USA" },
   // 12. ALL_WORKING_TOOLS — 3 generic tool boxes
   { category: "ALL_WORKING_TOOLS", workingToolType: "TOOL_1" },
   { category: "ALL_WORKING_TOOLS", workingToolType: "TOOL_2" },
   { category: "ALL_WORKING_TOOLS", workingToolType: "TOOL_3" },
+
+
 ];
 
 const FOLLOWER_TIER_FLOORS: Partial<Record<SocialLogCategoryValue, number>> = {
@@ -236,6 +239,7 @@ export const CATEGORY_LABELS: Record<string, string> = {
   WEBSITE_CREATION: "Website Creation",
   MAIL: "Mail",
   ALL_WORKING_TOOLS: "All Working Tools",
+  ICLOUD: "iCloud",
 };
 
 export const PAGE_TYPE_LABELS: Record<string, string> = {
@@ -357,6 +361,9 @@ export default function SocialLogCard({ group, onView, searchQuery }: Props) {
     if (group.category === "ALL_WORKING_TOOLS") {
       // Use the username/label from the representative log if available
       return representative?.username || "Working Tool";
+    }
+    if (group.category === "ICLOUD") {
+      return "USA iCloud";
     }
     return categoryLabel;
   })();

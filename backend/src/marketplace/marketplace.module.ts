@@ -6,6 +6,7 @@ import { MarketplaceService } from './marketplace.service';
 
 import { FiveSimModule } from '../providers/fivesim/fivesim.module';
 import { GrizzySmsModule } from '../providers/grizzysms/grizzysms.module';
+import { SmsBowerModule } from '../providers/smsbower/smsbower.module';
 import { WalletModule } from '../wallet/wallet.module';
 import { PrismaModule } from '../prisma/prisma.module';
 
@@ -15,6 +16,7 @@ import { PrismaModule } from '../prisma/prisma.module';
     PrismaModule,
     FiveSimModule,
     GrizzySmsModule,
+    SmsBowerModule,
     WalletModule,
   ],
 

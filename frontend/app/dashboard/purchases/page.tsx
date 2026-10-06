@@ -72,6 +72,19 @@ function buildCredentialRows(log: PurchasedSocialLog): CredentialRow[] {
     rows.push({ label: "Tool Link", value: log.toolLink });
   }
 
+  // iCloud — matches the log format: MAIL / PASSWORD / DOB / NUMBER / SMS site
+  if (log.dateOfBirth) {
+    rows.push({ label: "Date of Birth", value: log.dateOfBirth });
+  }
+
+  if (log.smsNumber) {
+    rows.push({ label: "Number", value: log.smsNumber });
+  }
+
+  if (log.smsLink) {
+    rows.push({ label: "SMS Site", value: log.smsLink });
+  }
+
   return rows;
 }
 

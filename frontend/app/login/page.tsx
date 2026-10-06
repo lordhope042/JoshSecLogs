@@ -11,7 +11,7 @@ export default function LoginPage() {
   return (
     <AuthLayout
       title="Welcome Back"
-      subtitle="Login to access your dashboard."
+      subtitle="Sign in to your JoshSecLogs account"
     >
       <Suspense fallback={null}>
         <LoginForm />

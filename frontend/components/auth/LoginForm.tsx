@@ -3,68 +3,57 @@
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useState } from "react";
-
 import {
   Eye,
   EyeOff,
-  Mail,
+  UserRound,
   Lock,
   LoaderCircle,
-  ShieldCheck,
 } from "lucide-react";
-
 import { Button } from "@/components/ui/button";
-
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-
 import {
   loginSchema,
   LoginData,
 } from "@/lib/validations/login";
-
 import api from "@/lib/axios";
-
 import { toast } from "sonner";
-
 import { markJustLoggedIn } from "@/hooks/useWelcomeNotification";
 
 export default function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
-
-  const [showPassword, setShowPassword] =
-    useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
   const {
     register,
     handleSubmit,
-    formState: {
-      errors,
-      isSubmitting,
-    },
+    formState: { errors, isSubmitting },
   } = useForm<LoginData>({
     resolver: zodResolver(loginSchema),
   });
 
   async function onSubmit(data: LoginData) {
     try {
-      const res = await api.post(
-        "/auth/login",
-        data,
-      );
+      const res = await api.post("/auth/login", {
+        identifier: data.identifier,
+        password: data.password,
+      });
 
-      // NOTE: the shared axios instance's response interceptor already
-      // unwraps `response.data`, so `res` here IS the backend JSON body
-      // ({ message, accessToken, user, isFirstLogin }) — not a full
-      // Axios response.
       const {
         accessToken,
         user,
         isFirstLogin,
       } = res as unknown as {
         accessToken: string;
-        user: { name: string; role: string };
+        user: {
+          id?: string;
+          name: string;
+          username?: string;
+          email?: string;
+          role: string;
+        };
         isFirstLogin?: boolean;
       };
 
@@ -78,32 +67,24 @@ export default function LoginForm() {
         JSON.stringify(user),
       );
 
-      // Flag that the dashboard welcome/notification modal should fire
-      // once for this login session, and whether to show the "welcome"
-      // or "welcome back" variant. Cleared by the modal on dismiss.
       markJustLoggedIn(isFirstLogin);
 
       toast.success(
         `Welcome back ${user.name}!`,
       );
 
-      /*
-      =====================================
-          REDIRECT LOGIC
-      1. If a ?redirect= query param exists (e.g. from /shop),
-         send the user there after login.
-      2. Admins always go to /admin regardless.
-      3. Default: /dashboard
-      =====================================
-      */
-
       if (user.role === "ADMIN") {
         router.replace("/admin");
         return;
       }
 
-      const redirect = searchParams.get("redirect");
-      if (redirect && redirect.startsWith("/")) {
+      const redirect =
+        searchParams.get("redirect");
+
+      if (
+        redirect &&
+        redirect.startsWith("/")
+      ) {
         router.replace(redirect);
         return;
       }
@@ -112,245 +93,207 @@ export default function LoginForm() {
     } catch (err: any) {
       toast.error(
         err?.response?.data?.message ??
-          "Invalid email or password.",
+          "Invalid username/email or password.",
       );
     }
   }
 
   const input =
-    "w-full rounded-2xl border border-zinc-700 bg-[#111827]/80 py-3.5 pl-12 pr-4 text-white outline-none transition-all placeholder:text-zinc-500 focus:border-orange-500 focus:ring-4 focus:ring-orange-500/10";
+    "h-12 w-full rounded-[9px] border border-slate-200 bg-white pl-11 pr-11 text-[13px] text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-orange-500 focus:ring-4 focus:ring-orange-500/10 dark:border-slate-700 dark:bg-[#0a1725] dark:text-white dark:placeholder:text-slate-500";
 
   return (
-    <div className="overflow-hidden rounded-3xl border border-orange-500/20 bg-gray-50/90 dark:bg-[#0b1220]/90 p-8 shadow-[0_0_80px_rgba(255,120,0,.08)] backdrop-blur-xl">
+    <form
+      onSubmit={handleSubmit(onSubmit)}
+      className="space-y-5"
+    >
+      {/* Username / Email */}
+      <Field
+        label="Username or Email"
+        icon={
+          <UserRound className="h-[17px] w-[17px]" />
+        }
+        error={errors.identifier?.message}
+      >
+        <input
+          type="text"
+          placeholder="Enter your username or email"
+          autoComplete="username"
+          className={input}
+          {...register("identifier")}
+        />
+      </Field>
 
-      {/* Header */}
+      {/* Password */}
+      <Field
+        label="Password"
+        icon={
+          <Lock className="h-[17px] w-[17px]" />
+        }
+        error={errors.password?.message}
+      >
+        <input
+          type={
+            showPassword
+              ? "text"
+              : "password"
+          }
+          placeholder="Enter your password"
+          autoComplete="current-password"
+          className={input}
+          {...register("password")}
+        />
 
-      <div className="mb-8">
+        <button
+          type="button"
+          onClick={() =>
+            setShowPassword((v) => !v)
+          }
+          className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 transition hover:text-orange-500"
+          aria-label={
+            showPassword
+              ? "Hide password"
+              : "Show password"
+          }
+        >
+          {showPassword ? (
+            <EyeOff className="h-[17px] w-[17px]" />
+          ) : (
+            <Eye className="h-[17px] w-[17px]" />
+          )}
+        </button>
+      </Field>
 
-        <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-orange-500 to-orange-600">
-
-          <ShieldCheck className="h-8 w-8 text-gray-900 dark:text-white" />
-
-        </div>
-
-        <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
-          Welcome Back
-        </h1>
-
-        <p className="mt-3 text-sm leading-6 text-gray-500 dark:text-zinc-400">
-          Login to your JoshSecLogs account
-          to purchase Virtual Numbers,
-          Social Media Accounts,
-          Digital Logs and manage
-          your wallet securely.
-        </p>
-
+      {/* Forgot password */}
+      <div className="-mt-1 flex items-center justify-end">
+        <Link
+          href="/forgot-password"
+          className="text-[11px] font-semibold text-orange-500 hover:text-orange-600"
+        >
+          Forgot password?
+        </Link>
       </div>
 
-      <form
-        onSubmit={handleSubmit(onSubmit)}
-        className="space-y-6"
+      {/* Login button */}
+      <Button
+        disabled={isSubmitting}
+        type="submit"
+        className="h-12 w-full rounded-[9px] bg-orange-500 text-[13px] font-bold text-white shadow-[0_8px_22px_rgba(249,115,22,.2)] hover:bg-orange-600"
       >
+        {isSubmitting ? (
+          <>
+            <LoaderCircle className="mr-2 h-4 w-4 animate-spin" />
+            Signing In...
+          </>
+        ) : (
+          <>
+            Login
+            <span className="ml-2">→</span>
+          </>
+        )}
+      </Button>
 
-        {/* EMAIL */}
+      <Divider />
 
-        <div>
+      {/* Google */}
+      <Button
+        type="button"
+        variant="outline"
+        className="h-12 w-full rounded-[9px] border-slate-200 bg-white text-[13px] font-semibold text-slate-800 hover:bg-slate-50 dark:border-slate-700 dark:bg-[#0a1725] dark:text-white dark:hover:bg-slate-800"
+      >
+        <GoogleIcon />
+        Continue with Google
+      </Button>
 
-          <label className="mb-2 block text-sm font-medium text-gray-700 dark:text-zinc-300">
-            Email Address
-          </label>
-
-          <div className="relative">
-
-            <Mail
-              size={18}
-              className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 dark:text-zinc-500"
-            />
-
-            <input
-              type="email"
-              placeholder="example@email.com"
-              className={input}
-              {...register("email")}
-            />
-
-          </div>
-
-          {errors.email && (
-            <p className="mt-2 text-sm text-red-500">
-              {errors.email.message}
-            </p>
-          )}
-
-        </div>
-
-        {/* PASSWORD */}
-
-        <div>
-
-          <label className="mb-2 block text-sm font-medium text-gray-700 dark:text-zinc-300">
-            Password
-          </label>
-
-          <div className="relative">
-
-            <Lock
-              size={18}
-              className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 dark:text-zinc-500"
-            />
-
-            <input
-              type={
-                showPassword
-                  ? "text"
-                  : "password"
-              }
-              placeholder="Enter password"
-              className={`${input} pr-12`}
-              {...register("password")}
-            />
-
-            <button
-              type="button"
-              onClick={() =>
-                setShowPassword(
-                  !showPassword,
-                )
-              }
-              className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 dark:text-zinc-500 transition hover:text-orange-500"
-            >
-              {showPassword ? (
-                <EyeOff size={18} />
-              ) : (
-                <Eye size={18} />
-              )}
-            </button>
-
-          </div>
-
-          {errors.password && (
-            <p className="mt-2 text-sm text-red-500">
-              {errors.password.message}
-            </p>
-          )}
-
-        </div>
-
-        {/* REMEMBER */}
-
-        <div className="flex items-center justify-between">
-
-          <label className="flex items-center gap-2 text-sm text-gray-500 dark:text-zinc-400">
-
-            <input
-              type="checkbox"
-              className="accent-orange-500"
-            />
-
-            Remember me
-
-          </label>
-
-          <Link
-            href="/forgot-password"
-            className="text-sm font-medium text-orange-500 hover:text-orange-400"
-          >
-            Forgot Password?
-          </Link>
-
-        </div>
-
-        {/* LOGIN */}
-
-        <Button
-          disabled={isSubmitting}
-          type="submit"
-          className="h-14 w-full rounded-2xl bg-gradient-to-r from-orange-500 to-orange-600 text-base font-semibold transition hover:scale-[1.01] hover:from-orange-600 hover:to-orange-500"
+      {/* Register */}
+      <p className="pt-1 text-center text-[12px] text-slate-500 dark:text-slate-400">
+        Don&apos;t have an account?
+        <Link
+          href="/register"
+          className="ml-1.5 font-bold text-orange-500 hover:text-orange-600"
         >
-          {isSubmitting ? (
-            <>
-              <LoaderCircle className="mr-2 h-5 w-5 animate-spin" />
-              Signing In...
-            </>
-          ) : (
-            "Login"
-          )}
-        </Button>
+          Register
+        </Link>
+      </p>
+    </form>
+  );
+}
 
-        {/* DIVIDER */}
+function Field({
+  label,
+  icon,
+  error,
+  children,
+}: {
+  label: string;
+  icon: React.ReactNode;
+  error?: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <div>
+      <label className="mb-1.5 block text-[11px] font-semibold text-slate-600 dark:text-slate-300">
+        {label}
+      </label>
 
-        <div className="relative">
+      <div className="relative">
+        <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500">
+          {icon}
+        </span>
 
-          <div className="absolute inset-0 flex items-center">
+        {children}
+      </div>
 
-            <div className="w-full border-t border-gray-300 dark:border-zinc-700"></div>
-
-          </div>
-
-          <div className="relative flex justify-center">
-
-            <span className="bg-gray-50 dark:bg-[#0b1220] px-4 text-sm text-gray-400 dark:text-zinc-500">
-              OR CONTINUE WITH
-            </span>
-
-          </div>
-
-        </div>
-
-        {/* GOOGLE */}
-
-        <Button
-          type="button"
-          variant="outline"
-          className="h-14 w-full rounded-2xl border-gray-300 dark:border-zinc-700 bg-white dark:bg-[#111827] text-gray-900 dark:text-white transition hover:bg-[#192438]"
-        >
-
-          <svg
-            className="mr-3 h-5 w-5"
-            viewBox="0 0 24 24"
-          >
-            <path
-              fill="#EA4335"
-              d="M12 10.2v3.9h5.4c-.2 1.3-.9 2.4-2 3.2l3.2 2.5c1.9-1.8 3-4.4 3-7.6 0-.7-.1-1.4-.2-2H12z"
-            />
-
-            <path
-              fill="#34A853"
-              d="M12 22c2.7 0 5-.9 6.7-2.5l-3.2-2.5c-.9.6-2 .9-3.5.9-2.7 0-5-1.8-5.8-4.3H2.9v2.7A10 10 0 0012 22z"
-            />
-
-            <path
-              fill="#FBBC05"
-              d="M6.2 13.6A6 6 0 016 12c0-.6.1-1.1.2-1.6V7.7H2.9A10 10 0 002 12c0 1.6.4 3.2.9 4.3l3.3-2.7z"
-            />
-
-            <path
-              fill="#4285F4"
-              d="M12 6c1.5 0 2.9.5 4 1.6l3-3A10 10 0 0012 2 10 10 0 002.9 7.7l3.3 2.7C7 7.8 9.3 6 12 6z"
-            />
-          </svg>
-
-          Continue with Google
-
-        </Button>
-
-        {/* REGISTER y*/}
-
-        <div className="pt-2 text-center text-sm text-gray-500 dark:text-zinc-400">
-
-          Don't have an account?
-
-          <Link
-            href="/register"
-            className="ml-2 font-semibold text-orange-500 hover:text-orange-400"
-          >
-            Create Account
-          </Link>
-
-        </div>
-
-      </form>
-
+      {error && (
+        <p className="mt-1.5 text-[11px] text-red-500">
+          {error}
+        </p>
+      )}
     </div>
+  );
+}
+
+function Divider() {
+  return (
+    <div className="relative py-0.5">
+      <div className="absolute inset-0 flex items-center">
+        <div className="w-full border-t border-slate-200 dark:border-slate-800" />
+      </div>
+
+      <div className="relative flex justify-center">
+        <span className="bg-white px-3 text-[10px] uppercase tracking-wide text-slate-400 dark:bg-[#071321] dark:text-slate-500">
+          or continue with
+        </span>
+      </div>
+    </div>
+  );
+}
+
+function GoogleIcon() {
+  return (
+    <svg
+      className="mr-2.5 h-5 w-5"
+      viewBox="0 0 24 24"
+      aria-hidden="true"
+    >
+      <path
+        fill="#EA4335"
+        d="M12 10.2v3.9h5.4c-.2 1.3-.9 2.4-2 3.2l3.2 2.5c1.9-1.8 3-4.4 3-7.6 0-.7-.1-1.4-.2-2H12z"
+      />
+
+      <path
+        fill="#34A853"
+        d="M12 22c2.7 0 5-.9 6.7-2.5l-3.2-2.5c-.9.6-2 .9-3.5.9-2.7 0-5-1.8-5.8-4.3H2.9v2.7A10 10 0 0012 22z"
+      />
+
+      <path
+        fill="#FBBC05"
+        d="M6.2 13.6A6 6 0 016 12c0-.6.1-1.1.2-1.6V7.7H2.9A10 10 0 002 12c0 1.6.4 3.2.9 4.3l3.3-2.7z"
+      />
+
+      <path
+        fill="#4285F4"
+        d="M12 6c1.5 0 2.9.5 4 1.6l3-3A10 10 0 0012 2 10 10 0 002.9 7.7l3.3 2.7C7 7.8 9.3 6 12 6z"
+      />
+    </svg>
   );
 }

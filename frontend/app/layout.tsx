@@ -1,6 +1,7 @@
 import "./globals.css";
 import { Inter } from "next/font/google";
 import { ThemeProvider } from "@/components/providers/ThemeProvider";
+import TikTokPixel from "@/components/TikTokPixel";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -46,9 +47,8 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body className={inter.className}>
-        <ThemeProvider>
-          {children}
-        </ThemeProvider>
+        <TikTokPixel />
+        <ThemeProvider>{children}</ThemeProvider>
       </body>
     </html>
   );

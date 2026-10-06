@@ -29,6 +29,9 @@ interface FormValues {
   websiteType?: WebsiteType | "";
   workingToolType?: WorkingToolType | "";
   toolLink?: string;
+  dateOfBirth?: string;
+  smsNumber?: string;
+  smsLink?: string;
   price: number | "";
   emailAttached: boolean;
   phoneAttached: boolean;
@@ -72,6 +75,7 @@ const PLATFORMS: SocialPlatform[] = [
   "NEXTPLUS",
   "MAIL",
   "TOOL",
+  "ICLOUD",
 ];
 
 const CATEGORIES: { value: SocialLogCategoryValue; label: string }[] = [
@@ -87,6 +91,7 @@ const CATEGORIES: { value: SocialLogCategoryValue; label: string }[] = [
   { value: "WEBSITE_CREATION", label: "Website Creation" },
   { value: "MAIL", label: "Mail" },
   { value: "ALL_WORKING_TOOLS", label: "All Working Tools" },
+  { value: "ICLOUD", label: "iCloud — USA" },
 ];
 
 const PAGE_TYPES: { value: SocialLogPageType; label: string }[] = [
@@ -168,6 +173,7 @@ const VPN_CATEGORY = "VPN";
 const TUTORIAL_CATEGORY = "TUTORIAL";
 const WEBSITE_CATEGORY = "WEBSITE_CREATION";
 const WORKING_TOOLS_CATEGORY = "ALL_WORKING_TOOLS";
+const ICLOUD_CATEGORY = "ICLOUD";
 
 const EMPTY_FORM: FormValues = {
   platform: "",
@@ -183,6 +189,9 @@ const EMPTY_FORM: FormValues = {
   websiteType: "",
   workingToolType: "",
   toolLink: "",
+  dateOfBirth: "",
+  smsNumber: "",
+  smsLink: "",
   price: "",
   emailAttached: false,
   phoneAttached: false,
@@ -231,6 +240,7 @@ export default function SocialLogForm({
   const needsTiktokCountry = values.category === "TIKTOK_COUNTRY";
   const needsWorkingToolType = values.category === WORKING_TOOLS_CATEGORY;
   const isWorkingTool = values.category === WORKING_TOOLS_CATEGORY;
+  const isIcloud = values.category === ICLOUD_CATEGORY;
   const tierOptions = values.category ? FOLLOWER_TIERS[values.category] : undefined;
 
   function update<K extends keyof FormValues>(key: K, value: FormValues[K]) {
@@ -273,6 +283,20 @@ export default function SocialLogForm({
         updates.toolLink = "";
       }
       
+      // Auto-set category to ICLOUD for ICLOUD platform (fixed: USA)
+      if (platform === "ICLOUD") {
+        updates.category = "ICLOUD";
+        updates.country = "USA";
+        updates.followers = "";
+        updates.pageType = "";
+        updates.instagramSubType = "";
+        updates.vpnType = "";
+        updates.tutorialType = "";
+        updates.websiteType = "";
+        updates.workingToolType = "";
+        updates.toolLink = "";
+      }
+
       // Auto-set category to ALL_WORKING_TOOLS for TOOL platform
       if (platform === "TOOL") {
         updates.category = "ALL_WORKING_TOOLS";
@@ -344,6 +368,9 @@ export default function SocialLogForm({
     if (values.recoveryEmail?.trim() && !EMAIL_PATTERN.test(values.recoveryEmail.trim()))
       next.recoveryEmail = "Enter a valid email address.";
 
+    if (isIcloud && values.smsLink?.trim() && !URL_PATTERN.test(values.smsLink.trim()))
+      next.smsLink = "Must be a valid URL starting with http:// or https://";
+
     if (values.cookies?.trim()) {
       try {
         JSON.parse(values.cookies);
@@ -371,7 +398,11 @@ export default function SocialLogForm({
           needsPageType && values.pageType
             ? (values.pageType as SocialLogPageType)
             : undefined,
-        country: needsCountry && values.country.trim() ? values.country.trim() : undefined,
+        country: isIcloud
+          ? "USA"
+          : needsCountry && values.country.trim()
+            ? values.country.trim()
+            : undefined,
         username: values.username.trim(),
         age: isWorkingTool ? 0 : Number(values.age),
         followers:
@@ -419,6 +450,9 @@ export default function SocialLogForm({
           : undefined,
         cookies: values.cookies?.trim() ? JSON.parse(values.cookies) : undefined,
         notes: values.notes?.trim() || undefined,
+        dateOfBirth: isIcloud && values.dateOfBirth?.trim() ? values.dateOfBirth.trim() : undefined,
+        smsNumber: isIcloud && values.smsNumber?.trim() ? values.smsNumber.trim() : undefined,
+        smsLink: isIcloud && values.smsLink?.trim() ? values.smsLink.trim() : undefined,
       } as CreateSocialLogDto;
 
       await onSubmit(payload);
@@ -861,6 +895,40 @@ export default function SocialLogForm({
                 className={inputClass(false)}
               />
             </Field>
+
+            {isIcloud && (
+              <>
+                <Field label="Date of Birth">
+                  <input
+                    type="text"
+                    value={values.dateOfBirth}
+                    onChange={(e) => update("dateOfBirth", e.target.value)}
+                    placeholder="2000-01-01"
+                    className={inputClass(false)}
+                  />
+                </Field>
+
+                <Field label="Number (receives SMS)" error={errors.smsNumber}>
+                  <input
+                    type="text"
+                    value={values.smsNumber}
+                    onChange={(e) => update("smsNumber", e.target.value)}
+                    placeholder="+16204707136"
+                    className={inputClass(!!errors.smsNumber)}
+                  />
+                </Field>
+
+                <Field label="SMS Site Link" error={errors.smsLink} className="md:col-span-2">
+                  <input
+                    type="text"
+                    value={values.smsLink}
+                    onChange={(e) => update("smsLink", e.target.value)}
+                    placeholder="https://api1997.com/smsrecord?token=..."
+                    className={`${inputClass(!!errors.smsLink)} font-mono text-xs`}
+                  />
+                </Field>
+              </>
+            )}
 
           </div>
 

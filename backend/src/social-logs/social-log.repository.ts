@@ -47,6 +47,9 @@ const PURCHASED_SELECT = {
   websiteType: true,
   workingToolType: true,
   toolLink: true,
+  dateOfBirth: true,
+  smsNumber: true,
+  smsLink: true,
 } as Prisma.SocialLogSelect;
 
 @Injectable()
@@ -399,6 +402,9 @@ export class SocialLogRepository {
         websiteType: true,
         workingToolType: true,
         toolLink: true,
+        dateOfBirth: true,
+        smsNumber: true,
+        smsLink: true,
       },
     });
   }

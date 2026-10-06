@@ -20,6 +20,17 @@ export class UsersService {
   }
 
   /**
+   * Find user by username
+   */
+  async findByUsername(username: string) {
+    return this.prisma.user.findUnique({
+      where: {
+        username,
+      },
+    });
+  }
+
+  /**
    * Find user by ID
    */
   async findById(id: string) {
@@ -45,22 +56,29 @@ export class UsersService {
   }
 
   /**
-   * Records that a user has just logged in. Returns whether this was
-   * their first-ever login — i.e. `lastLoginAt` was still null before
-   * this call — which the auth flow uses to decide whether to show a
-   * "welcome" vs "welcome back" notification.
+   * Records that a user has just logged in.
+   *
+   * Returns true when this is the user's first-ever login.
    */
   async markLogin(id: string) {
     const before = await this.prisma.user.findUnique({
-      where: { id },
-      select: { lastLoginAt: true },
+      where: {
+        id,
+      },
+      select: {
+        lastLoginAt: true,
+      },
     });
 
     const isFirstLogin = before?.lastLoginAt == null;
 
     await this.prisma.user.update({
-      where: { id },
-      data: { lastLoginAt: new Date() },
+      where: {
+        id,
+      },
+      data: {
+        lastLoginAt: new Date(),
+      },
     });
 
     return isFirstLogin;
@@ -71,6 +89,7 @@ export class UsersService {
    */
   async createUser(data: {
     name: string;
+    username: string;
     email: string;
     passwordHash: string;
     referralCode: string;
@@ -79,15 +98,17 @@ export class UsersService {
     return this.prisma.user.create({
       data: {
         name: data.name,
+        username: data.username,
         email: data.email,
         passwordHash: data.passwordHash,
 
-        // Generated for the new user
+        // Generated referral code belonging to this user
         referralCode: data.referralCode,
 
-        // Optional referral code entered during registration
+        // Referral code entered during registration
         referredBy: data.referredBy,
 
+        // Automatically create wallet
         wallet: {
           create: {
             balance: 0,

@@ -34,7 +34,7 @@ export class MarketplaceController {
 
   @Get('countries')
   countries(
-    @Query('provider') provider?: 'FIVESIM' | 'GRIZZYSMS',
+    @Query('provider') provider?: 'FIVESIM' | 'GRIZZYSMS' | 'SMSBOWER',
   ) {
     return this.marketplaceService.countries(
       provider ?? 'FIVESIM',
@@ -44,7 +44,7 @@ export class MarketplaceController {
   @Get('products/:country')
   products(
     @Param('country') country: string,
-    @Query('provider') provider?: 'FIVESIM' | 'GRIZZYSMS',
+    @Query('provider') provider?: 'FIVESIM' | 'GRIZZYSMS' | 'SMSBOWER',
   ) {
     return this.marketplaceService.products(
       country,
@@ -55,7 +55,7 @@ export class MarketplaceController {
   @Get('prices/:country')
   prices(
     @Param('country') country: string,
-    @Query('provider') provider?: 'FIVESIM' | 'GRIZZYSMS',
+    @Query('provider') provider?: 'FIVESIM' | 'GRIZZYSMS' | 'SMSBOWER',
   ) {
     return this.marketplaceService.prices(
       country,
@@ -154,7 +154,7 @@ export class MarketplaceController {
   }
 
   /* ============================================================
-                          BAN
+                          BANs
   ============================================================ */
 
   @UseGuards(AuthGuard('jwt'))

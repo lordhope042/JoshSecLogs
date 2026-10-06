@@ -20,7 +20,7 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
-export type Provider = "FIVESIM" | "GRIZZYSMS";
+export type Provider = "FIVESIM" | "GRIZZYSMS" | "SMSBOWER";
 
 export const MarketplaceAPI = {
   /*

@@ -52,6 +52,7 @@ const platformColors: Record<string, string> = {
   NEXTPLUS: "bg-lime-500/10 text-lime-400 border-lime-500/20",
   MAIL: "bg-red-400/10 text-red-300 border-red-400/20",
   TOOL: "bg-amber-500/10 text-amber-400 border-amber-500/20",
+  ICLOUD: "bg-sky-500/10 text-sky-300 border-sky-500/20",
 };
 
 const CATEGORY_LABELS: Record<SocialLogCategoryValue, string> = {
@@ -67,6 +68,7 @@ const CATEGORY_LABELS: Record<SocialLogCategoryValue, string> = {
   WEBSITE_CREATION: "Website Creation",
   MAIL: "Mail",
   ALL_WORKING_TOOLS: "All Working Tools",
+  ICLOUD: "iCloud — USA",
 };
 
 const PAGE_TYPE_LABELS: Record<string, string> = {

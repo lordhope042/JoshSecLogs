@@ -125,6 +125,19 @@ export default function AddSocialLogModal({ open, onClose, onCreated }: AddSocia
       return subs;
     }
 
+    if (group.value === "ICLOUD") {
+      // Fixed product — always USA. If more countries are ever added to
+      // the group's country list, the first selected one wins.
+      return [
+        {
+          platform: "ICLOUD" as SocialPlatform,
+          category: "ICLOUD",
+          country: wizard.selectedCountries[0] ?? "USA",
+          label: "USA iCloud",
+        },
+      ];
+    }
+
     if (group.value === "INSTAGRAM" && group.instagramSubTypes) {
       return wizard.selectedSubTypes.map((st) => {
         const cfg = group.instagramSubTypes?.find((x) => x.value === st);
@@ -327,6 +340,9 @@ export default function AddSocialLogModal({ open, onClose, onCreated }: AddSocia
               })()
             : undefined,
           notes: wizard.details.notes,
+          dateOfBirth: wizard.details.dateOfBirth || undefined,
+          smsNumber: wizard.details.smsNumber || undefined,
+          smsLink: wizard.details.smsLink || undefined,
         } as CreateSocialLogDto;
 
         await createSocialLog(payload);
@@ -730,6 +746,40 @@ export default function AddSocialLogModal({ open, onClose, onCreated }: AddSocia
                   <p className="pt-2 text-xs font-semibold uppercase tracking-wide text-gray-400 dark:text-zinc-500">
                     Private details — only revealed to the buyer after purchase
                   </p>
+
+                  {group.value === "ICLOUD" && (
+                    <div className="grid grid-cols-2 gap-3 rounded-xl border border-sky-500/20 bg-sky-500/5 p-4">
+                      <div>
+                        <label className="mb-2 block text-sm font-medium text-gray-700 dark:text-zinc-300">Date of Birth</label>
+                        <input
+                          value={wizard.details.dateOfBirth ?? ""}
+                          onChange={(e) => setDetail("dateOfBirth", e.target.value)}
+                          placeholder="2000-01-01"
+                          className="w-full rounded-xl border border-gray-300 dark:border-zinc-700 bg-gray-100 dark:bg-zinc-800 px-4 py-3 text-gray-900 dark:text-white"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="mb-2 block text-sm font-medium text-gray-700 dark:text-zinc-300">Number (receives SMS)</label>
+                        <input
+                          value={wizard.details.smsNumber ?? ""}
+                          onChange={(e) => setDetail("smsNumber", e.target.value)}
+                          placeholder="+16204707136"
+                          className="w-full rounded-xl border border-gray-300 dark:border-zinc-700 bg-gray-100 dark:bg-zinc-800 px-4 py-3 text-gray-900 dark:text-white"
+                        />
+                      </div>
+
+                      <div className="col-span-2">
+                        <label className="mb-2 block text-sm font-medium text-gray-700 dark:text-zinc-300">SMS Site Link</label>
+                        <input
+                          value={wizard.details.smsLink ?? ""}
+                          onChange={(e) => setDetail("smsLink", e.target.value)}
+                          placeholder="https://api1997.com/smsrecord?token=..."
+                          className="w-full rounded-xl border border-gray-300 dark:border-zinc-700 bg-gray-100 dark:bg-zinc-800 px-4 py-3 font-mono text-xs text-gray-900 dark:text-white"
+                        />
+                      </div>
+                    </div>
+                  )}
 
                   <div className="grid grid-cols-2 gap-3">
                     <div>

@@ -8,7 +8,7 @@ export default function TransactionTable({
   transactions,
 }: Props) {
   return (
-    <div className="rounded-xl border bg-white shadow-sm">
+    <div className="rounded-2xl border border-slate-200 bg-white shadow-[0_12px_35px_rgba(15,23,42,0.05)] dark:border-slate-800 dark:bg-[#0a1725] dark:shadow-none">
       <table className="w-full">
         <thead>
           <tr>

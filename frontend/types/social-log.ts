@@ -21,7 +21,8 @@ export type SocialPlatform =
   | "TEXTPLUS"
   | "NEXTPLUS"
   | "MAIL"
-  | "TOOL"; // ADD THIS for All Working Tools
+  | "TOOL" // ADD THIS for All Working Tools
+  | "ICLOUD"; // USA iCloud logs
 
 /*
 ========================================================
@@ -41,7 +42,8 @@ export type SocialLogCategoryValue =
   | "TIKTOK_FOLLOWERS"
   | "WEBSITE_CREATION"
   | "MAIL"
-  | "ALL_WORKING_TOOLS"; // ADD THIS
+  | "ALL_WORKING_TOOLS" // ADD THIS
+  | "ICLOUD"; // USA iCloud
 
 // Only meaningful when category = FACEBOOK_PAGE
 export type SocialLogPageType =
@@ -179,6 +181,15 @@ export interface SocialLog {
   // ADD THIS — Tool Link
   toolLink: string | null;
 
+  // ICLOUD — date of birth ("2000-01-01")
+  dateOfBirth: string | null;
+
+  // ICLOUD — SMS receiving number (+16204707136)
+  smsNumber: string | null;
+
+  // ICLOUD — per-account SMS inbox URL
+  smsLink: string | null;
+
   username: string;
 
   age: number;
@@ -241,6 +252,13 @@ export interface PurchasedSocialLog {
 
   // ADD THIS
   toolLink: string | null;
+
+  // ICLOUD
+  dateOfBirth: string | null;
+
+  smsNumber: string | null;
+
+  smsLink: string | null;
 
   followers: number | null;
 
@@ -309,6 +327,13 @@ export interface CreateSocialLogDto {
 
   // ADD THIS
   toolLink?: string;
+
+  // ICLOUD
+  dateOfBirth?: string;
+
+  smsNumber?: string;
+
+  smsLink?: string;
 
   username: string;
 

@@ -1,0 +1,10 @@
+Add this import to app/layout.tsx:
+import TikTokPixel from "@/components/TikTokPixel";
+
+Then render <TikTokPixel /> inside <body>, alongside ThemeProvider:
+<body className={inter.className}>
+  <ThemeProvider>
+    {children}
+  </ThemeProvider>
+  <TikTokPixel />
+</body>

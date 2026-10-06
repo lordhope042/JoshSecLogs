@@ -8,6 +8,8 @@ datasource db {
 
 model User {
   id                  String              @id @default(uuid())
+  name                String
+  username            String?             @unique
   email               String              @unique
   passwordHash        String
   role                UserRole            @default(USER)
@@ -16,7 +18,6 @@ model User {
   emailVerified       Boolean             @default(false)
   isActive            Boolean             @default(true)
   lastLoginAt         DateTime?
-  name                String
   referralCode        String?             @unique
   referredBy          String?
   apiKeys             ApiKey[]
@@ -25,7 +26,7 @@ model User {
   purchasedSocialLogs SocialLog[]         @relation("PurchasedSocialLogs")
   wallet              Wallet?
   transactions        WalletTransaction[]
-  virtualAccounts VirtualAccount[]
+  virtualAccounts     VirtualAccount[]
 
   @@index([email])
 }
@@ -123,6 +124,12 @@ model SocialLog {
   websiteType     WebsiteType?
   workingToolType WorkingToolType?
   toolLink        String?
+  /// ICLOUD — "2000-01-01" format
+  dateOfBirth     String?
+  /// ICLOUD — number that receives SMS, e.g. +16204707136
+  smsNumber       String?
+  /// ICLOUD — per-account URL to read SMS (api1997 smsrecord link)
+  smsLink         String?
   buyer           User?              @relation("PurchasedSocialLogs", fields: [buyerId], references: [id])
 
   @@index([buyerId])
@@ -134,6 +141,7 @@ model SocialLog {
   @@index([tutorialType])
   @@index([websiteType])
   @@index([workingToolType])
+  @@index([dateOfBirth])
 }
 
 model Order {
@@ -304,6 +312,7 @@ enum SocialPlatform {
   NEXTPLUS
   MAIL
   TOOL
+  ICLOUD
 }
 
 enum SocialLogCategory {
@@ -320,6 +329,7 @@ enum SocialLogCategory {
   WEBSITE_CREATION
   MAIL
   ALL_WORKING_TOOLS
+  ICLOUD
 }
 
 enum SocialLogPageType {

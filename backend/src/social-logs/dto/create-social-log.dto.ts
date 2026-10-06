@@ -127,6 +127,27 @@ export class CreateSocialLogDto {
 
   /*
   =====================================
+  ICLOUD FIELDS — only when category = ICLOUD
+  =====================================
+  */
+
+  // Date of birth — stored as "2000-01-01"
+  @IsOptional()
+  @IsString()
+  dateOfBirth?: string;
+
+  // Number that receives SMS, e.g. +16204707136
+  @IsOptional()
+  @IsString()
+  smsNumber?: string;
+
+  // Per-account URL to read SMS (api1997 smsrecord link)
+  @IsOptional()
+  @IsString()
+  smsLink?: string;
+
+  /*
+  =====================================
   PRIVATE LOGIN DETAILS
   =====================================
   */

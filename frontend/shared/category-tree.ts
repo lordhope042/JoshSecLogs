@@ -27,6 +27,7 @@ import type {
  */
 
 export type WizardGroup =
+  | "ICLOUD"
   | "FACEBOOK"
   | "TWITTER"
   | "INSTAGRAM"
@@ -70,6 +71,13 @@ export interface GroupConfig {
 }
 
 export const WIZARD_GROUPS: GroupConfig[] = [
+  {
+    value: "ICLOUD",
+    label: "iCloud",
+    platforms: ["ICLOUD"],
+    category: "ICLOUD",
+    countries: [{ value: "USA", label: "USA" }],
+  },
   {
     value: "FACEBOOK",
     label: "Facebook",

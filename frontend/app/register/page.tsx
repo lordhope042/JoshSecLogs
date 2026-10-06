@@ -7,7 +7,7 @@ export default function RegisterPage() {
   return (
     <AuthLayout
       title="Create Your Account"
-      subtitle="Purchase premium virtual numbers, social media accounts, and secure digital products in minutes."
+      subtitle="Join JoshSecLogs and get started today"
     >
       <RegisterForm />
     </AuthLayout>

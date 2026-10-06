@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { RefreshCw } from "lucide-react";
 
 import WalletBalance from "@/components/wallet/WalletBalance";
 import VirtualAccountsCard from "@/components/wallet/VirtualAccountsCard";
@@ -35,32 +36,14 @@ export default function WalletPage() {
     await Promise.all([loadWallet(), loadTransactions()]);
   }, [loadWallet, loadTransactions]);
 
-  /*
-  =====================================
-      INITIAL LOAD
-
-      FIX: virtual accounts now load right alongside the wallet, on
-      page mount — previously they were only fetched when the deposit
-      modal opened, so the account number(s) never showed up on the
-      page itself unless the user clicked "Deposit" first. Now
-      VirtualAccountsCard is rendered directly on the page and always
-      has data as soon as the page loads.
-  =====================================
-  */
+  // Initial load: wallet, transactions and virtual accounts together
   useEffect(() => {
     load();
     loadAccounts();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  /*
-  =====================================
-      AUTO-REFRESH ON RETURN TO TAB
-
-      Picks up a balance that changed while the user was away (a
-      deposit credited in the background via webhook).
-  =====================================
-  */
+  // Refresh when the user returns to the tab (picks up webhook credits)
   useEffect(() => {
     const handleVisibilityChange = () => {
       if (document.visibilityState === "visible") {
@@ -80,8 +63,11 @@ export default function WalletPage() {
   async function refreshWallet() {
     if (refreshing || loading) return;
     setRefreshing(true);
-    await Promise.all([load(), loadAccounts()]);
-    setRefreshing(false);
+    try {
+      await Promise.all([load(), loadAccounts()]);
+    } finally {
+      setRefreshing(false);
+    }
   }
 
   async function handleCreateAccount(bank: PocketFiBank, phone: string) {
@@ -91,22 +77,64 @@ export default function WalletPage() {
 
   return (
     <>
-      <div className="space-y-8">
-        <WalletBalance
-          wallet={wallet}
-          loading={loading}
-          refreshing={refreshing}
-          onRefresh={refreshWallet}
-          onDeposit={() => setDepositOpen(true)}
-        />
+      <div className="mx-auto w-full max-w-6xl space-y-6">
+        {/* Page header */}
+        <div className="flex items-start justify-between gap-4">
+          <div>
+            <h1 className="text-2xl font-black tracking-tight text-gray-900 dark:text-white sm:text-3xl">
+              Wallet
+            </h1>
 
-        <VirtualAccountsCard
-          accounts={accounts}
-          loading={accountsLoading}
-          onAddBank={() => setDepositOpen(true)}
-        />
+            <p className="mt-1 text-sm text-gray-500 dark:text-slate-400">
+              Fund your wallet, manage your deposit accounts and track
+              every transaction.
+            </p>
+          </div>
 
-        <TransactionHistory transactions={transactions} loading={loading} />
+          <button
+            type="button"
+            onClick={refreshWallet}
+            disabled={refreshing || loading}
+            aria-label="Refresh wallet"
+            className="inline-flex h-10 shrink-0 items-center gap-2 rounded-lg border border-gray-200 bg-white px-4 text-xs font-bold text-gray-700 transition hover:border-orange-400 hover:text-orange-500 disabled:cursor-not-allowed disabled:opacity-60 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:border-orange-500 dark:hover:text-orange-400"
+          >
+            <RefreshCw
+              className={`h-4 w-4 ${refreshing ? "animate-spin" : ""}`}
+            />
+
+            <span className="hidden sm:inline">
+              {refreshing ? "Refreshing" : "Refresh"}
+            </span>
+          </button>
+        </div>
+
+        {/* Content grid */}
+        <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,420px)_minmax(0,1fr)]">
+          {/* Left column: balance and bank accounts */}
+          <div className="space-y-6 lg:sticky lg:top-24">
+            <WalletBalance
+              wallet={wallet}
+              loading={loading}
+              refreshing={refreshing}
+              onRefresh={refreshWallet}
+              onDeposit={() => setDepositOpen(true)}
+            />
+
+            <VirtualAccountsCard
+              accounts={accounts}
+              loading={accountsLoading}
+              onAddBank={() => setDepositOpen(true)}
+            />
+          </div>
+
+          {/* Right column: history */}
+          <div className="min-w-0">
+            <TransactionHistory
+              transactions={transactions}
+              loading={loading}
+            />
+          </div>
+        </div>
       </div>
 
       <DepositModal

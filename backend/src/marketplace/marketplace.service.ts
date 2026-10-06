@@ -11,11 +11,12 @@ import { PrismaService } from '../prisma/prisma.service';
 import { WalletService } from '../wallet/wallet.service';
 import { FiveSimService } from '../providers/fivesim/fivesim.service';
 import { GrizzySmsService } from '../providers/grizzysms/grizzysms.service';
+import { SmsBowerService } from '../providers/smsbower/smsbower.service';
 import { OrderStatus } from '@prisma/client';
 
 import { BuyNumberDto } from './dto/buy-number.dto';
 
-type Provider = 'FIVESIM' | 'GRIZZYSMS';
+type Provider = 'FIVESIM' | 'GRIZZYSMS' | 'SMSBOWER';
 
 @Injectable()
 export class MarketplaceService {
@@ -26,6 +27,7 @@ export class MarketplaceService {
   constructor(
     private readonly fiveSim: FiveSimService,
     private readonly grizzySms: GrizzySmsService,
+    private readonly smsBower: SmsBowerService,
     private readonly wallet: WalletService,
     private readonly prisma: PrismaService,
     private readonly config: ConfigService,
@@ -74,6 +76,25 @@ export class MarketplaceService {
     );
   }
 
+  // SMSBower (handler_api.php / SMS-Activate protocol, same as GrizzySMS)
+  // also prices in RUB. Falls back to the same RUB_TO_NGN rate used for
+  // GrizzySMS unless a dedicated SMSBOWER_RUB_TO_NGN is configured —
+  // useful if the two resellers' RUB pricing ever needs separate margin.
+  private get smsBowerRubRate(): number {
+    return Number(
+      this.config.get<number>('SMSBOWER_RUB_TO_NGN') ??
+        this.rubRate,
+    );
+  }
+
+  private convertSmsBowerPrice(
+    rub: number,
+  ): number {
+    return Math.ceil(
+      rub * this.smsBowerRubRate * this.markup,
+    );
+  }
+
   /* ============================================================
               GRIZZYSMS NAME LOOKUP (live, not hardcoded)
   ============================================================
@@ -91,6 +112,9 @@ export class MarketplaceService {
   async countries(provider: Provider = 'FIVESIM') {
     if (provider === 'GRIZZYSMS') {
       return this.grizzyCountries();
+    }
+    if (provider === 'SMSBOWER') {
+      return this.smsBowerCountries();
     }
     return this.fiveSimCountries();
   }
@@ -175,6 +199,39 @@ export class MarketplaceService {
     }
   }
 
+  private async smsBowerCountries() {
+    try {
+      const [prices, namedList] = await Promise.all([
+        this.smsBower.getPricesV2(),
+        this.smsBower.getCountriesList(),
+      ]);
+
+      const nameMap = new Map(
+        (namedList ?? []).map((c) => [c.id, c.name]),
+      );
+
+      return Object.keys(prices ?? {})
+        .map((id) => ({
+          id,
+          code: id,
+          name: nameMap.get(id) ?? `Country ${id}`,
+          iso: id,
+          prefix: '',
+          flag: null,
+        }))
+        .sort((a, b) => a.name.localeCompare(b.name));
+    } catch (error) {
+      this.logger.error(
+        'Failed loading SMSBower countries',
+        error,
+      );
+
+      throw new BadGatewayException(
+        'Unable to load countries.',
+      );
+    }
+  }
+
   /* ============================================================
                         PRODUCTS
   ============================================================ */
@@ -182,6 +239,9 @@ export class MarketplaceService {
   async products(country: string, provider: Provider = 'FIVESIM') {
     if (provider === 'GRIZZYSMS') {
       return this.grizzyProducts(country);
+    }
+    if (provider === 'SMSBOWER') {
+      return this.smsBowerProducts(country);
     }
     return this.fiveSimProducts(country);
   }
@@ -268,6 +328,48 @@ export class MarketplaceService {
     }
   }
 
+  private async smsBowerProducts(country: string) {
+    try {
+      const [rawPrices, namedList] = await Promise.all([
+        this.smsBower.getPricesV2(undefined, country),
+        this.smsBower.getServicesList(),
+      ]);
+
+      const nameMap = new Map(
+        (namedList ?? []).map((s) => [s.code, s.name]),
+      );
+
+      // Same dual-shape handling as grizzyProducts() — SMSBower may
+      // return the country-nested shape or the already-flattened one.
+      const response: any = rawPrices;
+      const nested = response?.[country];
+      const services =
+        nested && typeof nested === 'object'
+          ? nested
+          : response && typeof response === 'object'
+            ? response
+            : {};
+
+      return Object.keys(services)
+        .map((code) => ({
+          id: code,
+          service: code,
+          name: nameMap.get(code) ?? code,
+          image: null,
+        }))
+        .sort((a, b) => a.name.localeCompare(b.name));
+    } catch (error) {
+      this.logger.error(
+        `Failed loading SMSBower products for ${country}`,
+        error,
+      );
+
+      throw new BadGatewayException(
+        'Unable to load products.',
+      );
+    }
+  }
+
   /* ============================================================
                           PRICES
   ============================================================ */
@@ -275,6 +377,9 @@ export class MarketplaceService {
   async prices(country: string, provider: Provider = 'FIVESIM') {
     if (provider === 'GRIZZYSMS') {
       return this.grizzyPrices(country);
+    }
+    if (provider === 'SMSBOWER') {
+      return this.smsBowerPrices(country);
     }
     return this.fiveSimPrices(country);
   }
@@ -489,6 +594,108 @@ export class MarketplaceService {
     }
   }
 
+  /**
+   * SMSBower — same handler_api.php protocol as GrizzySMS, so this
+   * mirrors grizzyPrices() exactly, including the same dual-shape /
+   * single-key-{price:count} parsing (resolvePriceAndStock). ONE THING
+   * TO VERIFY LIVE: GrizzySMS's getPricesV2 turned out to key each
+   * service entry as { "<priceStr>": <stockCount> } rather than named
+   * fields — confirm with a real SMSBOWER_API_KEY + one debug log
+   * (already wired below) that SMSBower's payload matches before
+   * trusting stock numbers in production; the named-field fallback
+   * below covers the case where it doesn't.
+   */
+  private async smsBowerPrices(country: string) {
+    try {
+      const response: any = await this.smsBower.getPricesV2(undefined, country);
+
+      const nested = response?.[country];
+      const services =
+        nested && typeof nested === 'object'
+          ? nested
+          : response && typeof response === 'object'
+            ? response
+            : {};
+
+      const sampleEntry = Object.entries(services)[0];
+      this.logger.debug(
+        `SMSBower prices raw sample for country=${country}: ${JSON.stringify(
+          sampleEntry,
+        )}`,
+      );
+
+      const resolvePriceAndStock = (
+        info: any,
+      ): { rub: number; stock: number } => {
+        if (info && typeof info === 'object') {
+          const entries = Object.entries(info);
+
+          if (
+            entries.length === 1 &&
+            !('cost' in info) &&
+            !('price' in info) &&
+            !('count' in info) &&
+            !('qty' in info)
+          ) {
+            const [priceStr, stockVal] = entries[0];
+            const rub = Number(priceStr);
+            const stock = Number(stockVal as any);
+
+            if (!Number.isNaN(rub)) {
+              return { rub, stock: Number.isNaN(stock) ? 0 : stock };
+            }
+          }
+        }
+
+        const rub = Number(
+          info?.cost ??
+            info?.price ??
+            info?.retail_price ??
+            info?.real_price ??
+            0,
+        );
+
+        const stock = Number(
+          info?.count ??
+            info?.qty ??
+            info?.quantity ??
+            info?.available ??
+            info?.stock ??
+            0,
+        );
+
+        return { rub, stock };
+      };
+
+      return Object.entries(services)
+        .map(([service, info]: any) => {
+          const { rub, stock } = resolvePriceAndStock(info);
+
+          return {
+            service,
+            activationTypes: [
+              {
+                activationType: 'any',
+                stock,
+                priceUsd: rub, // actually RUB — see convertSmsBowerPrice
+                priceNgn: this.convertSmsBowerPrice(rub),
+              },
+            ],
+          };
+        })
+        .sort((a, b) => a.service.localeCompare(b.service));
+    } catch (error) {
+      this.logger.error(
+        `Failed loading SMSBower prices for ${country}`,
+        error,
+      );
+
+      throw new BadGatewayException(
+        'Unable to load prices.',
+      );
+    }
+  }
+
   /* ============================================================
                     PURCHASE HELPERS
   ============================================================ */
@@ -540,6 +747,18 @@ export class MarketplaceService {
   ) {
     if (provider === 'GRIZZYSMS') {
       const purchase = await this.grizzySms.buy(product, country);
+
+      if (!purchase?.id) {
+        throw new BadGatewayException(
+          'Provider failed to allocate a number.',
+        );
+      }
+
+      return purchase;
+    }
+
+    if (provider === 'SMSBOWER') {
+      const purchase = await this.smsBower.buy(product, country);
 
       if (!purchase?.id) {
         throw new BadGatewayException(
@@ -699,6 +918,19 @@ export class MarketplaceService {
           order.providerOrderId ?? '',
         );
         return {
+          status: this.mapGrizzyStatus(result.code),
+          sms: result.code === 'STATUS_OK' && result.value ? [result.value] : null,
+          raw: result,
+        };
+      }
+
+      if (order.provider === 'SMSBOWER') {
+        const result = await this.smsBower.getStatus(
+          order.providerOrderId ?? '',
+        );
+        return {
+          // Same status-code vocabulary as GrizzySMS (identical protocol),
+          // so mapGrizzyStatus applies unchanged here too.
           status: this.mapGrizzyStatus(result.code),
           sms: result.code === 'STATUS_OK' && result.value ? [result.value] : null,
           raw: result,
@@ -951,6 +1183,8 @@ export class MarketplaceService {
 
     if (order.provider === 'GRIZZYSMS') {
       await this.grizzySms.finish(order.providerOrderId ?? '');
+    } else if (order.provider === 'SMSBOWER') {
+      await this.smsBower.finish(order.providerOrderId ?? '');
     } else {
       await this.fiveSim.finish(
         Number(order.providerOrderId),
@@ -999,6 +1233,12 @@ export class MarketplaceService {
 
     if (order.provider === 'GRIZZYSMS') {
       const code = await this.grizzySms.cancel(order.providerOrderId ?? '');
+      status = this.mapGrizzyStatus(
+        code === 'ACCESS_CANCEL' ? 'STATUS_CANCEL' : undefined,
+      );
+      rawStatusLabel = code;
+    } else if (order.provider === 'SMSBOWER') {
+      const code = await this.smsBower.cancel(order.providerOrderId ?? '');
       status = this.mapGrizzyStatus(
         code === 'ACCESS_CANCEL' ? 'STATUS_CANCEL' : undefined,
       );
@@ -1106,6 +1346,9 @@ export class MarketplaceService {
       // handler_api.php has no separate "ban" action — status 8 (cancel)
       // is the closest equivalent for marking a number bad/unusable.
       await this.grizzySms.cancel(order.providerOrderId ?? '');
+    } else if (order.provider === 'SMSBOWER') {
+      // Same protocol, same limitation — no dedicated "ban" action.
+      await this.smsBower.cancel(order.providerOrderId ?? '');
     } else {
       await this.fiveSim.ban(
         Number(order.providerOrderId),

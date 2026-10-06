@@ -245,7 +245,7 @@ export default function TransactionCard({ transaction }: TransactionCardProps) {
   }
 
   return (
-    <div className="rounded-2xl border border-gray-200 dark:border-zinc-800 bg-white dark:bg-[#111827] p-5 transition-all duration-300 hover:border-orange-500 hover:shadow-lg hover:shadow-orange-500/10">
+    <div className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-[#0a1725] p-5 transition-all duration-300 hover:border-orange-400 hover:shadow-lg hover:shadow-orange-500/10">
       {/* Header */}
       <div className="flex items-start justify-between gap-4">
         <div className="flex items-start gap-4">
