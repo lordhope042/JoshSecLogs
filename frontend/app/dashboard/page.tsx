@@ -16,9 +16,17 @@ import {
   Wallet,
   Zap,
 } from "lucide-react";
+import { FaWhatsapp } from "react-icons/fa";
 
 import { useWalletContext } from "@/contexts/WalletContext";
 import { useOrders } from "@/hooks/useOrders";
+
+// 08143002438 in international format (Nigeria +234, leading 0 dropped)
+const WHATSAPP_NUMBER = "2348143002438";
+const WHATSAPP_MESSAGE = "Hello JoshSecLogs, I need help with my account.";
+const WHATSAPP_URL = `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(
+  WHATSAPP_MESSAGE,
+)}`;
 
 function money(value: number) {
   return `₦${Number(value || 0).toLocaleString(undefined, {
@@ -62,7 +70,7 @@ export default function DashboardPage() {
   const recentTransactions = transactions.slice(0, 5);
 
   return (
-    <div className="mx-auto w-full max-w-[1600px] space-y-6">
+    <div className="mx-auto w-full max-w-[1600px] space-y-6 pb-20">
       {/* Page heading */}
       <section className="flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
         <div>
@@ -282,6 +290,18 @@ export default function DashboardPage() {
           <ArrowUpRight className="h-4 w-4" />
         </Link>
       </div>
+
+      {/* WhatsApp contact button — fixed to the bottom-right corner */}
+      <a
+        href={WHATSAPP_URL}
+        target="_blank"
+        rel="noopener noreferrer"
+        aria-label="Chat with us on WhatsApp"
+        className="fixed bottom-5 right-5 z-40 inline-flex h-14 items-center justify-center gap-2.5 rounded-full bg-[#25D366] px-4 text-sm font-bold text-white shadow-lg shadow-[#25D366]/30 transition hover:bg-[#1ebe5a] focus:outline-none focus-visible:ring-4 focus-visible:ring-[#25D366]/40 sm:bottom-6 sm:right-6 sm:px-5"
+      >
+        <FaWhatsapp className="h-7 w-7 shrink-0" />
+        <span className="hidden sm:inline">Chat on WhatsApp</span>
+      </a>
     </div>
   );
 }

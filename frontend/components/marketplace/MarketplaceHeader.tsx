@@ -30,10 +30,10 @@ interface Props {
   disabled?: boolean;
 }
 
+// GRIZZYSMS removed — only two providers are offered now.
 const PROVIDERS: { value: Provider; label: string; recommended?: boolean }[] = [
   { value: "FIVESIM", label: "Provider 1" },
-  { value: "GRIZZYSMS", label: "Provider 2", recommended: true },
-  { value: "SMSBOWER", label: "Provider 3" },
+  { value: "SMSBOWER", label: "Provider 2" },
 ];
 
 export default function MarketplaceHeader({
@@ -72,7 +72,7 @@ export default function MarketplaceHeader({
           Provider
         </label>
 
-        <div className="grid grid-cols-3 gap-3">
+        <div className="grid grid-cols-2 gap-3">
           {PROVIDERS.map((p) => (
             <div key={p.value} className="flex flex-col gap-1">
               <button
