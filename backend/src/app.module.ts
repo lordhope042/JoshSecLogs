@@ -8,7 +8,10 @@ import { AuthModule } from "./auth/auth.module";
 import { WalletModule } from "./wallet/wallet.module";
 import { PaymentsModule } from "./payment/payments.module";
 import { OrdersModule } from "./orders/orders.module";
+
 import { FiveSimModule } from "./providers/fivesim/fivesim.module";
+import { SmsBowerModule } from "./providers/smsbower/smsbower.module";
+
 import { AdminModule } from "./admin/admin.module";
 
 import { MarketplaceModule } from "./marketplace/marketplace.module";
@@ -37,8 +40,10 @@ import { NotificationModule } from "./notifications/notification.module";
 
     /* Providers */
     FiveSimModule,
+    SmsBowerModule,
 
-     AdminModule,
+    /* Admin */
+    AdminModule,
 
     /* Orders */
     OrdersModule,
