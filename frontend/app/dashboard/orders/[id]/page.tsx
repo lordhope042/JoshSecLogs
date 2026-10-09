@@ -18,6 +18,39 @@ import { useOrders } from "@/hooks/useOrders";
 
 const POLL_MS = 5000;
 const LIVE_STATUSES = ["ACTIVE", "PENDING", "PROCESSING"];
+const ORDER_TIMEOUT_MS = 20 * 60 * 1000; // must match the backend timeout
+
+// Fallback when the order only has a numeric country code.
+// Add more IDs here to match your provider's country list.
+const COUNTRY_NAMES: Record<string, string> = {
+  "0": "Russia",
+  "1": "Ukraine",
+  "2": "Kazakhstan",
+  "3": "China",
+  "4": "Philippines",
+  "6": "Indonesia",
+  "7": "Malaysia",
+  "8": "Kenya",
+  "10": "Vietnam",
+  "12": "United States",
+  "15": "Poland",
+  "16": "United Kingdom",
+  "19": "Nigeria",
+  "22": "India",
+  "36": "Canada",
+  "43": "Germany",
+  "52": "Thailand",
+  "73": "Brazil",
+  "78": "France",
+  "187": "United States",
+};
+
+function countryLabel(order: any): string {
+  if (order?.countryName) return String(order.countryName);
+  const raw = order?.country;
+  if (raw === undefined || raw === null || raw === "") return "—";
+  return COUNTRY_NAMES[String(raw)] ?? String(raw);
+}
 
 function money(value: unknown) {
   const amount = Number(value || 0);
@@ -67,11 +100,23 @@ export default function OrderDetailPage() {
   const [notFound, setNotFound] = useState(false);
   const [busy, setBusy] = useState<"finish" | "cancel" | null>(null);
   const timer = useRef<ReturnType<typeof setInterval> | null>(null);
+  const [now, setNow] = useState(() => Date.now());
 
   const status = String(order?.status || "").toUpperCase();
   const isLive = LIVE_STATUSES.includes(status);
   const meta = statusMeta(order?.status);
   const StatusIcon = meta.Icon;
+
+  // Use the server's expiresAt if it sends one, otherwise createdAt + 20 minutes.
+  const rawExpiry = order?.expiresAt
+    ? new Date(order.expiresAt).getTime()
+    : order?.createdAt
+      ? new Date(order.createdAt).getTime() + ORDER_TIMEOUT_MS
+      : 0;
+  const expiresAt = Number.isNaN(rawExpiry) ? 0 : rawExpiry;
+  const remainingMs = expiresAt ? Math.max(0, expiresAt - now) : 0;
+  const expired = isLive && expiresAt > 0 && remainingMs === 0;
+  const countdown = `${String(Math.floor(remainingMs / 60000)).padStart(2, "0")}:${String(Math.floor((remainingMs % 60000) / 1000)).padStart(2, "0")}`;
 
   // The hook toggles its shared `loading` flag on every call, so we only
   // show the skeleton for the first load and ignore it while polling.
@@ -90,12 +135,22 @@ export default function OrderDetailPage() {
     refresh();
   }, [refresh]);
 
-  // Poll for the SMS code while the order is still waiting.
+  // Tick every second while the order is live so the countdown moves.
+  useEffect(() => {
+    if (!isLive) return;
+    setNow(Date.now());
+    const t = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(t);
+  }, [isLive]);
+
+  // Poll for the SMS code while the order is waiting. Once the 20 minutes are up,
+  // poll the order itself instead so the page picks up the server's timeout + refund.
   useEffect(() => {
     if (!id || !order || !isLive) return;
 
     const poll = () => {
-      loadSms(id).catch(() => {});
+      if (expired) loadOrder(id).catch(() => {});
+      else loadSms(id).catch(() => {});
     };
 
     poll();
@@ -104,7 +159,7 @@ export default function OrderDetailPage() {
     return () => {
       if (timer.current) clearInterval(timer.current);
     };
-  }, [id, order?.id, isLive]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [id, order?.id, isLive, expired]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const messages = useMemo(() => sms.map(smsText).filter(Boolean), [sms]);
 
@@ -161,6 +216,8 @@ export default function OrderDetailPage() {
     );
   }
 
+  const serviceLabel = order.serviceName || order.service || "Service";
+
   return (
     <main className="mx-auto w-full max-w-3xl space-y-6 pb-10">
       <Link href="/dashboard/orders" className="inline-flex items-center gap-2 text-xs font-bold text-slate-500 hover:text-orange-500">
@@ -170,7 +227,7 @@ export default function OrderDetailPage() {
       {/* Header */}
       <section className="flex items-start justify-between gap-4">
         <div>
-          <h1 className="text-[26px] font-black tracking-[-.03em] text-slate-950 dark:text-white">{order.service || "Service"} order</h1>
+          <h1 className="text-[26px] font-black tracking-[-.03em] text-slate-950 dark:text-white">{serviceLabel} order</h1>
           <button onClick={() => copy(String(order.id), "Order ID")} className="mt-1 flex items-center gap-2 text-xs text-slate-500 hover:text-orange-500">
             #{String(order.id).slice(-8)} <Copy className="h-3.5 w-3.5" />
           </button>
@@ -215,7 +272,14 @@ export default function OrderDetailPage() {
         ) : isLive ? (
           <div className="mt-4 flex items-center gap-3 rounded-xl bg-blue-500/10 px-4 py-4 text-xs text-blue-600 dark:text-blue-400">
             <LoaderCircle className="h-4 w-4 animate-spin" />
-            Waiting for the code. Use the number above, then this page updates on its own.
+            {expired ? (
+              <span>Time is up. This order is being closed and refunded automatically.</span>
+            ) : (
+              <span>
+                Waiting for the code. Use the number above, then this page updates on its own.
+                {expiresAt > 0 && <> Expires in <b className="tabular-nums">{countdown}</b>.</>}
+              </span>
+            )}
           </div>
         ) : (
           <p className="mt-4 text-xs text-slate-500">No code was received for this order.</p>
@@ -226,9 +290,8 @@ export default function OrderDetailPage() {
       <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-[#0b1424]">
         <h2 className="text-sm font-black text-slate-950 dark:text-white">Order details</h2>
         <dl className="mt-4 grid grid-cols-2 gap-4 text-xs">
-          <Detail label="Service" value={order.service || "—"} />
-          <Detail label="Country" value={order.country || "—"} />
-          <Detail label="Provider" value={order.provider || "—"} />
+          <Detail label="Service" value={serviceLabel} />
+          <Detail label="Country" value={countryLabel(order)} />
           <Detail label="Price" value={money(order.sellingPriceNgn ?? order.amount)} />
           <Detail label="Created" value={dateTime(order.createdAt)} />
           <Detail label="Refunded" value={order.refundedAt ? dateTime(order.refundedAt) : "No"} />
@@ -248,7 +311,7 @@ export default function OrderDetailPage() {
           </button>
           <button
             onClick={onCancel}
-            disabled={busy !== null || messages.length > 0}
+            disabled={busy !== null || messages.length > 0 || expired}
             className="inline-flex h-11 flex-1 items-center justify-center gap-2 rounded-xl border border-red-500/30 px-5 text-sm font-bold text-red-600 transition hover:bg-red-500/10 disabled:cursor-not-allowed disabled:opacity-50 dark:text-red-400"
           >
             {busy === "cancel" ? <LoaderCircle className="h-4 w-4 animate-spin" /> : <XCircle className="h-4 w-4" />}
@@ -265,6 +328,6 @@ function Detail({ label, value }: { label: string; value: string }) {
     <div>
       <dt className="text-[10px] uppercase tracking-wider text-slate-400">{label}</dt>
       <dd className="mt-1 break-words font-bold text-slate-800 dark:text-slate-200">{value}</dd>
-    </div>
+</div>
   );
 }
