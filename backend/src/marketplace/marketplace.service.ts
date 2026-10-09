@@ -18,6 +18,17 @@ import { BuyNumberDto } from './dto/buy-number.dto';
 
 type Provider = 'FIVESIM' | 'GRIZZYSMS' | 'SMSBOWER';
 
+type NameMaps = {
+  smsBower: {
+    countries: Map<string, string>;
+    services: Map<string, string>;
+  };
+  grizzy: {
+    countries: Map<string, string>;
+    services: Map<string, string>;
+  };
+};
+
 @Injectable()
 export class MarketplaceService {
   private readonly logger = new Logger(
@@ -712,21 +723,35 @@ export class MarketplaceService {
     }
 
     if (provider === 'SMSBOWER') {
-      // maxPrice caps the provider-side cost at the tier the user was
-      // quoted, so a pricier tier is never bought at the cheaper price.
-      const purchase = await this.smsBower.buy(
-        product,
-        country,
-        maxPrice,
-      );
-
-      if (!purchase?.id) {
-        throw new BadGatewayException(
-          'Provider failed to allocate a number.',
+      try {
+        // maxPrice caps the provider-side cost at the tier the user was
+        // quoted, so a pricier tier is never bought at the cheaper price.
+        const purchase = await this.smsBower.buy(
+          product,
+          country,
+          maxPrice,
         );
-      }
 
-      return purchase;
+        if (!purchase?.id) {
+          this.logger.error(
+            `SMSBower buy returned no id: ${JSON.stringify(purchase)}`,
+          );
+
+          throw new BadGatewayException(
+            'Provider failed to allocate a number.',
+          );
+        }
+
+        return purchase;
+      } catch (error) {
+        this.logger.error(
+          `SMSBower buy failed product=${product} country=${country} maxPrice=${maxPrice}: ${
+            error instanceof Error ? error.message : String(error)
+          }`,
+        );
+
+        throw error;
+      }
     }
 
     const purchase = await this.fiveSim.buy(
@@ -959,17 +984,130 @@ export class MarketplaceService {
   }
 
   /* ============================================================
+                    NAME RESOLUTION FOR ORDERS
+  ============================================================ */
+
+  /**
+   * Load the service/country name lookups once for a set of providers.
+   * The provider catalogues are cached by their own services, so this is
+   * cheap. Failures fall back to empty maps (codes are shown instead).
+   */
+  private async loadNameMaps(
+    providers: Set<string>,
+  ): Promise<NameMaps> {
+    const maps: NameMaps = {
+      smsBower: {
+        countries: new Map<string, string>(),
+        services: new Map<string, string>(),
+      },
+      grizzy: {
+        countries: new Map<string, string>(),
+        services: new Map<string, string>(),
+      },
+    };
+
+    if (providers.has('SMSBOWER')) {
+      try {
+        const [countries, services] = await Promise.all([
+          this.smsBower.getCountriesList(),
+          this.smsBowerServiceNameMap(),
+        ]);
+
+        for (const country of countries ?? []) {
+          maps.smsBower.countries.set(country.id, country.name);
+        }
+
+        maps.smsBower.services = services;
+      } catch (error) {
+        this.logger.warn(
+          `Could not load SMSBower names for orders: ${
+            error instanceof Error ? error.message : String(error)
+          }`,
+        );
+      }
+    }
+
+    if (providers.has('GRIZZYSMS')) {
+      try {
+        const [countries, services] = await Promise.all([
+          this.grizzySms.getCountriesList(),
+          this.grizzySms.getServicesList(),
+        ]);
+
+        for (const country of countries ?? []) {
+          maps.grizzy.countries.set(country.id, country.name);
+        }
+
+        for (const service of services ?? []) {
+          maps.grizzy.services.set(service.code, service.name);
+        }
+      } catch (error) {
+        this.logger.warn(
+          `Could not load GrizzySMS names for orders: ${
+            error instanceof Error ? error.message : String(error)
+          }`,
+        );
+      }
+    }
+
+    return maps;
+  }
+
+  /**
+   * Add `serviceName` and `countryName` to orders. Falls back to the raw
+   * codes when a name is not available.
+   */
+  private async attachNames<
+    T extends { provider: string; country: string; service: string },
+  >(
+    orders: T[],
+  ): Promise<Array<T & { serviceName: string; countryName: string }>> {
+    if (orders.length === 0) {
+      return [];
+    }
+
+    const providers = new Set(orders.map((order) => order.provider));
+    const maps = await this.loadNameMaps(providers);
+
+    return orders.map((order) => {
+      let countryName = order.country;
+      let serviceName = order.service;
+
+      if (order.provider === 'SMSBOWER') {
+        countryName =
+          maps.smsBower.countries.get(order.country) ?? countryName;
+
+        serviceName = this.smsBowerServiceName(
+          order.service,
+          maps.smsBower.services,
+        );
+      } else if (order.provider === 'GRIZZYSMS') {
+        countryName =
+          maps.grizzy.countries.get(order.country) ?? countryName;
+
+        serviceName =
+          maps.grizzy.services.get(order.service) ?? serviceName;
+      }
+
+      return { ...order, serviceName, countryName };
+    });
+  }
+
+  /* ============================================================
                           USER ORDERS
   ============================================================ */
 
   async getUserOrders(userId: string) {
-    return this.prisma.order.findMany({
+    const orders = await this.prisma.order.findMany({
       where: { userId },
       orderBy: { createdAt: 'desc' },
     });
+
+    return this.attachNames(orders);
   }
 
-  async getOrder(
+  /** Plain lookup used internally (no provider catalogue calls). */
+  private async findOrder(
     userId: string,
     orderId: string,
   ) {
@@ -987,6 +1125,17 @@ export class MarketplaceService {
     return order;
   }
 
+  /** Public lookup that also returns readable service/country names. */
+  async getOrder(
+    userId: string,
+    orderId: string,
+  ) {
+    const order = await this.findOrder(userId, orderId);
+    const [withNames] = await this.attachNames([order]);
+
+    return withNames;
+  }
+
   /* ============================================================
                           SYNC ORDER
   ============================================================ */
@@ -995,7 +1144,7 @@ export class MarketplaceService {
     userId: string,
     orderId: string,
   ) {
-    const order = await this.getOrder(userId, orderId);
+    const order = await this.findOrder(userId, orderId);
     const checked = await this.checkProviderOrder(order);
     const status = checked.status;
 
@@ -1065,7 +1214,7 @@ export class MarketplaceService {
     userId: string,
     orderId: string,
   ) {
-    const order = await this.getOrder(userId, orderId);
+    const order = await this.findOrder(userId, orderId);
     const checked = await this.checkProviderOrder(order);
 
     return {
@@ -1085,7 +1234,7 @@ export class MarketplaceService {
     userId: string,
     orderId: string,
   ) {
-    const order = await this.getOrder(userId, orderId);
+    const order = await this.findOrder(userId, orderId);
 
     if (order.provider === 'GRIZZYSMS') {
       await this.grizzySms.finish(
@@ -1120,7 +1269,7 @@ export class MarketplaceService {
     userId: string,
     orderId: string,
   ) {
-    const order = await this.getOrder(userId, orderId);
+    const order = await this.findOrder(userId, orderId);
 
     if (
       order.status === OrderStatus.CANCELLED ||
@@ -1235,7 +1384,7 @@ export class MarketplaceService {
     userId: string,
     orderId: string,
   ) {
-    const order = await this.getOrder(userId, orderId);
+    const order = await this.findOrder(userId, orderId);
 
     if (
       order.status === OrderStatus.CANCELLED ||
