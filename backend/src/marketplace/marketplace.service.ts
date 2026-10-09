@@ -1,4 +1,3 @@
-
 import {
   Injectable,
   BadGatewayException,
@@ -44,13 +43,6 @@ export class MarketplaceService {
     );
   }
 
-  // GrizzySMS prices are treated as RUB.
-  private get rubRate(): number {
-    return Number(
-      this.config.get<number>('RUB_TO_NGN') ?? 18,
-    );
-  }
-
   private get markup(): number {
     return Number(
       this.config.get<number>('MARKUP') ?? 1.2,
@@ -60,26 +52,6 @@ export class MarketplaceService {
   private convertPrice(usd: number): number {
     return Math.ceil(
       usd * this.usdRate * this.markup,
-    );
-  }
-
-  private convertRubPrice(rub: number): number {
-    return Math.ceil(
-      rub * this.rubRate * this.markup,
-    );
-  }
-
-  // SMSBower uses a configurable rate, falling back to RUB_TO_NGN.
-  private get smsBowerRubRate(): number {
-    return Number(
-      this.config.get<number>('SMSBOWER_RUB_TO_NGN') ??
-        this.rubRate,
-    );
-  }
-
-  private convertSmsBowerPrice(rub: number): number {
-    return Math.ceil(
-      rub * this.smsBowerRubRate * this.markup,
     );
   }
 
@@ -413,7 +385,7 @@ export class MarketplaceService {
 
       const resolvePriceAndStock = (
         info: any,
-      ): { rub: number; stock: number } => {
+      ): { usd: number; stock: number } => {
         if (info && typeof info === 'object') {
           const entries = Object.entries(info);
 
@@ -425,19 +397,19 @@ export class MarketplaceService {
             !('qty' in info)
           ) {
             const [priceStr, stockVal] = entries[0];
-            const rub = Number(priceStr);
+            const usd = Number(priceStr);
             const stock = Number(stockVal);
 
-            if (!Number.isNaN(rub)) {
+            if (!Number.isNaN(usd)) {
               return {
-                rub,
+                usd,
                 stock: Number.isNaN(stock) ? 0 : stock,
               };
             }
           }
         }
 
-        const rub = Number(
+        const usd = Number(
           info?.cost ??
             info?.price ??
             info?.retail_price ??
@@ -454,12 +426,12 @@ export class MarketplaceService {
             0,
         );
 
-        return { rub, stock };
+        return { usd, stock };
       };
 
       return Object.entries(services)
         .map(([service, info]: any) => {
-          const { rub, stock } = resolvePriceAndStock(info);
+          const { usd, stock } = resolvePriceAndStock(info);
 
           return {
             service,
@@ -467,9 +439,8 @@ export class MarketplaceService {
               {
                 activationType: 'any',
                 stock,
-                // Compatibility field: this value is RUB, not USD.
-                priceUsd: rub,
-                priceNgn: this.convertRubPrice(rub),
+                priceUsd: usd,
+                priceNgn: this.convertPrice(usd),
               },
             ],
           };
@@ -488,9 +459,75 @@ export class MarketplaceService {
   }
 
   /**
+   * Resolve one service entry from SMSBower getPricesV2.
+   *
+   * Documented shape: { "<price1>": stock1, "<price2>": stock2, ... },
+   * one key per price tier. Named-field shapes ({ cost, count }) are
+   * still accepted as a fallback.
+   *
+   * Returns the cheapest tier that has stock. If no tier has stock,
+   * returns the cheapest tier with stock 0, so the service still
+   * appears (as out of stock) instead of showing a price of 0.
+   */
+  private resolveSmsBowerTier(info: any): {
+    usd: number;
+    stock: number;
+  } {
+    if (info && typeof info === 'object') {
+      const hasNamedFields =
+        'cost' in info ||
+        'price' in info ||
+        'count' in info ||
+        'qty' in info;
+
+      if (!hasNamedFields) {
+        const tiers = Object.entries(info)
+          .map(([priceStr, stockVal]: [string, any]) => {
+            const stock =
+              stockVal && typeof stockVal === 'object'
+                ? Number(stockVal.count ?? stockVal.qty)
+                : Number(stockVal);
+
+            return {
+              usd: Number(priceStr),
+              stock: Number.isFinite(stock) ? stock : 0,
+            };
+          })
+          .filter((tier) => Number.isFinite(tier.usd))
+          .sort((a, b) => a.usd - b.usd);
+
+        if (tiers.length > 0) {
+          return tiers.find((tier) => tier.stock > 0) ?? tiers[0];
+        }
+      }
+    }
+
+    const usd = Number(
+      info?.cost ??
+        info?.price ??
+        info?.retail_price ??
+        info?.real_price ??
+        0,
+    );
+
+    const stock = Number(
+      info?.count ??
+        info?.qty ??
+        info?.quantity ??
+        info?.available ??
+        info?.stock ??
+        0,
+    );
+
+    return {
+      usd: Number.isFinite(usd) ? usd : 0,
+      stock: Number.isFinite(stock) ? stock : 0,
+    };
+  }
+
+  /**
    * SMSBower prices are normalized to the same response shape as
-   * GrizzySMS. The single-key { "<price>": <stock> } response is
-   * supported alongside named-field responses.
+   * GrizzySMS, using the cheapest in-stock price tier per service.
    */
   private async smsBowerPrices(country: string) {
     try {
@@ -512,65 +549,18 @@ export class MarketplaceService {
         `SMSBower prices raw sample for country=${country}: ${JSON.stringify(sampleEntry)}`,
       );
 
-      const resolvePriceAndStock = (
-        info: any,
-      ): { rub: number; stock: number } => {
-        if (info && typeof info === 'object') {
-          const entries = Object.entries(info);
-
-          if (
-            entries.length === 1 &&
-            !('cost' in info) &&
-            !('price' in info) &&
-            !('count' in info) &&
-            !('qty' in info)
-          ) {
-            const [priceStr, stockVal] = entries[0];
-            const rub = Number(priceStr);
-            const stock = Number(stockVal);
-
-            if (!Number.isNaN(rub)) {
-              return {
-                rub,
-                stock: Number.isNaN(stock) ? 0 : stock,
-              };
-            }
-          }
-        }
-
-        const rub = Number(
-          info?.cost ??
-            info?.price ??
-            info?.retail_price ??
-            info?.real_price ??
-            0,
-        );
-
-        const stock = Number(
-          info?.count ??
-            info?.qty ??
-            info?.quantity ??
-            info?.available ??
-            info?.stock ??
-            0,
-        );
-
-        return { rub, stock };
-      };
-
       return Object.entries(services)
         .map(([service, info]: any) => {
-          const { rub, stock } = resolvePriceAndStock(info);
+          const { usd, stock } = this.resolveSmsBowerTier(info);
 
           return {
             service,
             activationTypes: [
               {
                 activationType: 'any',
-                // Compatibility field: this value is treated as RUB.
-                priceUsd: rub,
+                priceUsd: usd,
                 stock,
-                priceNgn: this.convertSmsBowerPrice(rub),
+                priceNgn: this.convertPrice(usd),
               },
             ],
           };
@@ -634,6 +624,7 @@ export class MarketplaceService {
     operator: string,
     product: string,
     provider: Provider,
+    maxPrice?: number,
   ) {
     if (provider === 'GRIZZYSMS') {
       const purchase = await this.grizzySms.buy(product, country);
@@ -648,7 +639,13 @@ export class MarketplaceService {
     }
 
     if (provider === 'SMSBOWER') {
-      const purchase = await this.smsBower.buy(product, country);
+      // maxPrice caps the provider-side cost at the tier the user was
+      // quoted, so a pricier tier is never bought at the cheaper price.
+      const purchase = await this.smsBower.buy(
+        product,
+        country,
+        maxPrice,
+      );
 
       if (!purchase?.id) {
         throw new BadGatewayException(
@@ -690,7 +687,9 @@ export class MarketplaceService {
         activationType: dto.operator ?? 'any',
         service: dto.product,
         phoneNumber: purchase.phone,
-        providerCostUsd: String(purchase.price ?? 0),
+        providerCostUsd: String(
+          purchase.price ?? purchase.activationCost ?? 0,
+        ),
         sellingPriceNgn: String(amount),
         status: OrderStatus.ACTIVE,
       },
@@ -857,6 +856,9 @@ export class MarketplaceService {
         operator,
         dto.product,
         dto.provider,
+        dto.provider === 'SMSBOWER'
+          ? activation.priceUsd
+          : undefined,
       );
 
       const order = await this.createOrder(
@@ -1072,7 +1074,7 @@ export class MarketplaceService {
 
       rawStatusLabel = code;
     } else if (order.provider === 'SMSBOWER') {
-      // FIX: SmsBowerService.cancel() returns an object, not a string.
+      // SmsBowerService.cancel() returns an object, not a string.
       const result = await this.smsBower.cancel(
         order.providerOrderId ?? '',
       );

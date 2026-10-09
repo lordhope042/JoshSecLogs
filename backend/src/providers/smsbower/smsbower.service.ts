@@ -1,4 +1,3 @@
-
 import {
   BadGatewayException,
   Injectable,
@@ -48,6 +47,12 @@ export interface SmsBowerPriceResponse {
   };
 }
 
+/** One price tier from getPricesV2: the price and how many numbers sit at it. */
+export interface SmsBowerPriceTier {
+  price: number;
+  count: number;
+}
+
 export interface SmsBowerServiceItem {
   code: string;
   name: string;
@@ -68,6 +73,9 @@ export const SMSBOWER_USA_COUNTRIES = {
   PHYSICAL: '187',
   VIRTUAL: '12',
 } as const;
+
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  value !== null && typeof value === 'object' && !Array.isArray(value);
 
 /* -------------------------------------------------------------------------- */
 /*                              SERVICE IMPLEMENTATION                        */
@@ -118,6 +126,12 @@ export class SmsBowerService {
         'SMSBower API key is not configured on the server',
       );
     }
+  }
+
+  /** Drop cached catalogues so the next call hits SMSBower again. */
+  clearCache(): void {
+    this.countriesCache = undefined;
+    this.servicesCache = undefined;
   }
 
   /**
@@ -215,6 +229,42 @@ export class SmsBowerService {
     }
   }
 
+  /**
+   * Turn the different list shapes SMSBower can return into a flat array of
+   * records. Handles:
+   *   [ {...}, {...} ]
+   *   { countries: [...] } / { services: [...] } / { data: [...] }
+   *   { "1": {...}, "2": {...} }   (keyed by id/code)
+   *   { "1": "Name" }              (keyed, value is the name)
+   */
+  private extractItems(
+    parsed: unknown,
+    listKeys: string[],
+    keyField: string,
+  ): Record<string, unknown>[] {
+    if (Array.isArray(parsed)) {
+      return parsed.filter(isRecord);
+    }
+
+    if (!isRecord(parsed)) {
+      return [];
+    }
+
+    for (const listKey of listKeys) {
+      const candidate = parsed[listKey];
+
+      if (Array.isArray(candidate)) {
+        return candidate.filter(isRecord);
+      }
+    }
+
+    return Object.entries(parsed).map(([key, value]) =>
+      isRecord(value)
+        ? { [keyField]: key, ...value }
+        : { [keyField]: key, name: value },
+    );
+  }
+
   /* ------------------------------------------------------------------------ */
   /*                                  BALANCE                                 */
   /* ------------------------------------------------------------------------ */
@@ -241,6 +291,7 @@ export class SmsBowerService {
 
   /**
    * Retrieve prices using SMSBower's getPrices action.
+   * Shape: { [countryId]: { [service]: { cost, count } } }
    */
   async getPrices(
     service?: string,
@@ -254,33 +305,75 @@ export class SmsBowerService {
 
     const parsed = this.parseJson<unknown>(raw, 'getPrices');
 
-    if (
-      parsed === null ||
-      typeof parsed !== 'object' ||
-      Array.isArray(parsed)
-    ) {
+    if (!isRecord(parsed)) {
       throw new BadGatewayException(
         'SMSBower returned an invalid price catalogue',
       );
     }
 
-    return parsed as SmsBowerPriceResponse;
+    return parsed as unknown as SmsBowerPriceResponse;
   }
 
   /**
    * Retrieve prices using SMSBower's getPricesV2 action.
+   * Shape: { [countryId]: { [service]: { [price]: count } } }
    */
   async getPricesV2(
     service?: string,
     country?: string,
-  ): Promise<unknown> {
+  ): Promise<Record<string, Record<string, unknown>>> {
     const raw = await this.request({
       action: 'getPricesV2',
       service,
       country,
     });
 
-    return this.parseJson<unknown>(raw, 'getPricesV2');
+    const parsed = this.parseJson<unknown>(raw, 'getPricesV2');
+
+    if (!isRecord(parsed)) {
+      throw new BadGatewayException(
+        `SMSBower returned an invalid V2 price catalogue: ${raw.slice(0, 250)}`,
+      );
+    }
+
+    return parsed as Record<string, Record<string, unknown>>;
+  }
+
+  /**
+   * Normalised V2 prices for one service: { [countryId]: tiers sorted by price }.
+   * Countries with no readable tiers are left out.
+   */
+  async getServicePriceTiers(
+    service: string,
+    country?: string,
+  ): Promise<Record<string, SmsBowerPriceTier[]>> {
+    const data = await this.getPricesV2(service, country);
+    const result: Record<string, SmsBowerPriceTier[]> = {};
+
+    for (const [countryId, services] of Object.entries(data)) {
+      const entry = isRecord(services) ? services[service] : undefined;
+
+      if (!isRecord(entry)) {
+        continue;
+      }
+
+      const tiers = Object.entries(entry)
+        .map(([price, value]) => ({
+          price: Number(price),
+          count: isRecord(value) ? Number(value.count) : Number(value),
+        }))
+        .filter(
+          (tier) =>
+            Number.isFinite(tier.price) && Number.isFinite(tier.count),
+        )
+        .sort((a, b) => a.price - b.price);
+
+      if (tiers.length > 0) {
+        result[countryId] = tiers;
+      }
+    }
+
+    return result;
   }
 
   /**
@@ -296,8 +389,9 @@ export class SmsBowerService {
   /*                              COUNTRY CATALOGUE                           */
   /* ------------------------------------------------------------------------ */
 
-  async getCountriesList(): Promise<SmsBowerCountry[]> {
+  async getCountriesList(forceRefresh = false): Promise<SmsBowerCountry[]> {
     if (
+      !forceRefresh &&
       this.countriesCache &&
       this.countriesCache.expiresAt > Date.now()
     ) {
@@ -310,69 +404,59 @@ export class SmsBowerService {
 
     const parsed = this.parseJson<unknown>(raw, 'getCountries');
 
-    let items: unknown[] = [];
+    const items = this.extractItems(
+      parsed,
+      ['countries', 'data'],
+      'id',
+    );
 
-    if (Array.isArray(parsed)) {
-      items = parsed;
-    } else if (
-      parsed &&
-      typeof parsed === 'object' &&
-      !Array.isArray(parsed)
-    ) {
-      const object = parsed as Record<string, unknown>;
+    const countries: SmsBowerCountry[] = [];
 
-      if (Array.isArray(object.countries)) {
-        items = object.countries;
-      } else if (Array.isArray(object.data)) {
-        items = object.data;
-      } else {
-        items = Object.entries(object).map(([id, value]) => {
-          if (value && typeof value === 'object') {
-            return { id, ...(value as Record<string, unknown>) };
-          }
+    for (const country of items) {
+      const id =
+        country.id ??
+        country.country ??
+        country.countryId ??
+        country.country_id;
 
-          return { id, name: value };
-        });
+      if (id === undefined || id === null || String(id) === '') {
+        continue;
       }
+
+      // SMSBower returns names as { rus, eng, chn }. Prefer English, and never
+      // drop a country just because its name field is missing.
+      const name =
+        country.eng ??
+        country.name ??
+        country.countryName ??
+        country.country_name ??
+        country.title ??
+        country.rus ??
+        country.chn;
+
+      countries.push({
+        id: String(id),
+        name:
+          name !== undefined && name !== null && String(name) !== ''
+            ? String(name)
+            : String(id),
+      });
     }
 
-    const countries: SmsBowerCountry[] = items
-      .map((item) => {
-        if (!item || typeof item !== 'object') {
-          return null;
-        }
-
-        const country = item as Record<string, unknown>;
-
-        const id =
-          country.id ??
-          country.country ??
-          country.countryId ??
-          country.country_id;
-
-        const name =
-          country.name ??
-          country.countryName ??
-          country.country_name ??
-          country.title;
-
-        if (id === undefined || name === undefined) {
-          return null;
-        }
-
-        return {
-          id: String(id),
-          name: String(name),
-        };
-      })
-      .filter(
-        (country): country is SmsBowerCountry => country !== null,
+    if (countries.length < items.length) {
+      this.logger.warn(
+        `SMSBower getCountries: kept ${countries.length} of ${items.length} items. ` +
+          `Sample: ${JSON.stringify(items[0]).slice(0, 300)}`,
       );
+    }
 
-    this.countriesCache = {
-      data: countries,
-      expiresAt: Date.now() + this.CACHE_TTL_MS,
-    };
+    // Never cache an empty result, otherwise a parse problem sticks for an hour.
+    if (countries.length > 0) {
+      this.countriesCache = {
+        data: countries,
+        expiresAt: Date.now() + this.CACHE_TTL_MS,
+      };
+    }
 
     return countries;
   }
@@ -381,8 +465,9 @@ export class SmsBowerService {
   /*                              SERVICE CATALOGUE                           */
   /* ------------------------------------------------------------------------ */
 
-  async getServicesList(): Promise<SmsBowerServiceItem[]> {
+  async getServicesList(forceRefresh = false): Promise<SmsBowerServiceItem[]> {
     if (
+      !forceRefresh &&
       this.servicesCache &&
       this.servicesCache.expiresAt > Date.now()
     ) {
@@ -395,76 +480,56 @@ export class SmsBowerService {
 
     const parsed = this.parseJson<unknown>(raw, 'getServicesList');
 
-    let items: unknown[] = [];
+    const items = this.extractItems(
+      parsed,
+      ['services', 'data'],
+      'code',
+    );
 
-    if (Array.isArray(parsed)) {
-      items = parsed;
-    } else if (
-      parsed &&
-      typeof parsed === 'object' &&
-      !Array.isArray(parsed)
-    ) {
-      const object = parsed as Record<string, unknown>;
+    const services: SmsBowerServiceItem[] = [];
 
-      if (Array.isArray(object.services)) {
-        items = object.services;
-      } else if (Array.isArray(object.data)) {
-        items = object.data;
-      } else {
-        items = Object.entries(object).map(([code, value]) => {
-          if (value && typeof value === 'object') {
-            return {
-              code,
-              ...(value as Record<string, unknown>),
-            };
-          }
+    for (const service of items) {
+      const code =
+        service.code ??
+        service.service ??
+        service.serviceCode ??
+        service.service_code;
 
-          return {
-            code,
-            name: value,
-          };
-        });
+      if (code === undefined || code === null || String(code) === '') {
+        continue;
       }
+
+      // Fall back to the code instead of dropping a service with no name field.
+      const name =
+        service.name ??
+        service.serviceName ??
+        service.service_name ??
+        service.title ??
+        service.eng ??
+        service.rus;
+
+      services.push({
+        code: String(code),
+        name:
+          name !== undefined && name !== null && String(name) !== ''
+            ? String(name)
+            : String(code),
+      });
     }
 
-    const services: SmsBowerServiceItem[] = items
-      .map((item) => {
-        if (!item || typeof item !== 'object') {
-          return null;
-        }
-
-        const service = item as Record<string, unknown>;
-
-        const code =
-          service.code ??
-          service.service ??
-          service.serviceCode ??
-          service.service_code;
-
-        const name =
-          service.name ??
-          service.serviceName ??
-          service.service_name ??
-          service.title;
-
-        if (code === undefined || name === undefined) {
-          return null;
-        }
-
-        return {
-          code: String(code),
-          name: String(name),
-        };
-      })
-      .filter(
-        (service): service is SmsBowerServiceItem =>
-          service !== null,
+    if (services.length < items.length) {
+      this.logger.warn(
+        `SMSBower getServicesList: kept ${services.length} of ${items.length} items. ` +
+          `Sample: ${JSON.stringify(items[0]).slice(0, 300)}`,
       );
+    }
 
-    this.servicesCache = {
-      data: services,
-      expiresAt: Date.now() + this.CACHE_TTL_MS,
-    };
+    if (services.length > 0) {
+      this.servicesCache = {
+        data: services,
+        expiresAt: Date.now() + this.CACHE_TTL_MS,
+      };
+    }
 
     return services;
   }
@@ -517,17 +582,13 @@ export class SmsBowerService {
       );
     }
 
-    if (
-      !parsed ||
-      typeof parsed !== 'object' ||
-      Array.isArray(parsed)
-    ) {
+    if (!isRecord(parsed)) {
       throw new BadGatewayException(
         'SMSBower returned an unexpected number allocation response',
       );
     }
 
-    const result = parsed as Record<string, unknown>;
+    const result = parsed;
 
     const activationId = result.activationId;
     const phoneNumber = result.phoneNumber;
@@ -675,7 +736,11 @@ export class SmsBowerService {
   /* ------------------------------------------------------------------------ */
 
   /**
-   * Check catalogue pricing and stock.
+   * Check catalogue pricing and stock using getPricesV2, which lists every
+   * price tier (the v1 call can show only one price per country).
+   *
+   * `cost` is the cheapest tier that has stock, `count` is total stock across
+   * all tiers, and `tiers` has the full breakdown.
    *
    * This is an estimate of catalogue availability, not a guarantee that
    * a subsequent number purchase will succeed.
@@ -690,40 +755,26 @@ export class SmsBowerService {
       cost: number;
       count: number;
       available: boolean;
+      tiers: SmsBowerPriceTier[];
     }>;
     available: boolean;
   }> {
-    const prices = await this.getWhatsAppPrices(country);
+    const tiersByCountry = await this.getServicePriceTiers('wa', country);
 
-    const countries = Object.entries(prices)
-      .map(([countryId, services]) => {
-        const whatsapp = services?.wa;
-
-        if (!whatsapp) {
-          return null;
-        }
-
-        const cost = Number(whatsapp.cost);
-        const count = Number(whatsapp.count);
+    const countries = Object.entries(tiersByCountry).map(
+      ([countryId, tiers]) => {
+        const inStock = tiers.filter((tier) => tier.count > 0);
+        const count = tiers.reduce((sum, tier) => sum + tier.count, 0);
 
         return {
           countryId,
-          cost: Number.isFinite(cost) ? cost : 0,
-          count: Number.isFinite(count) ? count : 0,
-          available:
-            Number.isFinite(count) && count > 0,
+          cost: (inStock[0] ?? tiers[0]).price,
+          count,
+          available: inStock.length > 0,
+          tiers,
         };
-      })
-      .filter(
-        (
-          item,
-        ): item is {
-          countryId: string;
-          cost: number;
-          count: number;
-          available: boolean;
-        } => item !== null,
-      );
+      },
+    );
 
     return {
       service: 'wa',
@@ -796,14 +847,15 @@ export class SmsBowerService {
     }
 
     try {
-      const services = await this.getServicesList();
+      const services = await this.getServicesList(true);
 
       result.servicesCount = services.length;
-      result.whatsappService = services.find(
-        (service) =>
-          service.code.toLowerCase() === 'wa' ||
-          service.name.toLowerCase().includes('whatsapp'),
-      ) ?? null;
+      result.whatsappService =
+        services.find(
+          (service) =>
+            service.code.toLowerCase() === 'wa' ||
+            service.name.toLowerCase().includes('whatsapp'),
+        ) ?? null;
     } catch (error: unknown) {
       result.servicesStatus = 'failed';
       result.servicesError =
@@ -820,7 +872,16 @@ export class SmsBowerService {
     }
 
     try {
-      const countries = await this.getCountriesList();
+      result.whatsappPricesV2 = await this.getServicePriceTiers('wa');
+      result.whatsappPricesV2Status = 'success';
+    } catch (error: unknown) {
+      result.whatsappPricesV2Status = 'failed';
+      result.whatsappPricesV2Error =
+        error instanceof Error ? error.message : 'Unknown error';
+    }
+
+    try {
+      const countries = await this.getCountriesList(true);
 
       result.countriesCount = countries.length;
       result.usaCountries = countries.filter((country) =>

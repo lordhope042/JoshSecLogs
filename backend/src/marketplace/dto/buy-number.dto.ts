@@ -14,10 +14,10 @@ export class BuyNumberDto {
   =====================================
   */
 
-  @IsIn(['FIVESIM', 'GRIZZYSMS'], {
-    message: 'Provider must be FIVESIM or GRIZZYSMS.',
+  @IsIn(['FIVESIM', 'GRIZZYSMS', 'SMSBOWER'], {
+    message: 'Provider must be FIVESIM, GRIZZYSMS or SMSBOWER.',
   })
-  provider!: 'FIVESIM' | 'GRIZZYSMS';
+  provider!: 'FIVESIM' | 'GRIZZYSMS' | 'SMSBOWER';
 
   /*
   =====================================
