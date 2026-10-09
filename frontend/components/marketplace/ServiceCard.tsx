@@ -5,6 +5,9 @@ import type { Provider } from "@/services/marketplace";
 
 interface ActivationType {
   activationType: string;
+  /** Display label, e.g. "Grade 1". Falls back to activationType. */
+  label?: string;
+  grade?: number;
   stock: number;
   priceUsd: number;
   priceNgn: number;
@@ -40,6 +43,10 @@ interface ServiceCardProps {
     service: string,
     activationType: string,
     price: number,
+    /** Display label of the chosen grade, e.g. "Grade 1" (SMSBower). */
+    label?: string,
+    /** Friendly service name, e.g. "WhatsApp". */
+    serviceName?: string,
   ) => void;
 }
 
@@ -75,7 +82,7 @@ export default function ServiceCard({
       <div className="space-y-4">
 
         {activationTypes.length > 0 ? (
-          activationTypes
+          [...activationTypes]
             .sort((a, b) => a.priceNgn - b.priceNgn)
             .map((activation) => (
               <div
@@ -87,7 +94,7 @@ export default function ServiceCard({
                   <div>
 
                     <h4 className="font-semibold text-gray-900 dark:text-white capitalize">
-                      {activation.activationType}
+                      {activation.label ?? activation.activationType}
                     </h4>
 
                     <div className="mt-1 flex items-center gap-2 text-sm">
@@ -129,6 +136,8 @@ export default function ServiceCard({
                       service,
                       activation.activationType,
                       activation.priceNgn,
+                      activation.label,
+                      displayName,
                     )
                   }
                   className="mt-4 w-full rounded-xl bg-orange-500 py-2.5 font-semibold text-black transition hover:bg-orange-400 disabled:cursor-not-allowed disabled:bg-zinc-700 disabled:text-zinc-400"

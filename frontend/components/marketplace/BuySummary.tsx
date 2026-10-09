@@ -21,7 +21,11 @@ interface BuySummaryProps {
   wallet?: number;
   country?: string;
   service?: string;
+  /** Friendly service name, e.g. "WhatsApp". Falls back to `service`. */
+  serviceName?: string;
   activationType?: string;
+  /** Friendly grade label, e.g. "Grade 1". Falls back to `activationType`. */
+  activationLabel?: string;
   price?: number;
 }
 
@@ -54,6 +58,15 @@ const displayValue = (
   value?: string,
 ) => value?.trim() || "Not Selected";
 
+/**
+ * SMSBower activation types are price keys (e.g. "0.12"). If no label was
+ * passed down, show them as a readable tier instead of a bare number.
+ */
+const formatActivation = (value?: string) =>
+  value && /^\d+(\.\d+)?$/.test(value.trim())
+    ? `Tier $${value.trim()}`
+    : value;
+
 /* ==========================================================
    COMPONENT
 ========================================================== */
@@ -62,7 +75,9 @@ export default function BuySummary({
   wallet = 0,
   country,
   service,
+  serviceName,
   activationType,
+  activationLabel,
   price = 0,
 }: BuySummaryProps) {
   const enoughBalance = wallet >= price;
@@ -160,7 +175,7 @@ export default function BuySummary({
                 <Package size={18} />
               }
               title="Service"
-              value={displayValue(service)}
+              value={displayValue(serviceName ?? service)}
             />
 
             <SummaryItem
@@ -169,7 +184,8 @@ export default function BuySummary({
               }
               title="Activation"
               value={displayValue(
-                activationType,
+                activationLabel ??
+                  formatActivation(activationType),
               )}
             />
 

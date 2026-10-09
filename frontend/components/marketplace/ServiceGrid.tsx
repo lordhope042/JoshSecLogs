@@ -15,6 +15,10 @@ interface ServiceGridProps {
     service: string,
     activationType: string,
     price: number,
+    /** Display label of the chosen grade, e.g. "Grade 1" (SMSBower). */
+    label?: string,
+    /** Friendly service name, e.g. "WhatsApp". */
+    serviceName?: string,
   ) => void;
 }
 

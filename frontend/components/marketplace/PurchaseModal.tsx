@@ -28,7 +28,11 @@ interface PurchaseModalProps {
   provider: Provider;
   country: string;
   service: string;
+  /** Friendly service name, e.g. "WhatsApp". Falls back to `service`. */
+  serviceName?: string;
   activationType: string;
+  /** Friendly grade label, e.g. "Grade 1". Falls back to `activationType`. */
+  activationLabel?: string;
 
   price: number;
   wallet: number;
@@ -65,6 +69,15 @@ const money = (amount = 0): string =>
 const displayValue = (value?: string) =>
   value?.trim() || "Not Selected";
 
+/**
+ * SMSBower activation types are price keys (e.g. "0.12"). If no label was
+ * passed down, show them as a readable tier instead of a bare number.
+ */
+const formatActivation = (value?: string) =>
+  value && /^\d+(\.\d+)?$/.test(value.trim())
+    ? `Tier $${value.trim()}`
+    : value;
+
 /* ==========================================================
    COMPONENT
 ========================================================== */
@@ -76,7 +89,9 @@ export default function PurchaseModal({
   provider,
   country,
   service,
+  serviceName,
   activationType,
+  activationLabel,
 
   price,
   wallet,
@@ -87,9 +102,9 @@ export default function PurchaseModal({
   if (!open) return null;
 
   const providerLabel =
-    provider === "GRIZZYSMS"
+    provider === "SMSBOWER"
       ? "Provider 2"
-      : provider === "SMSBOWER"
+      : provider === "GRIZZYSMS"
       ? "Provider 3"
       : "Provider 1";
 
@@ -175,14 +190,15 @@ export default function PurchaseModal({
                 <Row
                   icon={<Package size={18} />}
                   label="Service"
-                  value={displayValue(service)}
+                  value={displayValue(serviceName ?? service)}
                 />
 
                 <Row
                   icon={<Zap size={18} />}
                   label="Activation"
                   value={displayValue(
-                    activationType,
+                    activationLabel ??
+                      formatActivation(activationType),
                   )}
                 />
 

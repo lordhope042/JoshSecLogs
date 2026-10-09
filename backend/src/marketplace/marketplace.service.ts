@@ -258,17 +258,10 @@ export class MarketplaceService {
 
   private async smsBowerProducts(country: string) {
     try {
-      const [rawPrices, namedList] = await Promise.all([
+      const [rawPrices, nameMap] = await Promise.all([
         this.smsBower.getPricesV2(undefined, country),
-        this.smsBower.getServicesList(),
+        this.smsBowerServiceNameMap(),
       ]);
-
-      const nameMap = new Map(
-        (namedList ?? []).map((service) => [
-          service.code,
-          service.name,
-        ]),
-      );
 
       const response: any = rawPrices;
       const nested = response?.[country];
@@ -284,7 +277,7 @@ export class MarketplaceService {
         .map((code) => ({
           id: code,
           service: code,
-          name: nameMap.get(code) ?? code,
+          name: this.smsBowerServiceName(code, nameMap),
           image: null,
         }))
         .sort((a, b) => a.name.localeCompare(b.name));
@@ -459,20 +452,77 @@ export class MarketplaceService {
   }
 
   /**
-   * Resolve one service entry from SMSBower getPricesV2.
-   *
-   * Documented shape: { "<price1>": stock1, "<price2>": stock2, ... },
-   * one key per price tier. Named-field shapes ({ cost, count }) are
-   * still accepted as a fallback.
-   *
-   * Returns the cheapest tier that has stock. If no tier has stock,
-   * returns the cheapest tier with stock 0, so the service still
-   * appears (as out of stock) instead of showing a price of 0.
+   * Fallback display names, used only when SMSBower's service list
+   * does not return a name for a code.
    */
-  private resolveSmsBowerTier(info: any): {
+  private readonly smsBowerFallbackNames: Record<string, string> = {
+    wa: 'WhatsApp',
+    tg: 'Telegram',
+    fb: 'Facebook',
+    ig: 'Instagram',
+    go: 'Google',
+    tw: 'Twitter / X',
+    ds: 'Discord',
+    lf: 'TikTok',
+    am: 'Amazon',
+    mm: 'Microsoft',
+    vi: 'Viber',
+    wb: 'WeChat',
+    oi: 'Tinder',
+    nf: 'Netflix',
+    ub: 'Uber',
+    ot: 'Any other',
+  };
+
+  private async smsBowerServiceNameMap(): Promise<
+    Map<string, string>
+  > {
+    try {
+      const list = await this.smsBower.getServicesList();
+
+      return new Map(
+        (list ?? []).map((service) => [
+          service.code,
+          service.name,
+        ]),
+      );
+    } catch (error) {
+      this.logger.warn(
+        `SMSBower service names unavailable, using fallbacks: ${
+          error instanceof Error ? error.message : String(error)
+        }`,
+      );
+
+      return new Map();
+    }
+  }
+
+  private smsBowerServiceName(
+    code: string,
+    nameMap: Map<string, string>,
+  ): string {
+    const apiName = nameMap.get(code);
+
+    if (apiName && apiName !== code) {
+      return apiName;
+    }
+
+    return this.smsBowerFallbackNames[code] ?? code;
+  }
+
+  /**
+   * Parse one service entry from SMSBower getPricesV2 into all of its
+   * price tiers ("grades"), cheapest first.
+   *
+   * Documented shape: { "<price1>": stock1, "<price2>": stock2, ... }.
+   * Named-field shapes ({ cost, count }) fall back to a single tier
+   * with key "any".
+   */
+  private resolveSmsBowerTiers(info: any): Array<{
+    key: string;
     usd: number;
     stock: number;
-  } {
+  }> {
     if (info && typeof info === 'object') {
       const hasNamedFields =
         'cost' in info ||
@@ -489,6 +539,7 @@ export class MarketplaceService {
                 : Number(stockVal);
 
             return {
+              key: priceStr,
               usd: Number(priceStr),
               stock: Number.isFinite(stock) ? stock : 0,
             };
@@ -497,7 +548,7 @@ export class MarketplaceService {
           .sort((a, b) => a.usd - b.usd);
 
         if (tiers.length > 0) {
-          return tiers.find((tier) => tier.stock > 0) ?? tiers[0];
+          return tiers;
         }
       }
     }
@@ -519,20 +570,31 @@ export class MarketplaceService {
         0,
     );
 
-    return {
-      usd: Number.isFinite(usd) ? usd : 0,
-      stock: Number.isFinite(stock) ? stock : 0,
-    };
+    return [
+      {
+        key: 'any',
+        usd: Number.isFinite(usd) ? usd : 0,
+        stock: Number.isFinite(stock) ? stock : 0,
+      },
+    ];
   }
 
   /**
-   * SMSBower prices are normalized to the same response shape as
-   * GrizzySMS, using the cheapest in-stock price tier per service.
+   * SMSBower prices are normalized to the shared response shape, with one
+   * activation type per price tier ("Grade 1" = cheapest). Only tiers with
+   * stock are listed; if nothing is in stock, the cheapest tier is listed
+   * with stock 0 so the service still appears.
+   *
+   * activationType is the tier's price key, which the buy flow uses to
+   * cap the provider-side cost (maxPrice) at the tier the user chose.
    */
   private async smsBowerPrices(country: string) {
     try {
-      const response: any =
-        await this.smsBower.getPricesV2(undefined, country);
+      const [response, nameMap]: [any, Map<string, string>] =
+        await Promise.all([
+          this.smsBower.getPricesV2(undefined, country),
+          this.smsBowerServiceNameMap(),
+        ]);
 
       const nested = response?.[country];
 
@@ -551,18 +613,21 @@ export class MarketplaceService {
 
       return Object.entries(services)
         .map(([service, info]: any) => {
-          const { usd, stock } = this.resolveSmsBowerTier(info);
+          const all = this.resolveSmsBowerTiers(info);
+          const inStock = all.filter((tier) => tier.stock > 0);
+          const shown = inStock.length > 0 ? inStock : all.slice(0, 1);
 
           return {
             service,
-            activationTypes: [
-              {
-                activationType: 'any',
-                priceUsd: usd,
-                stock,
-                priceNgn: this.convertPrice(usd),
-              },
-            ],
+            name: this.smsBowerServiceName(service, nameMap),
+            activationTypes: shown.map((tier, index) => ({
+              activationType: tier.key,
+              label: `Grade ${index + 1}`,
+              grade: index + 1,
+              stock: tier.stock,
+              priceUsd: tier.usd,
+              priceNgn: this.convertPrice(tier.usd),
+            })),
           };
         })
         .sort((a, b) => a.service.localeCompare(b.service));
@@ -600,9 +665,17 @@ export class MarketplaceService {
       );
     }
 
-    const activation = service.activationTypes.find(
+    let activation: any = service.activationTypes.find(
       (item: any) => item.activationType === operator,
     );
+
+    // Older clients send "any" for SMSBower: use the cheapest in-stock grade.
+    if (!activation && provider === 'SMSBOWER' && operator === 'any') {
+      activation =
+        service.activationTypes.find(
+          (item: any) => item.stock > 0,
+        ) ?? service.activationTypes[0];
+    }
 
     if (!activation) {
       throw new BadRequestException(
