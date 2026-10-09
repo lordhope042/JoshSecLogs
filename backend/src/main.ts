@@ -4,7 +4,7 @@ import helmet from 'helmet';
 import { AppModule } from './app.module';
 
 async function bootstrap() {
-  // FIX: rawBody is required so the Paystack webhook endpoint can compute an
+  // FIX: rawBody is requirbed so the Paystack webhook endpoint can compute an
   // exact HMAC-SHA512 signature over the original bytes.  Without this,
   // `req.rawBody` is undefined and signature verification fails — which means
   // Paystack webhooks would either be rejected or, worse, accepted on a

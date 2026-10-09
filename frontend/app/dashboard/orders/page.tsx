@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import {
   ArrowRight,
@@ -40,7 +40,7 @@ function statusMeta(status?: string) {
       return { label: "Processing", cls: "bg-blue-500/10 text-blue-600 dark:text-blue-400", Icon: LoaderCircle };
     case "FAILED":
     case "CANCELLED":
-      return { label: status === "CANCELLED" ? "Cancelled" : "Failed", cls: "bg-red-500/10 text-red-600 dark:text-red-400", Icon: XCircle };
+      return { label: status?.toUpperCase() === "CANCELLED" ? "Cancelled" : "Failed", cls: "bg-red-500/10 text-red-600 dark:text-red-400", Icon: XCircle };
     default:
       return { label: status || "Unknown", cls: "bg-slate-500/10 text-slate-600 dark:text-slate-400", Icon: Package };
   }
@@ -50,6 +50,20 @@ export default function OrdersPage() {
   const { orders, loading, loadOrders } = useOrders();
   const [query, setQuery] = useState("");
   const [status, setStatus] = useState("ALL");
+
+  // Fetch orders when the page opens (this was missing before).
+  useEffect(() => {
+    loadOrders().catch(() => toast.error("Could not load orders"));
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Refresh when the user returns to this tab.
+  useEffect(() => {
+    const onFocus = () => {
+      loadOrders().catch(() => {});
+    };
+    window.addEventListener("focus", onFocus);
+    return () => window.removeEventListener("focus", onFocus);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -118,7 +132,7 @@ export default function OrdersPage() {
         </div>
 
         {loading ? (
-          <div className="space-y-3 p-5">{[1,2,3,4].map((n) => <div key={n} className="h-16 animate-pulse rounded-xl bg-slate-100 dark:bg-slate-800/60" />)}</div>
+          <div className="space-y-3 p-5">{[1, 2, 3, 4].map((n) => <div key={n} className="h-16 animate-pulse rounded-xl bg-slate-100 dark:bg-slate-800/60" />)}</div>
         ) : filtered.length === 0 ? (
           <div className="flex flex-col items-center justify-center px-6 py-20 text-center">
             <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-orange-500/10 text-orange-500"><ShoppingBag className="h-6 w-6" /></div>
@@ -153,7 +167,7 @@ function Stat({ label, value, icon: Icon, tone }: any) {
 
 function OrderRow({ order, onCopy }: any) {
   const meta = statusMeta(order.status); const Icon = meta.Icon;
-  return <tr className="group hover:bg-slate-50/70 dark:hover:bg-white/[.02]"><td className="px-5 py-4"><button onClick={() => onCopy(String(order.id))} className="flex items-center gap-2 text-xs font-bold text-slate-800 dark:text-white hover:text-orange-500"><span>#{String(order.id).slice(-8)}</span><Copy className="h-3.5 w-3.5 text-slate-400" /></button><p className="mt-1 text-[10px] text-slate-400">{order.phoneNumber || order.country || "Service order"}</p></td><td className="px-4 py-4"><p className="text-xs font-bold text-slate-900 dark:text-white">{order.service || "Service"}</p><p className="mt-1 text-[10px] text-slate-400">{order.provider || "JoshSecLogs"}</p></td><td className="px-4 py-4 text-xs font-bold text-slate-800 dark:text-slate-200">{money(order.amount)}</td><td className="px-4 py-4"><span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[10px] font-bold ${meta.cls}`}><Icon className={`h-3 w-3 ${order.status === "PROCESSING" ? "animate-spin" : ""}`} />{meta.label}</span></td><td className="px-4 py-4"><div className="flex items-center gap-1.5 text-[11px] text-slate-500"><CalendarDays className="h-3.5 w-3.5" />{dateLabel(order.createdAt)}</div></td><td className="px-5 py-4 text-right"><Link href={`/dashboard/orders/${order.id}`} className="inline-flex h-8 items-center gap-1.5 rounded-lg border border-slate-200 px-3 text-[10px] font-bold text-slate-600 hover:border-orange-300 hover:text-orange-500 dark:border-slate-700 dark:text-slate-300"><Eye className="h-3.5 w-3.5" /> View</Link></td></tr>;
+  return <tr className="group hover:bg-slate-50/70 dark:hover:bg-white/[.02]"><td className="px-5 py-4"><button onClick={() => onCopy(String(order.id))} className="flex items-center gap-2 text-xs font-bold text-slate-800 dark:text-white hover:text-orange-500"><span>#{String(order.id).slice(-8)}</span><Copy className="h-3.5 w-3.5 text-slate-400" /></button><p className="mt-1 text-[10px] text-slate-400">{order.phoneNumber || order.country || "Service order"}</p></td><td className="px-4 py-4"><p className="text-xs font-bold text-slate-900 dark:text-white">{order.service || "Service"}</p><p className="mt-1 text-[10px] text-slate-400">{order.provider || "JoshSecLogs"}</p></td><td className="px-4 py-4 text-xs font-bold text-slate-800 dark:text-slate-200">{money(order.amount)}</td><td className="px-4 py-4"><span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[10px] font-bold ${meta.cls}`}><Icon className={`h-3 w-3 ${String(order.status).toUpperCase() === "PROCESSING" ? "animate-spin" : ""}`} />{meta.label}</span></td><td className="px-4 py-4"><div className="flex items-center gap-1.5 text-[11px] text-slate-500"><CalendarDays className="h-3.5 w-3.5" />{dateLabel(order.createdAt)}</div></td><td className="px-5 py-4 text-right"><Link href={`/dashboard/orders/${order.id}`} className="inline-flex h-8 items-center gap-1.5 rounded-lg border border-slate-200 px-3 text-[10px] font-bold text-slate-600 hover:border-orange-300 hover:text-orange-500 dark:border-slate-700 dark:text-slate-300"><Eye className="h-3.5 w-3.5" /> View</Link></td></tr>;
 }
 
 function MobileOrder({ order, onCopy }: any) {
