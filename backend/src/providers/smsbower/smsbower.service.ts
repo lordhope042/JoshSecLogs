@@ -1,54 +1,34 @@
+
 import {
+  BadGatewayException,
   Injectable,
   Logger,
-  InternalServerErrorException,
-  BadGatewayException,
 } from '@nestjs/common';
 import { HttpService } from '@nestjs/axios';
 import { ConfigService } from '@nestjs/config';
-import { firstValueFrom } from 'rxjs';
 import { AxiosError } from 'axios';
+import { firstValueFrom } from 'rxjs';
 
-/*
-|--------------------------------------------------------------------------
-| SMSBOWER PROVIDER
-|--------------------------------------------------------------------------
-|
-| SMSBower uses the classic handler_api.php protocol.
-|
-| Important service codes:
-|   WhatsApp = wa
-|   Telegram = tg
-|   Facebook = fb
-|   Instagram = ig
-|   Google/Gmail/YouTube = go
-|   TikTok = lf
-|   Twitter = tw
-|
-| The API returns:
-|
-|   getBalance:
-|     ACCESS_BALANCE:100.00
-|
-|   getNumber:
-|     ACCESS_NUMBER:activationId:phoneNumber
-|
-|   getStatus:
-|     STATUS_WAIT_CODE
-|     STATUS_OK:123456
-|
-|   setStatus:
-|     ACCESS_READY
-|     ACCESS_RETRY_GET
-|     ACCESS_ACTIVATION
-|     ACCESS_CANCEL
-|
-|--------------------------------------------------------------------------
-*/
+/* -------------------------------------------------------------------------- */
+/*                                   TYPES                                    */
+/* -------------------------------------------------------------------------- */
 
 export interface SmsBowerBuyResponse {
   id: string;
   phone: string;
+  activationCost?: number;
+  countryCode?: string;
+  canGetAnotherSms?: boolean;
+  activationTime?: string;
+  activationOperator?: string;
+}
+
+export interface SmsBowerBuyV2Options {
+  maxPrice?: number;
+  minPrice?: number;
+  providerIds?: string;
+  exceptProviderIds?: string;
+  userID?: string;
 }
 
 export interface SmsBowerStatusResponse {
@@ -78,229 +58,190 @@ export interface SmsBowerCountry {
   name: string;
 }
 
+/**
+ * SMSBower country identifiers.
+ *
+ * Verify these identifiers against your current SMSBower account catalogue
+ * before purchasing numbers. Availability and supported number types can vary.
+ */
+export const SMSBOWER_USA_COUNTRIES = {
+  PHYSICAL: '187',
+  VIRTUAL: '12',
+} as const;
+
+/* -------------------------------------------------------------------------- */
+/*                              SERVICE IMPLEMENTATION                        */
+/* -------------------------------------------------------------------------- */
+
 @Injectable()
 export class SmsBowerService {
   private readonly logger = new Logger(SmsBowerService.name);
 
-  private countriesCache: {
-    data: SmsBowerCountry[];
-    expiresAt: number;
-  } | null = null;
-
-  private servicesCache: {
-    data: SmsBowerServiceItem[];
-    expiresAt: number;
-  } | null = null;
-
+  private readonly baseUrl: string;
+  private readonly apiKey: string;
+  private readonly BUY_TIMEOUT_MS = 60_000;
+  private readonly DEFAULT_TIMEOUT_MS = 20_000;
   private readonly CACHE_TTL_MS = 60 * 60 * 1000;
 
-  private readonly DEFAULT_TIMEOUT_MS = 15000;
+  private countriesCache?: {
+    data: SmsBowerCountry[];
+    expiresAt: number;
+  };
 
-  private readonly BUY_TIMEOUT_MS = 30000;
+  private servicesCache?: {
+    data: SmsBowerServiceItem[];
+    expiresAt: number;
+  };
 
   constructor(
-    private readonly http: HttpService,
-    private readonly config: ConfigService,
-  ) {}
+    private readonly httpService: HttpService,
+    private readonly configService: ConfigService,
+  ) {
+    this.baseUrl = (
+      this.configService.get<string>(
+        'SMSBOWER_BASE_URL',
+        'https://smsbower.page/stubs/handler_api.php',
+      ) || 'https://smsbower.page/stubs/handler_api.php'
+    ).replace(/\/+$/, '');
 
-  /*
-  |--------------------------------------------------------------------------
-  | CONFIGURATION
-  |--------------------------------------------------------------------------
-  */
+    this.apiKey =
+      this.configService.get<string>('SMSBOWER_API_KEY') || '';
+  }
 
-  private get apiKey(): string {
-    const key = this.config.get<string>('SMSBOWER_API_KEY');
+  /* ------------------------------------------------------------------------ */
+  /*                              CONFIGURATION                               */
+  /* ------------------------------------------------------------------------ */
 
-    if (!key) {
-      throw new InternalServerErrorException(
-        'Missing SMSBOWER_API_KEY',
+  private ensureConfigured(): void {
+    if (!this.apiKey) {
+      throw new BadGatewayException(
+        'SMSBower API key is not configured on the server',
       );
     }
-
-    return key;
   }
 
-  private get baseUrl(): string {
-    const configured = this.config.get<string>(
-      'SMSBOWER_BASE_URL',
-    );
-
-    /*
-     * Official handler API endpoint.
-     *
-     * You can override this through:
-     *
-     * SMSBOWER_BASE_URL=https://smsbower.page/stubs/handler_api.php
-     */
-
-    if (!configured) {
-      return 'https://smsbower.page/stubs/handler_api.php';
-    }
-
-    const trimmed = configured.replace(/\/+$/, '');
-
-    if (trimmed.endsWith('/handler_api.php')) {
-      return trimmed;
-    }
-
-    return `${trimmed}/stubs/handler_api.php`;
-  }
-
-  /*
-  |--------------------------------------------------------------------------
-  | GENERIC API REQUEST
-  |--------------------------------------------------------------------------
-  */
-
+  /**
+   * Make a request to SMSBower.
+   *
+   * The API key is never written to the logs.
+   */
   private async request(
-    params: Record<string, string | number | undefined>,
-    timeoutMs: number = this.DEFAULT_TIMEOUT_MS,
+    params: Record<
+      string,
+      string | number | boolean | undefined | null
+    >,
+    timeout = this.DEFAULT_TIMEOUT_MS,
   ): Promise<string> {
-    try {
-      const query = new URLSearchParams();
+    this.ensureConfigured();
 
-      query.set('api_key', this.apiKey);
+    const query = new URLSearchParams();
+    query.set('api_key', this.apiKey);
 
-      for (const [key, value] of Object.entries(params)) {
-        if (value !== undefined && value !== null) {
-          query.set(key, String(value));
-        }
+    for (const [key, value] of Object.entries(params)) {
+      if (value !== undefined && value !== null && value !== '') {
+        query.set(key, String(value));
       }
+    }
 
-      const url = `${this.baseUrl}?${query.toString()}`;
+    const url = `${this.baseUrl}?${query.toString()}`;
 
-      this.logger.debug(
-        `SMSBower request: ${this.safeUrlForLog(url)}`,
-      );
+    const safeUrl = `${this.baseUrl}?api_key=[REDACTED]&${Array.from(
+      query.entries(),
+    )
+      .filter(([key]) => key !== 'api_key')
+      .map(([key, value]) => `${key}=${value}`)
+      .join('&')}`;
 
-      const { data } = await firstValueFrom(
-        this.http.request<string>({
-          method: 'GET',
-          url,
-          timeout: timeoutMs,
+    try {
+      const response = await firstValueFrom(
+        this.httpService.get<string>(url, {
+          timeout,
           responseType: 'text',
-
-          transformResponse: (response) => response,
+          transformResponse: [(data) => data],
         }),
       );
 
-      const result =
-        typeof data === 'string'
-          ? data
-          : JSON.stringify(data);
+      const raw =
+        typeof response.data === 'string'
+          ? response.data.trim()
+          : JSON.stringify(response.data);
 
+      this.logger.debug(`SMSBower request: ${safeUrl}`);
       this.logger.debug(
-        `SMSBower response: ${result.slice(0, 1000)}`,
+        `SMSBower response: ${raw.slice(0, 1000)}`,
       );
 
-      return result;
-    } catch (error) {
-      const err = error as AxiosError;
+      return raw;
+    } catch (error: unknown) {
+      const axiosError = error as AxiosError;
 
-      this.logger.error(`
-========== SMSBOWER ERROR ==========
-BASE URL: ${this.baseUrl}
-PARAMS: ${JSON.stringify(params)}
-TIMEOUT: ${timeoutMs}
-STATUS: ${err.response?.status ?? 'N/A'}
-RESPONSE: ${JSON.stringify(err.response?.data ?? '')}
-MESSAGE: ${
-        error instanceof Error
-          ? error.message
-          : String(error)
-      }
-====================================
-      `);
+      const status = axiosError.response?.status;
+      const responseData = axiosError.response?.data;
 
-      throw new BadGatewayException(
-        'SMSBower request failed',
+      const responseText =
+        typeof responseData === 'string'
+          ? responseData
+          : responseData
+            ? JSON.stringify(responseData)
+            : undefined;
+
+      this.logger.error(
+        `SMSBower request failed. HTTP status: ${status ?? 'unknown'}. ` +
+          `Message: ${axiosError.message || 'Unknown error'}`,
       );
-    }
-  }
 
-  /*
-  |--------------------------------------------------------------------------
-  | HIDE API KEY FROM LOGS
-  |--------------------------------------------------------------------------
-  */
-
-  private safeUrlForLog(url: string): string {
-    try {
-      const parsed = new URL(url);
-
-      if (parsed.searchParams.has('api_key')) {
-        parsed.searchParams.set(
-          'api_key',
-          '********',
+      if (responseText) {
+        this.logger.error(
+          `SMSBower error response: ${responseText.slice(0, 500)}`,
         );
       }
 
-      return parsed.toString();
-    } catch {
-      return '[invalid-url]';
+      throw new BadGatewayException(
+        'Unable to communicate with SMSBower. Check the provider status and server logs.',
+      );
     }
   }
 
-  /*
-  |--------------------------------------------------------------------------
-  | PARSE TEXT RESPONSE
-  |--------------------------------------------------------------------------
-  */
-
-  private parseTextResponse(
-    raw: string,
-  ): SmsBowerStatusResponse {
-    const trimmed = raw.trim();
-
-    const [code, ...rest] = trimmed.split(':');
-
-    return {
-      raw: trimmed,
-      code,
-      value:
-        rest.length > 0
-          ? rest.join(':')
-          : undefined,
-    };
+  /**
+   * Parse JSON returned by SMSBower.
+   */
+  private parseJson<T>(raw: string, action: string): T {
+    try {
+      return JSON.parse(raw) as T;
+    } catch {
+      throw new BadGatewayException(
+        `SMSBower returned an unexpected response for ${action}: ${raw.slice(0, 250)}`,
+      );
+    }
   }
 
-  /*
-  |--------------------------------------------------------------------------
-  | BALANCE
-  |--------------------------------------------------------------------------
-  */
+  /* ------------------------------------------------------------------------ */
+  /*                                  BALANCE                                 */
+  /* ------------------------------------------------------------------------ */
 
   async getBalance(): Promise<number> {
     const raw = await this.request({
       action: 'getBalance',
     });
 
-    const parsed = this.parseTextResponse(raw);
+    const match = raw.match(/ACCESS_BALANCE:([-+]?\d*\.?\d+)/i);
 
-    if (parsed.code !== 'ACCESS_BALANCE') {
+    if (!match) {
       throw new BadGatewayException(
-        `Unexpected SMSBower balance response: ${parsed.raw}`,
+        `Could not read SMSBower balance: ${raw.slice(0, 250)}`,
       );
     }
 
-    const balance = Number(parsed.value ?? 0);
-
-    if (Number.isNaN(balance)) {
-      throw new BadGatewayException(
-        `Invalid SMSBower balance: ${parsed.raw}`,
-      );
-    }
-
-    return balance;
+    return Number(match[1]);
   }
 
-  /*
-  |--------------------------------------------------------------------------
-  | PRICES
-  |--------------------------------------------------------------------------
-  */
+  /* ------------------------------------------------------------------------ */
+  /*                               PRICE CATALOGUE                            */
+  /* ------------------------------------------------------------------------ */
 
+  /**
+   * Retrieve prices using SMSBower's getPrices action.
+   */
   async getPrices(
     service?: string,
     country?: string,
@@ -311,95 +252,51 @@ MESSAGE: ${
       country,
     });
 
-    return this.parsePriceResponse(raw);
+    const parsed = this.parseJson<unknown>(raw, 'getPrices');
+
+    if (
+      parsed === null ||
+      typeof parsed !== 'object' ||
+      Array.isArray(parsed)
+    ) {
+      throw new BadGatewayException(
+        'SMSBower returned an invalid price catalogue',
+      );
+    }
+
+    return parsed as SmsBowerPriceResponse;
   }
 
-  /*
-  |--------------------------------------------------------------------------
-  | PRICES V2
-  |--------------------------------------------------------------------------
-  */
-
+  /**
+   * Retrieve prices using SMSBower's getPricesV2 action.
+   */
   async getPricesV2(
     service?: string,
     country?: string,
-  ): Promise<SmsBowerPriceResponse> {
+  ): Promise<unknown> {
     const raw = await this.request({
       action: 'getPricesV2',
       service,
       country,
     });
 
-    return this.parsePriceResponse(raw);
+    return this.parseJson<unknown>(raw, 'getPricesV2');
   }
 
-  /*
-  |--------------------------------------------------------------------------
-  | PARSE PRICE RESPONSE
-  |--------------------------------------------------------------------------
-  */
-
-  private parsePriceResponse(
-    raw: string,
-  ): SmsBowerPriceResponse {
-    try {
-      const parsed = JSON.parse(raw);
-
-      /*
-       * Some providers return:
-       *
-       * {
-       *   "0": {
-       *     "wa": {
-       *       "cost": 1.2,
-       *       "count": 10
-       *     }
-       *   }
-       * }
-       *
-       * Others may wrap it in:
-       *
-       * {
-       *   "prices": {...}
-       * }
-       */
-
-      if (
-        parsed &&
-        typeof parsed === 'object' &&
-        parsed.prices &&
-        typeof parsed.prices === 'object'
-      ) {
-        return parsed.prices;
-      }
-
-      return parsed;
-    } catch {
-      this.logger.error(
-        `SMSBower returned invalid price JSON: ${raw.slice(
-          0,
-          1000,
-        )}`,
-      );
-
-      throw new BadGatewayException(
-        `SMSBower getPrices returned non-JSON: ${raw.slice(
-          0,
-          200,
-        )}`,
-      );
-    }
+  /**
+   * Return WhatsApp prices, optionally restricted to a country.
+   */
+  async getWhatsAppPrices(
+    country?: string,
+  ): Promise<SmsBowerPriceResponse> {
+    return this.getPrices('wa', country);
   }
 
-  /*
-  |--------------------------------------------------------------------------
-  | COUNTRIES
-  |--------------------------------------------------------------------------
-  */
+  /* ------------------------------------------------------------------------ */
+  /*                              COUNTRY CATALOGUE                           */
+  /* ------------------------------------------------------------------------ */
 
-  async getCountriesList(): Promise<
-    SmsBowerCountry[] | null
-  > {
+  async getCountriesList(): Promise<SmsBowerCountry[]> {
     if (
       this.countriesCache &&
       this.countriesCache.expiresAt > Date.now()
@@ -407,106 +304,84 @@ MESSAGE: ${
       return this.countriesCache.data;
     }
 
-    try {
-      const raw = await this.request({
-        action: 'getCountries',
-      });
+    const raw = await this.request({
+      action: 'getCountries',
+    });
 
-      this.logger.debug(
-        `SMSBower countries raw response: ${raw.slice(
-          0,
-          1000,
-        )}`,
-      );
+    const parsed = this.parseJson<unknown>(raw, 'getCountries');
 
-      const parsed = JSON.parse(raw);
+    let items: unknown[] = [];
 
-      let result: SmsBowerCountry[] | null = null;
+    if (Array.isArray(parsed)) {
+      items = parsed;
+    } else if (
+      parsed &&
+      typeof parsed === 'object' &&
+      !Array.isArray(parsed)
+    ) {
+      const object = parsed as Record<string, unknown>;
 
-      /*
-       * Array format
-       */
-      if (Array.isArray(parsed)) {
-        result = parsed
-          .map((entry: any) => ({
-            id: String(
-              entry.id ??
-                entry.country ??
-                entry.countryId ??
-                '',
-            ),
+      if (Array.isArray(object.countries)) {
+        items = object.countries;
+      } else if (Array.isArray(object.data)) {
+        items = object.data;
+      } else {
+        items = Object.entries(object).map(([id, value]) => {
+          if (value && typeof value === 'object') {
+            return { id, ...(value as Record<string, unknown>) };
+          }
 
-            name: String(
-              entry.name_en ??
-                entry.name ??
-                entry.eng ??
-                entry.countryName ??
-                entry.id ??
-                '',
-            ),
-          }))
-          .filter((country) => country.id);
+          return { id, name: value };
+        });
       }
-
-      /*
-       * Object format
-       */
-      else if (
-        parsed &&
-        typeof parsed === 'object'
-      ) {
-        const source =
-          parsed.countries &&
-          typeof parsed.countries === 'object'
-            ? parsed.countries
-            : parsed;
-
-        result = Object.entries(source).map(
-          ([id, value]: [string, any]) => ({
-            id,
-
-            name: String(
-              value?.name_en ??
-                value?.name ??
-                value?.eng ??
-                value?.countryName ??
-                id,
-            ),
-          }),
-        );
-      }
-
-      if (result) {
-        this.countriesCache = {
-          data: result,
-          expiresAt:
-            Date.now() + this.CACHE_TTL_MS,
-        };
-      }
-
-      return result;
-    } catch (error) {
-      this.logger.warn(
-        `Unable to load SMSBower countries: ${
-          error instanceof Error
-            ? error.message
-            : String(error)
-        }`,
-      );
-
-      return null;
     }
+
+    const countries: SmsBowerCountry[] = items
+      .map((item) => {
+        if (!item || typeof item !== 'object') {
+          return null;
+        }
+
+        const country = item as Record<string, unknown>;
+
+        const id =
+          country.id ??
+          country.country ??
+          country.countryId ??
+          country.country_id;
+
+        const name =
+          country.name ??
+          country.countryName ??
+          country.country_name ??
+          country.title;
+
+        if (id === undefined || name === undefined) {
+          return null;
+        }
+
+        return {
+          id: String(id),
+          name: String(name),
+        };
+      })
+      .filter(
+        (country): country is SmsBowerCountry => country !== null,
+      );
+
+    this.countriesCache = {
+      data: countries,
+      expiresAt: Date.now() + this.CACHE_TTL_MS,
+    };
+
+    return countries;
   }
 
-  /*
-  |--------------------------------------------------------------------------
-  | SERVICES
-  |--------------------------------------------------------------------------
-  */
+  /* ------------------------------------------------------------------------ */
+  /*                              SERVICE CATALOGUE                           */
+  /* ------------------------------------------------------------------------ */
 
-  async getServicesList(): Promise<
-    SmsBowerServiceItem[] | null
-  > {
+  async getServicesList(): Promise<SmsBowerServiceItem[]> {
     if (
       this.servicesCache &&
       this.servicesCache.expiresAt > Date.now()
@@ -514,459 +389,447 @@ MESSAGE: ${
       return this.servicesCache.data;
     }
 
-    try {
-      const raw = await this.request({
-        action: 'getServicesList',
-      });
+    const raw = await this.request({
+      action: 'getServicesList',
+    });
 
-      this.logger.debug(
-        `SMSBower services raw response: ${raw.slice(
-          0,
-          2000,
-        )}`,
-      );
+    const parsed = this.parseJson<unknown>(raw, 'getServicesList');
 
-      const parsed = JSON.parse(raw);
+    let items: unknown[] = [];
 
-      let list: any[] | null = null;
+    if (Array.isArray(parsed)) {
+      items = parsed;
+    } else if (
+      parsed &&
+      typeof parsed === 'object' &&
+      !Array.isArray(parsed)
+    ) {
+      const object = parsed as Record<string, unknown>;
 
-      /*
-       * Possible response:
-       *
-       * [
-       *   {
-       *     code: "wa",
-       *     name: "WhatsApp"
-       *   }
-       * ]
-       */
+      if (Array.isArray(object.services)) {
+        items = object.services;
+      } else if (Array.isArray(object.data)) {
+        items = object.data;
+      } else {
+        items = Object.entries(object).map(([code, value]) => {
+          if (value && typeof value === 'object') {
+            return {
+              code,
+              ...(value as Record<string, unknown>),
+            };
+          }
 
-      if (Array.isArray(parsed)) {
-        list = parsed;
-      }
-
-      /*
-       * Or:
-       *
-       * {
-       *   services: [...]
-       * }
-       */
-
-      else if (
-        parsed &&
-        Array.isArray(parsed.services)
-      ) {
-        list = parsed.services;
-      }
-
-      /*
-       * Or object:
-       *
-       * {
-       *   wa: "WhatsApp",
-       *   tg: "Telegram"
-       * }
-       */
-
-      if (list) {
-        const result = list
-          .map((entry: any) => ({
-            code: String(
-              entry.code ??
-                entry.id ??
-                entry.service ??
-                '',
-            ),
-
-            name: String(
-              entry.name ??
-                entry.title ??
-                entry.serviceName ??
-                entry.code ??
-                '',
-            ),
-          }))
-          .filter((service) => service.code);
-
-        this.servicesCache = {
-          data: result,
-          expiresAt:
-            Date.now() + this.CACHE_TTL_MS,
-        };
-
-        return result;
-      }
-
-      /*
-       * Object-format fallback.
-       */
-
-      if (
-        parsed &&
-        typeof parsed === 'object'
-      ) {
-        const source =
-          parsed.services &&
-          typeof parsed.services === 'object'
-            ? parsed.services
-            : parsed;
-
-        const result = Object.entries(
-          source,
-        ).map(
-          ([code, value]: [string, any]) => ({
+          return {
             code,
-
-            name: String(
-              typeof value === 'string'
-                ? value
-                : value?.name ??
-                  value?.title ??
-                  code,
-            ),
-          }),
-        );
-
-        this.servicesCache = {
-          data: result,
-          expiresAt:
-            Date.now() + this.CACHE_TTL_MS,
-        };
-
-        return result;
+            name: value,
+          };
+        });
       }
+    }
 
-      return null;
-    } catch (error) {
-      this.logger.warn(
-        `Unable to load SMSBower services: ${
-          error instanceof Error
-            ? error.message
-            : String(error)
-        }`,
+    const services: SmsBowerServiceItem[] = items
+      .map((item) => {
+        if (!item || typeof item !== 'object') {
+          return null;
+        }
+
+        const service = item as Record<string, unknown>;
+
+        const code =
+          service.code ??
+          service.service ??
+          service.serviceCode ??
+          service.service_code;
+
+        const name =
+          service.name ??
+          service.serviceName ??
+          service.service_name ??
+          service.title;
+
+        if (code === undefined || name === undefined) {
+          return null;
+        }
+
+        return {
+          code: String(code),
+          name: String(name),
+        };
+      })
+      .filter(
+        (service): service is SmsBowerServiceItem =>
+          service !== null,
       );
 
-      return null;
+    this.servicesCache = {
+      data: services,
+      expiresAt: Date.now() + this.CACHE_TTL_MS,
+    };
+
+    return services;
+  }
+
+  /* ------------------------------------------------------------------------ */
+  /*                           NUMBER ALLOCATION V2                           */
+  /* ------------------------------------------------------------------------ */
+
+  /**
+   * Allocate a number through SMSBower's getNumberV2 endpoint.
+   *
+   * The provider returns JSON containing activationId and phoneNumber.
+   */
+  async buyV2(
+    service: string,
+    country: string,
+    options: SmsBowerBuyV2Options = {},
+  ): Promise<SmsBowerBuyResponse> {
+    if (!service || !country) {
+      throw new BadGatewayException(
+        'A service code and country ID are required',
+      );
     }
-  }
 
-  /*
-  |--------------------------------------------------------------------------
-  | WHATSAPP HELPER
-  |--------------------------------------------------------------------------
-  |
-  | This guarantees that WhatsApp uses:
-  |
-  |     wa
-  |
-  */
-
-  async getWhatsAppPrices(
-    country?: string,
-  ): Promise<SmsBowerPriceResponse> {
-    return this.getPrices(
-      'wa',
-      country,
+    const raw = await this.request(
+      {
+        action: 'getNumberV2',
+        service,
+        country,
+        maxPrice: options.maxPrice,
+        minPrice: options.minPrice,
+        providerIds: options.providerIds,
+        exceptProviderIds: options.exceptProviderIds,
+        userID: options.userID,
+      },
+      this.BUY_TIMEOUT_MS,
     );
+
+    let parsed: unknown;
+
+    try {
+      parsed = JSON.parse(raw);
+    } catch {
+      this.logger.warn(
+        `SMSBower getNumberV2 returned a non-JSON response: ${raw.slice(0, 300)}`,
+      );
+
+      throw new BadGatewayException(
+        `SMSBower getNumberV2 returned a non-JSON response: ${raw.slice(0, 250)}`,
+      );
+    }
+
+    if (
+      !parsed ||
+      typeof parsed !== 'object' ||
+      Array.isArray(parsed)
+    ) {
+      throw new BadGatewayException(
+        'SMSBower returned an unexpected number allocation response',
+      );
+    }
+
+    const result = parsed as Record<string, unknown>;
+
+    const activationId = result.activationId;
+    const phoneNumber = result.phoneNumber;
+
+    if (
+      activationId === undefined ||
+      activationId === null ||
+      phoneNumber === undefined ||
+      phoneNumber === null ||
+      String(phoneNumber).trim() === ''
+    ) {
+      const providerMessage =
+        result.message ??
+        result.error ??
+        result.status ??
+        'No number was allocated';
+
+      this.logger.warn(
+        `SMSBower number allocation unsuccessful: ${String(providerMessage).slice(0, 300)}`,
+      );
+
+      throw new BadGatewayException(
+        `SMSBower could not allocate a number: ${String(providerMessage).slice(0, 250)}`,
+      );
+    }
+
+    let canGetAnotherSms: boolean | undefined;
+
+    if (typeof result.canGetAnotherSms === 'boolean') {
+      canGetAnotherSms = result.canGetAnotherSms;
+    } else if (typeof result.canGetAnotherSms === 'string') {
+      canGetAnotherSms =
+        result.canGetAnotherSms.toLowerCase() === 'true';
+    }
+
+    return {
+      id: String(activationId),
+      phone: String(phoneNumber),
+      activationCost:
+        result.activationCost !== undefined &&
+        result.activationCost !== null
+          ? Number(result.activationCost)
+          : undefined,
+      countryCode:
+        result.countryCode !== undefined &&
+        result.countryCode !== null
+          ? String(result.countryCode)
+          : undefined,
+      canGetAnotherSms,
+      activationTime:
+        result.activationTime !== undefined &&
+        result.activationTime !== null
+          ? String(result.activationTime)
+          : undefined,
+      activationOperator:
+        result.activationOperator !== undefined &&
+        result.activationOperator !== null
+          ? String(result.activationOperator)
+          : undefined,
+    };
   }
 
-  /*
-  |--------------------------------------------------------------------------
-  | BUY NUMBER
-  |--------------------------------------------------------------------------
-  */
-
+  /**
+   * Backwards-compatible method for existing callers.
+   * Existing callers can continue using buy(service, country, maxPrice).
+   */
   async buy(
     service: string,
     country: string,
     maxPrice?: number,
   ): Promise<SmsBowerBuyResponse> {
-    const raw = await this.request(
-      {
-        action: 'getNumber',
-
-        /*
-         * WhatsApp must arrive here as:
-         *
-         * service=wa
-         */
-
-        service,
-
-        country,
-
-        maxPrice,
-      },
-
-      this.BUY_TIMEOUT_MS,
-    );
-
-    const parsed =
-      this.parseTextResponse(raw);
-
-    if (
-      parsed.code !== 'ACCESS_NUMBER'
-    ) {
-      throw new BadGatewayException(
-        `SMSBower could not allocate a number: ${parsed.raw}`,
-      );
-    }
-
-    const values = (
-      parsed.value ?? ''
-    ).split(':');
-
-    const id = values[0];
-    const phone = values.slice(1).join(':');
-
-    if (!id || !phone) {
-      throw new BadGatewayException(
-        `Unexpected SMSBower getNumber response: ${parsed.raw}`,
-      );
-    }
-
-    return {
-      id,
-      phone,
-    };
+    return this.buyV2(service, country, { maxPrice });
   }
 
-  /*
-  |--------------------------------------------------------------------------
-  | BUY WHATSAPP NUMBER
-  |--------------------------------------------------------------------------
-  */
-
+  /**
+   * Allocate a WhatsApp number.
+   */
   async buyWhatsApp(
     country: string,
     maxPrice?: number,
   ): Promise<SmsBowerBuyResponse> {
-    return this.buy(
-      'wa',
-      country,
-      maxPrice,
-    );
+    return this.buyV2('wa', country, { maxPrice });
   }
 
-  /*
-  |--------------------------------------------------------------------------
-  | SET STATUS
-  |--------------------------------------------------------------------------
-  |
-  | 1 = ready / confirm SMS
-  | 3 = request another SMS
-  | 6 = finish activation
-  | 8 = cancel activation
-  |
-  */
+  /* ------------------------------------------------------------------------ */
+  /*                            ACTIVATION STATUS                             */
+  /* ------------------------------------------------------------------------ */
 
+  /**
+   * Change the status of an activation.
+   *
+   * Common SMSBower status values:
+   * 1 = request another SMS
+   * 3 = request SMS activation completion
+   * 6 = finish activation
+   * 8 = cancel activation
+   */
   async setStatus(
     id: string,
     status: 1 | 3 | 6 | 8,
-  ): Promise<string> {
+  ): Promise<SmsBowerStatusResponse> {
     const raw = await this.request({
       action: 'setStatus',
       id,
       status,
     });
 
-    return this.parseTextResponse(
+    const parts = raw.split(':');
+
+    return {
       raw,
-    ).code;
+      code: parts[0] || raw,
+      value: parts.length > 1 ? parts.slice(1).join(':') : undefined,
+    };
   }
 
-  /*
-  |--------------------------------------------------------------------------
-  | FINISH
-  |--------------------------------------------------------------------------
-  */
-
-  async finish(
-    id: string,
-  ): Promise<string> {
+  async finish(id: string): Promise<SmsBowerStatusResponse> {
     return this.setStatus(id, 6);
   }
 
-  /*
-  |--------------------------------------------------------------------------
-  | CANCEL
-  |--------------------------------------------------------------------------
-  */
-
-  async cancel(
-    id: string,
-  ): Promise<string> {
+  async cancel(id: string): Promise<SmsBowerStatusResponse> {
     return this.setStatus(id, 8);
   }
 
-  /*
-  |--------------------------------------------------------------------------
-  | GET STATUS
-  |--------------------------------------------------------------------------
-  */
-
-  async getStatus(
-    id: string,
-  ): Promise<SmsBowerStatusResponse> {
+  /**
+   * Check an activation's current status.
+   */
+  async getStatus(id: string): Promise<SmsBowerStatusResponse> {
     const raw = await this.request({
       action: 'getStatus',
       id,
     });
 
-    return this.parseTextResponse(
+    const parts = raw.split(':');
+
+    return {
       raw,
-    );
+      code: parts[0] || raw,
+      value: parts.length > 1 ? parts.slice(1).join(':') : undefined,
+    };
   }
 
-  /*
-  |--------------------------------------------------------------------------
-  | CHECK WHATSAPP AVAILABILITY
-  |--------------------------------------------------------------------------
-  |
-  | Useful for your marketplace.
-  |
-  */
+  /* ------------------------------------------------------------------------ */
+  /*                          WHATSAPP AVAILABILITY                            */
+  /* ------------------------------------------------------------------------ */
 
+  /**
+   * Check catalogue pricing and stock.
+   *
+   * This is an estimate of catalogue availability, not a guarantee that
+   * a subsequent number purchase will succeed.
+   */
   async checkWhatsAppAvailability(
     country?: string,
-  ) {
-    const prices =
-      await this.getWhatsAppPrices(
-        country,
-      );
-
-    const results: Array<{
-      country: string;
+  ): Promise<{
+    service: string;
+    country?: string;
+    countries: Array<{
+      countryId: string;
       cost: number;
       count: number;
       available: boolean;
-    }> = [];
+    }>;
+    available: boolean;
+  }> {
+    const prices = await this.getWhatsAppPrices(country);
 
-    for (const [
-      countryId,
-      services,
-    ] of Object.entries(prices)) {
-      const whatsapp =
-        services?.wa;
+    const countries = Object.entries(prices)
+      .map(([countryId, services]) => {
+        const whatsapp = services?.wa;
 
-      if (!whatsapp) {
-        continue;
-      }
+        if (!whatsapp) {
+          return null;
+        }
 
-      results.push({
-        country: countryId,
-        cost: Number(
-          whatsapp.cost ?? 0,
-        ),
-        count: Number(
-          whatsapp.count ?? 0,
-        ),
-        available:
-          Number(
-            whatsapp.count ?? 0,
-          ) > 0,
-      });
-    }
+        const cost = Number(whatsapp.cost);
+        const count = Number(whatsapp.count);
 
-    return results;
+        return {
+          countryId,
+          cost: Number.isFinite(cost) ? cost : 0,
+          count: Number.isFinite(count) ? count : 0,
+          available:
+            Number.isFinite(count) && count > 0,
+        };
+      })
+      .filter(
+        (
+          item,
+        ): item is {
+          countryId: string;
+          cost: number;
+          count: number;
+          available: boolean;
+        } => item !== null,
+      );
+
+    return {
+      service: 'wa',
+      country,
+      countries,
+      available: countries.some((item) => item.available),
+    };
   }
 
-  /*
-  |--------------------------------------------------------------------------
-  | HEALTH CHECK
-  |--------------------------------------------------------------------------
-  */
+  /* ------------------------------------------------------------------------ */
+  /*                                  PING                                    */
+  /* ------------------------------------------------------------------------ */
 
-  async ping() {
+  async ping(): Promise<{
+    provider: string;
+    status: 'online' | 'offline';
+    balance?: number;
+    baseUrl: string;
+    error?: string;
+  }> {
     try {
-      const balance =
-        await this.getBalance();
+      const balance = await this.getBalance();
 
       return {
-        provider: 'SMSBOWER',
+        provider: 'SMSBower',
         status: 'online',
         balance,
         baseUrl: this.baseUrl,
       };
-    } catch {
+    } catch (error: unknown) {
+      const message =
+        error instanceof Error ? error.message : 'Unknown error';
+
       return {
-        provider: 'SMSBOWER',
+        provider: 'SMSBower',
         status: 'offline',
+        baseUrl: this.baseUrl,
+        error: message,
       };
     }
   }
 
-  /*
-  |--------------------------------------------------------------------------
-  | DEBUG / DIAGNOSTIC
-  |--------------------------------------------------------------------------
-  |
-  | This is useful right now because we're trying to find out
-  | why WhatsApp isn't appearing in your website.
-  |
-  */
+  /* ------------------------------------------------------------------------ */
+  /*                               DIAGNOSTICS                                */
+  /* ------------------------------------------------------------------------ */
 
-  async diagnostics() {
-    const result: any = {
-      provider: 'SMSBOWER',
+  async diagnostics(): Promise<Record<string, unknown>> {
+    const result: Record<string, unknown> = {
+      provider: 'SMSBower',
       baseUrl: this.baseUrl,
+      configured: Boolean(this.apiKey),
       whatsappServiceCode: 'wa',
     };
 
-    /*
-     * Balance
-     */
+    if (!this.apiKey) {
+      return {
+        ...result,
+        status: 'not_configured',
+        error: 'SMSBOWER_API_KEY is missing',
+      };
+    }
 
     try {
-      result.balance =
-        await this.getBalance();
-    } catch (error) {
+      result.balance = await this.getBalance();
+      result.balanceStatus = 'success';
+    } catch (error: unknown) {
+      result.balanceStatus = 'failed';
       result.balanceError =
-        error instanceof Error
-          ? error.message
-          : String(error);
+        error instanceof Error ? error.message : 'Unknown error';
     }
 
-    /*
-     * Services
-     */
-
     try {
-      const services =
-        await this.getServicesList();
+      const services = await this.getServicesList();
 
-      result.servicesCount =
-        services?.length ?? 0;
-
-      result.whatsappService =
-        services?.find(
-          (service) =>
-            service.code
-              .toLowerCase() === 'wa',
-        ) ?? null;
-    } catch (error) {
+      result.servicesCount = services.length;
+      result.whatsappService = services.find(
+        (service) =>
+          service.code.toLowerCase() === 'wa' ||
+          service.name.toLowerCase().includes('whatsapp'),
+      ) ?? null;
+    } catch (error: unknown) {
+      result.servicesStatus = 'failed';
       result.servicesError =
-        error instanceof Error
-          ? error.message
-          : String(error);
+        error instanceof Error ? error.message : 'Unknown error';
     }
 
-    /*
-     * WhatsApp prices
-     */
+    try {
+      result.whatsappPrices = await this.getPrices('wa');
+      result.whatsappPricesStatus = 'success';
+    } catch (error: unknown) {
+      result.whatsappPricesStatus = 'failed';
+      result.whatsappPricesError =
+        error instanceof Error ? error.message : 'Unknown error';
+    }
 
     try {
-      const prices =
-        await this.getPrices('wa');
+      const countries = await this.getCountriesList();
 
-      result.whatsappPrices =
-        prices;
-    } catch (error) {
-      result.whatsappPricesError =
-        error instanceof Error
-          ? error.message
-          : String(error);
+      result.countriesCount = countries.length;
+      result.usaCountries = countries.filter((country) =>
+        country.name.toLowerCase().includes('united states'),
+      );
+    } catch (error: unknown) {
+      result.countriesStatus = 'failed';
+      result.countriesError =
+        error instanceof Error ? error.message : 'Unknown error';
     }
 
     return result;
