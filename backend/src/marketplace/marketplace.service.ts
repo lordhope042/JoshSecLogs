@@ -1,3 +1,4 @@
+
 import {
   Injectable,
   BadGatewayException,
@@ -39,47 +40,36 @@ export class MarketplaceService {
 
   private get usdRate(): number {
     return Number(
-      this.config.get<number>('USD_TO_NGN') ??
-        1650,
+      this.config.get<number>('USD_TO_NGN') ?? 1650,
     );
   }
 
-  // GrizzySMS (handler_api.php / SMS-Activate protocol) prices in RUB,
-  // not USD — a separate conversion rate is needed for it.
+  // GrizzySMS prices are treated as RUB.
   private get rubRate(): number {
     return Number(
-      this.config.get<number>('RUB_TO_NGN') ??
-        18,
+      this.config.get<number>('RUB_TO_NGN') ?? 18,
     );
   }
 
   private get markup(): number {
     return Number(
-      this.config.get<number>('MARKUP') ??
-        1.2,
+      this.config.get<number>('MARKUP') ?? 1.2,
     );
   }
 
-  private convertPrice(
-    usd: number,
-  ): number {
+  private convertPrice(usd: number): number {
     return Math.ceil(
       usd * this.usdRate * this.markup,
     );
   }
 
-  private convertRubPrice(
-    rub: number,
-  ): number {
+  private convertRubPrice(rub: number): number {
     return Math.ceil(
       rub * this.rubRate * this.markup,
     );
   }
 
-  // SMSBower (handler_api.php / SMS-Activate protocol, same as GrizzySMS)
-  // also prices in RUB. Falls back to the same RUB_TO_NGN rate used for
-  // GrizzySMS unless a dedicated SMSBOWER_RUB_TO_NGN is configured —
-  // useful if the two resellers' RUB pricing ever needs separate margin.
+  // SMSBower uses a configurable rate, falling back to RUB_TO_NGN.
   private get smsBowerRubRate(): number {
     return Number(
       this.config.get<number>('SMSBOWER_RUB_TO_NGN') ??
@@ -87,23 +77,11 @@ export class MarketplaceService {
     );
   }
 
-  private convertSmsBowerPrice(
-    rub: number,
-  ): number {
+  private convertSmsBowerPrice(rub: number): number {
     return Math.ceil(
       rub * this.smsBowerRubRate * this.markup,
     );
   }
-
-  /* ============================================================
-              GRIZZYSMS NAME LOOKUP (live, not hardcoded)
-  ============================================================
-  Names come from GrizzySMS's own getCountries/getServices actions
-  (GrizzySmsService.getCountriesList/getServicesList), cached for an
-  hour. If those actions aren't available on this account/API version,
-  they return null and we fall back to the raw id/code as the display
-  name — never a guessed or hardcoded translation.
-  ============================================================ */
 
   /* ============================================================
                         COUNTRIES
@@ -113,50 +91,31 @@ export class MarketplaceService {
     if (provider === 'GRIZZYSMS') {
       return this.grizzyCountries();
     }
+
     if (provider === 'SMSBOWER') {
       return this.smsBowerCountries();
     }
+
     return this.fiveSimCountries();
   }
 
   private async fiveSimCountries() {
     try {
-      const response =
-        await this.fiveSim.countries();
+      const response = await this.fiveSim.countries();
 
-      return Object.entries(
-        response ?? {},
-      )
+      return Object.entries(response ?? {})
         .map(([code, item]: any) => ({
           id: code,
-
           code,
-
-          name:
-            item?.text ??
-            item?.name ??
-            code,
-
-          iso:
-            Object.keys(item?.iso ?? {})[0] ??
-            code,
-
-          prefix:
-            Object.keys(
-              item?.prefix ?? {},
-            )[0] ?? '',
-
-          flag:
-            item?.flag ??
-            item?.img ??
-            null,
+          name: item?.text ?? item?.name ?? code,
+          iso: Object.keys(item?.iso ?? {})[0] ?? code,
+          prefix: Object.keys(item?.prefix ?? {})[0] ?? '',
+          flag: item?.flag ?? item?.img ?? null,
         }))
-        .sort((a, b) =>
-          a.name.localeCompare(b.name),
-        );
+        .sort((a, b) => a.name.localeCompare(b.name));
     } catch (error) {
       this.logger.error(
-        'Failed loading countries',
+        'Failed loading FiveSIM countries',
         error,
       );
 
@@ -174,7 +133,10 @@ export class MarketplaceService {
       ]);
 
       const nameMap = new Map(
-        (namedList ?? []).map((c) => [c.id, c.name]),
+        (namedList ?? []).map((country) => [
+          country.id,
+          country.name,
+        ]),
       );
 
       return Object.keys(prices ?? {})
@@ -207,7 +169,10 @@ export class MarketplaceService {
       ]);
 
       const nameMap = new Map(
-        (namedList ?? []).map((c) => [c.id, c.name]),
+        (namedList ?? []).map((country) => [
+          country.id,
+          country.name,
+        ]),
       );
 
       return Object.keys(prices ?? {})
@@ -233,50 +198,39 @@ export class MarketplaceService {
   }
 
   /* ============================================================
-                        PRODUCTS
+                          PRODUCTS
   ============================================================ */
 
-  async products(country: string, provider: Provider = 'FIVESIM') {
+  async products(
+    country: string,
+    provider: Provider = 'FIVESIM',
+  ) {
     if (provider === 'GRIZZYSMS') {
       return this.grizzyProducts(country);
     }
+
     if (provider === 'SMSBOWER') {
       return this.smsBowerProducts(country);
     }
+
     return this.fiveSimProducts(country);
   }
 
   private async fiveSimProducts(country: string) {
     try {
-      const response =
-        await this.fiveSim.products(
-          country,
-        );
+      const response = await this.fiveSim.products(country);
 
-      return Object.entries(
-        response ?? {},
-      )
+      return Object.entries(response ?? {})
         .map(([service, item]: any) => ({
           id: service,
-
           service,
-
-          name:
-            item?.text ??
-            item?.name ??
-            service,
-
-          image:
-            item?.image ??
-            item?.img ??
-            null,
+          name: item?.text ?? item?.name ?? service,
+          image: item?.image ?? item?.img ?? null,
         }))
-        .sort((a, b) =>
-          a.name.localeCompare(b.name),
-        );
+        .sort((a, b) => a.name.localeCompare(b.name));
     } catch (error) {
       this.logger.error(
-        `Failed loading products for ${country}`,
+        `Failed loading FiveSIM products for ${country}`,
         error,
       );
 
@@ -294,13 +248,15 @@ export class MarketplaceService {
       ]);
 
       const nameMap = new Map(
-        (namedList ?? []).map((s) => [s.code, s.name]),
+        (namedList ?? []).map((service) => [
+          service.code,
+          service.name,
+        ]),
       );
 
-      // Same dual-shape handling as grizzyPrices() below — see the FIX
-      // comment there for why this matters.
       const response: any = rawPrices;
       const nested = response?.[country];
+
       const services =
         nested && typeof nested === 'object'
           ? nested
@@ -336,13 +292,15 @@ export class MarketplaceService {
       ]);
 
       const nameMap = new Map(
-        (namedList ?? []).map((s) => [s.code, s.name]),
+        (namedList ?? []).map((service) => [
+          service.code,
+          service.name,
+        ]),
       );
 
-      // Same dual-shape handling as grizzyProducts() — SMSBower may
-      // return the country-nested shape or the already-flattened one.
       const response: any = rawPrices;
       const nested = response?.[country];
+
       const services =
         nested && typeof nested === 'object'
           ? nested
@@ -371,86 +329,55 @@ export class MarketplaceService {
   }
 
   /* ============================================================
-                          PRICES
+                            PRICES
   ============================================================ */
 
-  async prices(country: string, provider: Provider = 'FIVESIM') {
+  async prices(
+    country: string,
+    provider: Provider = 'FIVESIM',
+  ) {
     if (provider === 'GRIZZYSMS') {
       return this.grizzyPrices(country);
     }
+
     if (provider === 'SMSBOWER') {
       return this.smsBowerPrices(country);
     }
+
     return this.fiveSimPrices(country);
   }
 
   private async fiveSimPrices(country: string) {
     try {
-      const response: any =
-        await this.fiveSim.prices(
-          country,
-        );
+      const response: any = await this.fiveSim.prices(country);
+      const services = response?.[country] ?? {};
 
-      const services =
-        response?.[country] ?? {};
+      return Object.entries(services)
+        .map(([service, activations]: any) => ({
+          service,
+          activationTypes: Object.entries(activations ?? {})
+            .map(([activationType, info]: any) => {
+              const usd = Number(info?.cost ?? 0);
 
-      return Object.entries(
-        services,
-      )
-        .map(
-          ([service, activations]: any) => ({
-            service,
-
-            activationTypes:
-              Object.entries(
-                activations ?? {},
-              )
-                .map(
-                  ([
-                    activationType,
-                    info,
-                  ]: any) => {
-                    const usd =
-                      Number(
-                        info?.cost ?? 0,
-                      );
-
-                    return {
-                      activationType,
-
-                      stock: Number(
-                        info?.count ?? 0,
-                      ),
-
-                      priceUsd: usd,
-
-                      priceNgn:
-                        this.convertPrice(
-                          usd,
-                        ),
-                    };
-                  },
-                )
-                .sort(
-                  (a, b) =>
-                    a.priceNgn -
-                    b.priceNgn,
-                ),
-          }),
-        )
+              return {
+                activationType,
+                stock: Number(info?.count ?? 0),
+                priceUsd: usd,
+                priceNgn: this.convertPrice(usd),
+              };
+            })
+            .sort((a, b) => a.priceNgn - b.priceNgn),
+        }))
         .filter(
           (service: any) =>
-            service.activationTypes
-              .length > 0,
+            service.activationTypes.length > 0,
         )
         .sort((a, b) =>
-          a.service.localeCompare(
-            b.service,
-          ),
+          a.service.localeCompare(b.service),
         );
     } catch (error) {
       this.logger.error(
-        `Failed loading prices for ${country}`,
+        `Failed loading FiveSIM prices for ${country}`,
         error,
       );
 
@@ -461,25 +388,16 @@ export class MarketplaceService {
   }
 
   /**
-   * GrizzySMS (handler_api.php protocol) has no per-operator breakdown
-   * the way 5sim does — each service+country combo is a single price
-   * and stock count. To keep the response shape identical for the
-   * frontend, a single synthetic activationType of "any" is returned
-   * per service.
+   * GrizzySMS uses one price and stock count per service/country.
+   * The response is normalized to one activation type: "any".
    */
   private async grizzyPrices(country: string) {
     try {
-      const response: any = await this.grizzySms.getPricesV2(undefined, country);
+      const response: any =
+        await this.grizzySms.getPricesV2(undefined, country);
 
-      // FIX: when a `country` filter is passed to getPricesV2, some
-      // handler_api.php-family providers return the response already
-      // flattened to { serviceCode: {...} } instead of still nesting it
-      // under the country id. The old code only tried response[country]
-      // and silently fell back to an empty object if that key didn't
-      // exist — meaning a shape mismatch here produced ZERO errors and
-      // ZERO prices, which is exactly what was happening. Try both
-      // shapes now.
       const nested = response?.[country];
+
       const services =
         nested && typeof nested === 'object'
           ? nested
@@ -487,36 +405,18 @@ export class MarketplaceService {
             ? response
             : {};
 
-      // One-time diagnostic: log the raw shape we actually got back so
-      // it's visible in the terminal without needing a manual curl call,
-      // in case the field names below still don't match.
       const sampleEntry = Object.entries(services)[0];
+
       this.logger.debug(
-        `GrizzySMS prices raw sample for country=${country}: ${JSON.stringify(
-          sampleEntry,
-        )}`,
+        `GrizzySMS prices raw sample for country=${country}: ${JSON.stringify(sampleEntry)}`,
       );
 
-      // FIX: GrizzySMS's per-service value here is NOT a named-field
-      // object like { cost, count } / { price, qty } — confirmed by the
-      // debug log above, which showed entries shaped like
-      // ["acz", {"0.3542": 20}]. That is a single-key object where the
-      // KEY is the price (RUB, as a string) and the VALUE is the stock
-      // count. Every named-field lookup below (info.cost, info.price,
-      // info.count, info.qty, ...) was silently returning undefined for
-      // this shape, so resolveCost/resolveCount both fell through to 0
-      // for every entry — which meant validatePurchase() rejected every
-      // GrizzySMS buy attempt with "currently out of stock", even though
-      // stock genuinely existed. Parse the key/value pair directly, and
-      // keep the named-field lookups only as a fallback in case some
-      // other endpoint/country still returns that shape.
       const resolvePriceAndStock = (
         info: any,
       ): { rub: number; stock: number } => {
         if (info && typeof info === 'object') {
           const entries = Object.entries(info);
 
-          // Single-key { "<priceStr>": <stockCount> } shape.
           if (
             entries.length === 1 &&
             !('cost' in info) &&
@@ -526,16 +426,17 @@ export class MarketplaceService {
           ) {
             const [priceStr, stockVal] = entries[0];
             const rub = Number(priceStr);
-            const stock = Number(stockVal as any);
+            const stock = Number(stockVal);
 
             if (!Number.isNaN(rub)) {
-              return { rub, stock: Number.isNaN(stock) ? 0 : stock };
+              return {
+                rub,
+                stock: Number.isNaN(stock) ? 0 : stock,
+              };
             }
           }
         }
 
-        // Fallback: named-field shape, in case another endpoint/country
-        // returns { cost, count } / { price, qty } etc. instead.
         const rub = Number(
           info?.cost ??
             info?.price ??
@@ -566,21 +467,13 @@ export class MarketplaceService {
               {
                 activationType: 'any',
                 stock,
-                priceUsd: rub, // stored in the "usd" field for shape
-                                // compatibility — this is actually RUB;
-                                // see convertRubPrice below for the
-                                // conversion actually used at purchase.
+                // Compatibility field: this value is RUB, not USD.
+                priceUsd: rub,
                 priceNgn: this.convertRubPrice(rub),
               },
             ],
           };
         })
-        // FIX: no longer pre-filtering out zero-stock entries here —
-        // fiveSimPrices() (above) doesn't either; it returns everything
-        // and lets the frontend (ServiceCard/ServiceGrid) decide what
-        // to show as "Out of Stock" vs hide. Silently dropping entries
-        // server-side made a field-name mismatch indistinguishable from
-        // "genuinely no stock", which is exactly what caused this bug.
         .sort((a, b) => a.service.localeCompare(b.service));
     } catch (error) {
       this.logger.error(
@@ -595,21 +488,17 @@ export class MarketplaceService {
   }
 
   /**
-   * SMSBower — same handler_api.php protocol as GrizzySMS, so this
-   * mirrors grizzyPrices() exactly, including the same dual-shape /
-   * single-key-{price:count} parsing (resolvePriceAndStock). ONE THING
-   * TO VERIFY LIVE: GrizzySMS's getPricesV2 turned out to key each
-   * service entry as { "<priceStr>": <stockCount> } rather than named
-   * fields — confirm with a real SMSBOWER_API_KEY + one debug log
-   * (already wired below) that SMSBower's payload matches before
-   * trusting stock numbers in production; the named-field fallback
-   * below covers the case where it doesn't.
+   * SMSBower prices are normalized to the same response shape as
+   * GrizzySMS. The single-key { "<price>": <stock> } response is
+   * supported alongside named-field responses.
    */
   private async smsBowerPrices(country: string) {
     try {
-      const response: any = await this.smsBower.getPricesV2(undefined, country);
+      const response: any =
+        await this.smsBower.getPricesV2(undefined, country);
 
       const nested = response?.[country];
+
       const services =
         nested && typeof nested === 'object'
           ? nested
@@ -618,10 +507,9 @@ export class MarketplaceService {
             : {};
 
       const sampleEntry = Object.entries(services)[0];
+
       this.logger.debug(
-        `SMSBower prices raw sample for country=${country}: ${JSON.stringify(
-          sampleEntry,
-        )}`,
+        `SMSBower prices raw sample for country=${country}: ${JSON.stringify(sampleEntry)}`,
       );
 
       const resolvePriceAndStock = (
@@ -639,10 +527,13 @@ export class MarketplaceService {
           ) {
             const [priceStr, stockVal] = entries[0];
             const rub = Number(priceStr);
-            const stock = Number(stockVal as any);
+            const stock = Number(stockVal);
 
             if (!Number.isNaN(rub)) {
-              return { rub, stock: Number.isNaN(stock) ? 0 : stock };
+              return {
+                rub,
+                stock: Number.isNaN(stock) ? 0 : stock,
+              };
             }
           }
         }
@@ -676,8 +567,9 @@ export class MarketplaceService {
             activationTypes: [
               {
                 activationType: 'any',
+                // Compatibility field: this value is treated as RUB.
+                priceUsd: rub,
                 stock,
-                priceUsd: rub, // actually RUB — see convertSmsBowerPrice
                 priceNgn: this.convertSmsBowerPrice(rub),
               },
             ],
@@ -697,7 +589,7 @@ export class MarketplaceService {
   }
 
   /* ============================================================
-                    PURCHASE HELPERS
+                      PURCHASE HELPERS
   ============================================================ */
 
   private async validatePurchase(
@@ -709,7 +601,7 @@ export class MarketplaceService {
     const services = await this.prices(country, provider);
 
     const service = services.find(
-      (s: any) => s.service === product,
+      (item: any) => item.service === product,
     );
 
     if (!service) {
@@ -718,11 +610,9 @@ export class MarketplaceService {
       );
     }
 
-    const activation =
-      service.activationTypes.find(
-        (a: any) =>
-          a.activationType === operator,
-      );
+    const activation = service.activationTypes.find(
+      (item: any) => item.activationType === operator,
+    );
 
     if (!activation) {
       throw new BadRequestException(
@@ -769,12 +659,11 @@ export class MarketplaceService {
       return purchase;
     }
 
-    const purchase =
-      await this.fiveSim.buy(
-        country,
-        operator,
-        product,
-      );
+    const purchase = await this.fiveSim.buy(
+      country,
+      operator,
+      product,
+    );
 
     if (!purchase?.id) {
       throw new BadGatewayException(
@@ -794,32 +683,15 @@ export class MarketplaceService {
     return this.prisma.order.create({
       data: {
         userId,
-
         provider: dto.provider,
-
-        providerOrderId: String(
-          purchase.id,
-        ),
-
+        providerOrderId: String(purchase.id),
         country: dto.country,
-
-        operator:
-          dto.operator ?? 'any',
-
-        activationType:
-          dto.operator ?? 'any',
-
+        operator: dto.operator ?? 'any',
+        activationType: dto.operator ?? 'any',
         service: dto.product,
-
-        phoneNumber:
-          purchase.phone,
-
-        providerCostUsd:
-          String(purchase.price ?? 0),
-
-        sellingPriceNgn:
-          String(amount),
-
+        phoneNumber: purchase.phone,
+        providerCostUsd: String(purchase.price ?? 0),
+        sellingPriceNgn: String(amount),
         status: OrderStatus.ACTIVE,
       },
     });
@@ -830,22 +702,13 @@ export class MarketplaceService {
     amount: number,
     product: string,
   ) {
-    return this.wallet.creditWallet(
-      userId,
-      amount,
-    );
+    return this.wallet.creditWallet(userId, amount);
   }
 
   /* ============================================================
-              PROVIDER STATUS MAPPING
+                    PROVIDER STATUS MAPPING
   ============================================================ */
 
-  /**
-   * 5sim raw statuses: PENDING, RECEIVED, CANCELED, TIMEOUT, FINISHED, BANNED
-   * Maps them onto our OrderStatus enum. Single source of truth —
-   * used by syncOrder() and cancel() so they can never drift apart
-   * the way the old syncOrder() did with `provider.status.toUpperCase() as any`.
-   */
   private mapProviderStatus(
     rawStatus: string | undefined,
   ): OrderStatus {
@@ -875,19 +738,14 @@ export class MarketplaceService {
         this.logger.warn(
           `Unmapped provider status "${rawStatus}" — defaulting to PENDING`,
         );
+
         return OrderStatus.PENDING;
     }
   }
 
-  /**
-   * GrizzySMS (handler_api.php) getStatus raw codes:
-   *   STATUS_WAIT_CODE   -> waiting for SMS, still active
-   *   STATUS_WAIT_RETRY  -> waiting for SMS, still active
-   *   STATUS_WAIT_RESEND -> waiting for SMS, still active
-   *   STATUS_OK          -> SMS received
-   *   STATUS_CANCEL      -> cancelled
-   */
-  private mapGrizzyStatus(rawCode: string | undefined): OrderStatus {
+  private mapGrizzyStatus(
+    rawCode: string | undefined,
+  ): OrderStatus {
     switch (rawCode) {
       case 'STATUS_WAIT_CODE':
       case 'STATUS_WAIT_RETRY':
@@ -904,6 +762,7 @@ export class MarketplaceService {
         this.logger.warn(
           `Unmapped GrizzySMS status "${rawCode}" — defaulting to PENDING`,
         );
+
         return OrderStatus.PENDING;
     }
   }
@@ -917,9 +776,13 @@ export class MarketplaceService {
         const result = await this.grizzySms.getStatus(
           order.providerOrderId ?? '',
         );
+
         return {
           status: this.mapGrizzyStatus(result.code),
-          sms: result.code === 'STATUS_OK' && result.value ? [result.value] : null,
+          sms:
+            result.code === 'STATUS_OK' && result.value
+              ? [result.value]
+              : null,
           raw: result,
         };
       }
@@ -928,60 +791,60 @@ export class MarketplaceService {
         const result = await this.smsBower.getStatus(
           order.providerOrderId ?? '',
         );
+
         return {
-          // Same status-code vocabulary as GrizzySMS (identical protocol),
-          // so mapGrizzyStatus applies unchanged here too.
           status: this.mapGrizzyStatus(result.code),
-          sms: result.code === 'STATUS_OK' && result.value ? [result.value] : null,
+          sms:
+            result.code === 'STATUS_OK' && result.value
+              ? [result.value]
+              : null,
           raw: result,
         };
       }
 
-      const result = await this.fiveSim.check(Number(order.providerOrderId));
+      const result = await this.fiveSim.check(
+        Number(order.providerOrderId),
+      );
+
       return {
-        status: this.mapProviderStatus((result as any)?.status),
+        status: this.mapProviderStatus(
+          (result as any)?.status,
+        ),
         sms: result.sms,
         raw: result,
       };
     } catch (error) {
-      // FIX: this previously had no logging at all — any failure here
-      // (5sim/GrizzySMS auth issue, network error, bad providerOrderId)
-      // propagated as a bare 502/500 with zero trace in the logs. Now
-      // every check/sms/cancel/finish call that hits this path logs the
-      // provider, order id, and real underlying error before rethrowing.
       this.logger.error(
         `checkProviderOrder failed — provider=${order.provider} providerOrderId=${order.providerOrderId}: ${
-          error instanceof Error ? error.message : String(error)
+          error instanceof Error
+            ? error.message
+            : String(error)
         }`,
       );
+
       throw error;
     }
   }
 
   /* ============================================================
-                        BUY NUMBER
+                          BUY NUMBER
   ============================================================ */
 
   async buy(
     userId: string,
     dto: BuyNumberDto,
   ) {
-    const operator =
-      dto.operator ?? 'any';
+    const operator = dto.operator ?? 'any';
 
-    // Validate stock & selling price
-    const activation =
-      await this.validatePurchase(
-        dto.country,
-        operator,
-        dto.product,
-        dto.provider,
-      );
+    const activation = await this.validatePurchase(
+      dto.country,
+      operator,
+      dto.product,
+      dto.provider,
+    );
 
-    const amount =
-      activation.priceNgn;
+    const amount = activation.priceNgn;
 
-    // Debit wallet
     await this.wallet.debitWallet(
       userId,
       amount,
@@ -989,33 +852,27 @@ export class MarketplaceService {
     );
 
     try {
-      // Buy from provider
-      const purchase =
-        await this.purchaseFromProvider(
-          dto.country,
-          operator,
-          dto.product,
-          dto.provider,
-        );
+      const purchase = await this.purchaseFromProvider(
+        dto.country,
+        operator,
+        dto.product,
+        dto.provider,
+      );
 
-      // Save order
-      const order =
-        await this.createOrder(
-          userId,
-          purchase,
-          dto,
-          amount,
-        );
+      const order = await this.createOrder(
+        userId,
+        purchase,
+        dto,
+        amount,
+      );
 
       return {
         success: true,
-        message:
-          'Number purchased successfully.',
+        message: 'Number purchased successfully.',
         order,
         purchase,
       };
     } catch (error) {
-      // Refund wallet if provider fails
       await this.refundPurchase(
         userId,
         amount,
@@ -1027,17 +884,13 @@ export class MarketplaceService {
   }
 
   /* ============================================================
-                        USER ORDERS
+                          USER ORDERS
   ============================================================ */
 
   async getUserOrders(userId: string) {
     return this.prisma.order.findMany({
-      where: {
-        userId,
-      },
-      orderBy: {
-        createdAt: 'desc',
-      },
+      where: { userId },
+      orderBy: { createdAt: 'desc' },
     });
   }
 
@@ -1045,60 +898,40 @@ export class MarketplaceService {
     userId: string,
     orderId: string,
   ) {
-    const order =
-      await this.prisma.order.findFirst({
-        where: {
-          id: orderId,
-          userId,
-        },
-      });
+    const order = await this.prisma.order.findFirst({
+      where: {
+        id: orderId,
+        userId,
+      },
+    });
 
     if (!order) {
-      throw new NotFoundException(
-        'Order not found.',
-      );
+      throw new NotFoundException('Order not found.');
     }
 
     return order;
   }
 
   /* ============================================================
-                        SYNC ORDER
+                          SYNC ORDER
   ============================================================ */
 
   async syncOrder(
     userId: string,
     orderId: string,
   ) {
-    const order =
-      await this.getOrder(
-        userId,
-        orderId,
-      );
-
+    const order = await this.getOrder(userId, orderId);
     const checked = await this.checkProviderOrder(order);
     const status = checked.status;
 
-    // ── Auto-refund on terminal failure states ──
-    // When a virtual number times out without receiving an SMS (or
-    // the provider otherwise fails the activation), the user has
-    // paid for a number that delivered no value. Refund the full
-    // selling price back to their wallet so their balance is
-    // restored. This is idempotent: once refundedAt is set we never
-    // refund the same order twice, even if sync is called again.
     const shouldRefund =
-      (status === OrderStatus.TIMEOUT ||
-        status === OrderStatus.FAILED) &&
+      (
+        status === OrderStatus.TIMEOUT ||
+        status === OrderStatus.FAILED
+      ) &&
       order.refundedAt === null;
 
     if (shouldRefund) {
-      // FIX: wrap the wallet credit AND the order status/refundedAt update
-      // in a SINGLE Prisma interactive transaction.  Previously these were
-      // two independent writes — if the `order.update` threw after the
-      // `wallet.credit` had already committed, the user's wallet was
-      // credited but `refundedAt` stayed null, so a later sync would
-      // credit them AGAIN (double refund).  Now both succeed or both
-      // roll back together.
       try {
         await this.prisma.$transaction(async (tx) => {
           await this.wallet.creditWallet(
@@ -1122,12 +955,12 @@ export class MarketplaceService {
           `Auto-refunded order ${order.id} (status=${status}) — ₦${order.sellingPriceNgn} returned to user ${userId}.`,
         );
       } catch (err) {
-        // The whole transaction rolled back, so neither the credit nor
-        // the order update was persisted.  Persist just the status so the
-        // UI reflects reality, and log loudly so it can be reconciled
-        // manually.  refundedAt remains null, so a later sync can retry.
         this.logger.error(
-          `Refund failed for order ${order.id} on status=${status}: ${err instanceof Error ? err.message : String(err)}`,
+          `Refund failed for order ${order.id} on status=${status}: ${
+            err instanceof Error
+              ? err.message
+              : String(err)
+          }`,
         );
 
         await this.prisma.order.update({
@@ -1137,12 +970,8 @@ export class MarketplaceService {
       }
     } else {
       await this.prisma.order.update({
-        where: {
-          id: order.id,
-        },
-        data: {
-          status,
-        },
+        where: { id: order.id },
+        data: { status },
       });
     }
 
@@ -1154,37 +983,43 @@ export class MarketplaceService {
   }
 
   /* ============================================================
-                        SMS
+                              SMS
   ============================================================ */
-  async sms(userId: string, orderId: string) {
-    const order = await this.getOrder(userId, orderId);
 
+  async sms(
+    userId: string,
+    orderId: string,
+  ) {
+    const order = await this.getOrder(userId, orderId);
     const checked = await this.checkProviderOrder(order);
 
     return {
-      Data: checked.sms && checked.sms.length > 0 ? checked.sms : null,
+      Data:
+        checked.sms && checked.sms.length > 0
+          ? checked.sms
+          : null,
       Total: checked.sms?.length ?? 0,
     };
   }
 
   /* ============================================================
-                        FINISH
+                            FINISH
   ============================================================ */
 
   async finish(
     userId: string,
     orderId: string,
   ) {
-    const order =
-      await this.getOrder(
-        userId,
-        orderId,
-      );
+    const order = await this.getOrder(userId, orderId);
 
     if (order.provider === 'GRIZZYSMS') {
-      await this.grizzySms.finish(order.providerOrderId ?? '');
+      await this.grizzySms.finish(
+        order.providerOrderId ?? '',
+      );
     } else if (order.provider === 'SMSBOWER') {
-      await this.smsBower.finish(order.providerOrderId ?? '');
+      await this.smsBower.finish(
+        order.providerOrderId ?? '',
+      );
     } else {
       await this.fiveSim.finish(
         Number(order.providerOrderId),
@@ -1192,12 +1027,8 @@ export class MarketplaceService {
     }
 
     await this.prisma.order.update({
-      where: {
-        id: order.id,
-      },
-      data: {
-        status: OrderStatus.COMPLETED,
-      },
+      where: { id: order.id },
+      data: { status: OrderStatus.COMPLETED },
     });
 
     return {
@@ -1207,17 +1038,14 @@ export class MarketplaceService {
   }
 
   /* ============================================================
-                        CANCEL
+                            CANCEL
   ============================================================ */
 
   async cancel(
     userId: string,
     orderId: string,
   ) {
-    const order = await this.getOrder(
-      userId,
-      orderId,
-    );
+    const order = await this.getOrder(userId, orderId);
 
     if (
       order.status === OrderStatus.CANCELLED ||
@@ -1232,45 +1060,52 @@ export class MarketplaceService {
     let rawStatusLabel: string;
 
     if (order.provider === 'GRIZZYSMS') {
-      const code = await this.grizzySms.cancel(order.providerOrderId ?? '');
-      status = this.mapGrizzyStatus(
-        code === 'ACCESS_CANCEL' ? 'STATUS_CANCEL' : undefined,
+      const code = await this.grizzySms.cancel(
+        order.providerOrderId ?? '',
       );
+
+      status = this.mapGrizzyStatus(
+        code === 'ACCESS_CANCEL'
+          ? 'STATUS_CANCEL'
+          : undefined,
+      );
+
       rawStatusLabel = code;
     } else if (order.provider === 'SMSBOWER') {
-      const code = await this.smsBower.cancel(order.providerOrderId ?? '');
-      status = this.mapGrizzyStatus(
-        code === 'ACCESS_CANCEL' ? 'STATUS_CANCEL' : undefined,
+      // FIX: SmsBowerService.cancel() returns an object, not a string.
+      const result = await this.smsBower.cancel(
+        order.providerOrderId ?? '',
       );
-      rawStatusLabel = code;
+
+      status = this.mapGrizzyStatus(
+        result.code === 'ACCESS_CANCEL'
+          ? 'STATUS_CANCEL'
+          : undefined,
+      );
+
+      rawStatusLabel = result.raw;
     } else {
       const provider = await this.fiveSim.cancel(
         Number(order.providerOrderId),
       );
-      status = this.mapProviderStatus((provider as any)?.status);
+
+      status = this.mapProviderStatus(
+        (provider as any)?.status,
+      );
+
       rawStatusLabel =
-        (provider as any)?.status?.toUpperCase?.() ?? 'UNKNOWN';
+        (provider as any)?.status?.toUpperCase?.() ??
+        'UNKNOWN';
     }
 
-    // Refund on a genuine cancellation OR a timeout. A timeout means
-    // the number expired without receiving an SMS — the user paid for
-    // a number that delivered no value, so their wallet should be
-    // restored. Guard with refundedAt so a second cancel/sync can't
-    // double-refund.
     const shouldRefund =
-      (status === OrderStatus.CANCELLED ||
-        status === OrderStatus.TIMEOUT) &&
+      (
+        status === OrderStatus.CANCELLED ||
+        status === OrderStatus.TIMEOUT
+      ) &&
       order.refundedAt === null;
 
     if (shouldRefund) {
-      // FIX: wrap the order status/refundedAt update AND the wallet credit
-      // in a SINGLE Prisma interactive transaction.  Previously the code
-      // first set `refundedAt` on the order, then credited the wallet as a
-      // separate write — if the credit threw, a compensating rollback
-      // (setting refundedAt back to null) was attempted, but that rollback
-      // itself could fail, leaving the order marked as refunded with no
-      // money returned.  Now both operations commit or roll back together,
-      // so no compensating rollback is needed.
       try {
         await this.prisma.$transaction(async (tx) => {
           await tx.order.update({
@@ -1292,22 +1127,20 @@ export class MarketplaceService {
           );
         });
       } catch (err) {
-        // Transaction rolled back — neither the order update nor the
-        // credit persisted, so refundedAt is still null and a later
-        // sync/cancel can retry cleanly.
         this.logger.error(
-          `Cancel refund failed for order ${order.id}: ${err instanceof Error ? err.message : String(err)}`,
+          `Cancel refund failed for order ${order.id}: ${
+            err instanceof Error
+              ? err.message
+              : String(err)
+          }`,
         );
+
         throw err;
       }
     } else {
       await this.prisma.order.update({
-        where: {
-          id: order.id,
-        },
-        data: {
-          status,
-        },
+        where: { id: order.id },
+        data: { status },
       });
     }
 
@@ -1320,18 +1153,14 @@ export class MarketplaceService {
   }
 
   /* ============================================================
-                        BAN
+                              BAN
   ============================================================ */
 
   async ban(
     userId: string,
     orderId: string,
   ) {
-    const order =
-      await this.getOrder(
-        userId,
-        orderId,
-      );
+    const order = await this.getOrder(userId, orderId);
 
     if (
       order.status === OrderStatus.CANCELLED ||
@@ -1343,12 +1172,13 @@ export class MarketplaceService {
     }
 
     if (order.provider === 'GRIZZYSMS') {
-      // handler_api.php has no separate "ban" action — status 8 (cancel)
-      // is the closest equivalent for marking a number bad/unusable.
-      await this.grizzySms.cancel(order.providerOrderId ?? '');
+      await this.grizzySms.cancel(
+        order.providerOrderId ?? '',
+      );
     } else if (order.provider === 'SMSBOWER') {
-      // Same protocol, same limitation — no dedicated "ban" action.
-      await this.smsBower.cancel(order.providerOrderId ?? '');
+      await this.smsBower.cancel(
+        order.providerOrderId ?? '',
+      );
     } else {
       await this.fiveSim.ban(
         Number(order.providerOrderId),
@@ -1356,12 +1186,8 @@ export class MarketplaceService {
     }
 
     await this.prisma.order.update({
-      where: {
-        id: order.id,
-      },
-      data: {
-        status: OrderStatus.BANNED,
-      },
+      where: { id: order.id },
+      data: { status: OrderStatus.BANNED },
     });
 
     return {
