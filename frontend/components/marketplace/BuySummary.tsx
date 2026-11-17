@@ -62,6 +62,8 @@ const formatActivation = (value?: string) =>
     ? `Grade ${value.trim()}`
     : value;
 
+const displayValue = (value?: string) => value?.trim() || "—";
+
 /* ==========================================================
    COMPONENT
 ========================================================== */
