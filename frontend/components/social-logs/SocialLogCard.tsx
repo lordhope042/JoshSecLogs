@@ -210,6 +210,27 @@ interface Props {
 
 const money = (price?: number) => `₦${Number(price ?? 0).toLocaleString()}`;
 
+const PLATFORM_LOGOS: Record<string, string> = {
+  FACEBOOK: "https://cdn.simpleicons.org/facebook/0866FF",
+  FACEBOOK_PAGE: "https://cdn.simpleicons.org/facebook/0866FF",
+  INSTAGRAM: "https://cdn.simpleicons.org/instagram/E4405F",
+  INSTAGRAM_FOLLOWERS: "https://cdn.simpleicons.org/instagram/E4405F",
+  TIKTOK: "https://cdn.simpleicons.org/tiktok/000000",
+  TIKTOK_COUNTRY: "https://cdn.simpleicons.org/tiktok/000000",
+  TIKTOK_FOLLOWERS: "https://cdn.simpleicons.org/tiktok/000000",
+  TWITTER: "https://cdn.simpleicons.org/x/000000",
+  X: "https://cdn.simpleicons.org/x/000000",
+  TELEGRAM: "https://cdn.simpleicons.org/telegram/26A5E4",
+  GMAIL: "https://cdn.simpleicons.org/gmail/EA4335",
+  YOUTUBE: "https://cdn.simpleicons.org/youtube/FF0000",
+};
+
+function platformLogoUrl(platform: string, category: string): string | undefined {
+  const key = platform.toUpperCase().replace(/[^A-Z0-9]/g, "");
+  const categoryKey = category.toUpperCase().replace(/[^A-Z0-9]/g, "");
+  return PLATFORM_LOGOS[key] ?? PLATFORM_LOGOS[categoryKey];
+}
+
 function HighlightedText({ text, query }: { text: string; query?: string }) {
   if (!query?.trim()) return <>{text}</>;
   const idx = text.toLowerCase().indexOf(query.trim().toLowerCase());
@@ -339,6 +360,7 @@ export default function SocialLogCard({ group, onView, searchQuery }: Props) {
   const isWorkingTool = group.category === "ALL_WORKING_TOOLS";
 
   const categoryLabel = CATEGORY_LABELS[group.category] ?? group.platform;
+  const platformLogo = platformLogoUrl(group.platform, group.category);
   const subLabel = group.subType ?? (group.pageType ? PAGE_TYPE_LABELS[group.pageType] ?? group.pageType : group.country ?? undefined);
 
   const heading = (() => {
@@ -395,7 +417,7 @@ export default function SocialLogCard({ group, onView, searchQuery }: Props) {
     >
       {/* Cover */}
 
-      <div className="relative h-44 overflow-hidden bg-zinc-100 dark:bg-zinc-800">
+      <div className="relative h-24 overflow-hidden bg-zinc-100 dark:bg-zinc-800">
         {representative?.image ? (
           <img
             src={representative.image}
@@ -410,10 +432,18 @@ export default function SocialLogCard({ group, onView, searchQuery }: Props) {
             `}
           />
         ) : (
-          <div className="flex h-full items-center justify-center bg-gradient-to-r from-orange-500 to-amber-500">
-            <span className="text-5xl font-black text-gray-900 dark:text-white">
-              {isWorkingTool ? "🔧" : group.platform.charAt(0)}
-            </span>
+          <div className="flex h-full items-center justify-center bg-zinc-100 dark:bg-zinc-800">
+            {platformLogo ? (
+              <img
+                src={platformLogo}
+                alt={`${categoryLabel} logo`}
+                className="h-12 w-12 object-contain"
+              />
+            ) : (
+              <span className="text-4xl" aria-hidden="true">
+                {isWorkingTool ? "🔧" : "👤"}
+              </span>
+            )}
           </div>
         )}
 
@@ -433,9 +463,9 @@ export default function SocialLogCard({ group, onView, searchQuery }: Props) {
 
       {/* Body */}
 
-      <div className="space-y-5 p-5">
+      <div className="space-y-3 p-4">
         <div>
-          <h3 className="truncate text-xl font-bold text-zinc-900 dark:text-white">
+          <h3 className="truncate text-base font-bold text-zinc-900 dark:text-white">
             <HighlightedText text={heading} query={searchQuery} />
           </h3>
           {subLabel && (
@@ -501,11 +531,11 @@ export default function SocialLogCard({ group, onView, searchQuery }: Props) {
 
       {/* Footer */}
 
-      <div className="flex items-center justify-between border-t border-zinc-200 p-5 dark:border-zinc-800">
+      <div className="flex items-center justify-between border-t border-zinc-200 p-4 dark:border-zinc-800">
         <div>
           <p className="text-xs text-gray-400 dark:text-zinc-500">Price</p>
           <p
-            className={`text-2xl font-bold ${
+            className={`text-xl font-bold ${
               isSold ? "text-gray-500 dark:text-zinc-400 line-through dark:text-zinc-600" : "text-orange-600 dark:text-orange-400"
             }`}
           >
