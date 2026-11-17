@@ -531,11 +531,11 @@ export default function SocialLogCard({ group, onView, searchQuery }: Props) {
 
       {/* Footer */}
 
-      <div className="flex items-center justify-between border-t border-zinc-200 p-4 dark:border-zinc-800">
+      <div className="flex flex-wrap items-center justify-between gap-3 border-t border-zinc-200 p-4 dark:border-zinc-800">
         <div>
           <p className="text-xs text-gray-400 dark:text-zinc-500">Price</p>
           <p
-            className={`text-xl font-bold ${
+            className={`text-lg font-bold ${
               isSold ? "text-gray-500 dark:text-zinc-400 line-through dark:text-zinc-600" : "text-orange-600 dark:text-orange-400"
             }`}
           >
@@ -549,8 +549,8 @@ export default function SocialLogCard({ group, onView, searchQuery }: Props) {
           className={`
             flex items-center gap-2
             rounded-xl
-            px-5 py-3
-            font-medium
+            px-3 py-2
+            text-sm font-medium
             transition-all
 
             ${
@@ -562,12 +562,12 @@ export default function SocialLogCard({ group, onView, searchQuery }: Props) {
         >
           {isSold ? (
             <>
-              <Lock size={18} />
+              <Lock size={16} />
               Sold Out
             </>
           ) : (
             <>
-              <Eye size={18} />
+              <Eye size={16} />
               View Details
             </>
           )}

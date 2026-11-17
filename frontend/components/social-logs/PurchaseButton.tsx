@@ -23,8 +23,8 @@ export default function PurchaseButton({
       disabled={loading}
       onClick={onPurchase}
       className="
-        group mt-8 w-full overflow-hidden
-        rounded-2xl
+        group mt-5 w-full overflow-hidden
+        rounded-xl
         bg-gradient-to-r
         from-orange-500
         to-orange-600
@@ -43,73 +43,59 @@ export default function PurchaseButton({
     >
       <div
         className="
-          flex items-center justify-between
-          rounded-2xl
+          flex flex-col items-stretch gap-3
+          rounded-xl
           bg-gradient-to-r
           from-orange-500
           to-orange-600
-          px-6 py-4
+          px-4 py-3
+          sm:flex-row sm:items-center sm:justify-between
         "
       >
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-3">
           <div
             className="
-              flex h-12 w-12
+              flex h-9 w-9
               items-center justify-center
-              rounded-xl
+              rounded-lg
               bg-white/15
               backdrop-blur
             "
           >
             {loading ? (
-              <Loader2
-                size={22}
-                className="animate-spin"
-              />
+              <Loader2 size={18} className="animate-spin" />
             ) : (
               <ShoppingCart
-                size={22}
-                className="
-                  transition-transform
-                  duration-300
-                  group-hover:scale-110
-                "
+                size={18}
+                className="transition-transform duration-300 group-hover:scale-110"
               />
             )}
           </div>
 
           <div className="text-left">
-            <p className="text-xs uppercase tracking-wider text-orange-100">
+            <p className="text-[10px] uppercase tracking-wider text-orange-100">
               Secure Checkout
             </p>
-
-            <h3 className="text-lg font-bold">
-              {loading
-                ? "Processing Purchase..."
-                : "Buy Account"}
+            <h3 className="text-base font-bold">
+              {loading ? "Processing Purchase..." : "Buy Account"}
             </h3>
           </div>
         </div>
 
-        <div className="flex items-center gap-4">
+        <div className="flex items-center justify-between gap-3 sm:justify-end">
           <div className="text-right">
-            <p className="text-xs uppercase tracking-wider text-orange-100">
+            <p className="text-[10px] uppercase tracking-wider text-orange-100">
               Total
             </p>
-
-            <p className="text-2xl font-extrabold">
+            <p className="text-xl font-extrabold">
               ₦{price.toLocaleString()}
             </p>
           </div>
 
           {!loading && (
             <ArrowRight
-              size={22}
-              className="
-                transition-transform
-                duration-300
-                group-hover:translate-x-1
-              "
+              size={18}
+              className="transition-transform duration-300 group-hover:translate-x-1"
             />
           )}
         </div>
