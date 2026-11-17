@@ -26,13 +26,13 @@ We do NOT use advertising cookies, tracking cookies, or third-party analytics co
 
 To manage cookies in Chrome: Settings → Privacy and security → Cookies and other site data. In Firefox: Settings → Privacy & Security → Cookies and Site Data. In Safari: Preferences → Privacy → Cookies and website data.
 
-Note that clearing cookies will log you out of your account and reset your theme preference. You will need to log in again after clearing cookies.`,
+Note that clearing cookies will log you out of your account. Your theme preference is stored separately and may remain until localStorage is cleared.`,
   },
   {
     title: "4. localStorage Usage",
-    content: `In addition to cookies, JoshSecLogs uses browser localStorage to store the following non-sensitive data: your JWT access token (for authentication), your theme preference (light/dark), and your notification preferences. This data is stored on your device and is not transmitted to our servers except where needed for authentication.
+    content: `Authentication is managed using a secure, HttpOnly session cookie that JavaScript cannot read. Browser localStorage may be used for non-sensitive interface preferences such as theme or notification settings, but it does not contain the authentication token.
 
-You can clear localStorage by clearing your browser data or using your browser's developer tools. Clearing localStorage will log you out of the platform.`,
+You can clear localStorage by clearing your browser data or using your browser's developer tools. This resets local preferences; clearing the authentication cookie is what logs you out.`,
   },
   {
     title: "5. Updates to This Policy",

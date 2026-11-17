@@ -45,19 +45,13 @@ interface User {
    ─────────────────────────────────────────── */
 const api = axios.create({
   baseURL: process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api/v1",
-});
-
-api.interceptors.request.use((config) => {
-  const token = localStorage.getItem("access_token");
-  if (token) config.headers.Authorization = `Bearer ${token}`;
-  return config;
+  withCredentials: true,
 });
 
 api.interceptors.response.use(
   (res) => res,
   (err) => {
     if (err.response?.status === 401) {
-      localStorage.removeItem("access_token");
       window.location.href = "/login";
     }
     return Promise.reject(err);
@@ -121,10 +115,8 @@ function getBalance(wallet: { balance?: number | string | null } | null | undefi
   return typeof num === "number" && !isNaN(num) ? num : 0;
 }
 
-// Read the logged-in admin's own id from wherever your auth stores it.
-// Adjust this if your app keeps the current user elsewhere (context, a
-// decoded JWT, etc.) — localStorage is a placeholder matching this file's
-// existing pattern of reading "access_token" directly.
+// Read the logged-in admin's display id from the existing profile cache.
+// Authorization is enforced by the server-side HttpOnly cookie session.
 function getCurrentUserId(): string | null {
   if (typeof window === "undefined") return null;
   return localStorage.getItem("user_id");

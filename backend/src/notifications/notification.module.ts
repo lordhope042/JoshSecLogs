@@ -6,12 +6,14 @@ import { NotificationController } from "./notification.controller";
 import { NotificationService } from "./notification.service";
 import { NotificationRepository } from "./notification.repository";
 
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+
 @Module({
   imports: [PrismaModule],
 
   controllers: [NotificationController],
 
-  providers: [NotificationService, NotificationRepository],
+  providers: [JwtAuthGuard, NotificationService, NotificationRepository],
 
   exports: [NotificationService],
 })

@@ -5,8 +5,10 @@ import {
   Patch,
   Post,
   Request,
+  Res,
   UseGuards,
 } from '@nestjs/common';
+import { Response } from 'express';
 
 import { AuthService } from './auth.service';
 
@@ -17,19 +19,54 @@ import { UpdatePasswordDto } from './dto/update-password.dto';
 import { ForgotPasswordDto } from './dto/forgot-password.dto';
 
 import { JwtAuthGuard } from './jwt-auth.guard';
+import { RateLimit, RateLimitGuard } from '../common/guards/rate-limit.guard';
 
 @Controller('auth')
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
   @Post('register')
+  @UseGuards(RateLimitGuard)
+  @RateLimit(5, 60_000)
   register(@Body() dto: RegisterDto) {
     return this.authService.register(dto);
   }
 
   @Post('login')
-  login(@Body() dto: LoginDto) {
-    return this.authService.login(dto);
+  @UseGuards(RateLimitGuard)
+  @RateLimit(5, 60_000)
+  async login(
+    @Body() dto: LoginDto,
+    @Res({ passthrough: true }) response: Response,
+  ) {
+    const { accessToken, ...result } = await this.authService.login(dto);
+    const expiresInSeconds = Number(process.env.JWT_EXPIRES_IN || 604800);
+    const production = process.env.NODE_ENV === 'production';
+
+    response.cookie('access_token', accessToken, {
+      httpOnly: true,
+      secure: production,
+      sameSite: production ? 'none' : 'lax',
+      path: '/',
+      maxAge:
+        Number.isFinite(expiresInSeconds) && expiresInSeconds > 0
+          ? expiresInSeconds * 1000
+          : 7 * 24 * 60 * 60 * 1000,
+    });
+
+    return result;
+  }
+
+  @Post('logout')
+  logout(@Res({ passthrough: true }) response: Response) {
+    const production = process.env.NODE_ENV === 'production';
+    response.clearCookie('access_token', {
+      httpOnly: true,
+      secure: production,
+      sameSite: production ? 'none' : 'lax',
+      path: '/',
+    });
+    return { success: true };
   }
 
   @UseGuards(JwtAuthGuard)
@@ -83,6 +120,8 @@ export class AuthController {
      and can be upgraded with a real email provider later.
   ============================================================ */
   @Post('forgot-password')
+  @UseGuards(RateLimitGuard)
+  @RateLimit(3, 15 * 60_000)
   forgotPassword(@Body() dto: ForgotPasswordDto) {
     return this.authService.forgotPassword(dto);
   }

@@ -6,7 +6,7 @@ import {
   Package,
   Zap,
   CreditCard,
-  CircleDollarSign,
+  Coins,
   CheckCircle2,
   AlertTriangle,
 } from "lucide-react";
@@ -54,17 +54,12 @@ const money = (amount = 0): string =>
     maximumFractionDigits: 2,
   }).format(amount);
 
-const displayValue = (
-  value?: string,
-) => value?.trim() || "Not Selected";
-
 /**
- * SMSBower activation types are price keys (e.g. "0.12"). If no label was
- * passed down, show them as a readable tier instead of a bare number.
+ * Keep activation codes private-looking and do not surface provider USD tiers.
  */
 const formatActivation = (value?: string) =>
   value && /^\d+(\.\d+)?$/.test(value.trim())
-    ? `Tier $${value.trim()}`
+    ? `Grade ${value.trim()}`
     : value;
 
 /* ==========================================================
@@ -204,7 +199,7 @@ export default function BuySummary({
             value={money(price)}
             color="orange"
             icon={
-              <CircleDollarSign
+              <Coins
                 size={22}
               />
             }

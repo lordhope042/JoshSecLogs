@@ -2,6 +2,7 @@ import {
   Injectable,
   BadGatewayException,
   BadRequestException,
+  ConflictException,
   NotFoundException,
   Logger,
 } from '@nestjs/common';
@@ -13,6 +14,7 @@ import { FiveSimService } from '../providers/fivesim/fivesim.service';
 import { GrizzySmsService } from '../providers/grizzysms/grizzysms.service';
 import { SmsBowerService } from '../providers/smsbower/smsbower.service';
 import { OrderStatus } from '@prisma/client';
+import { createHash } from 'crypto';
 
 import { BuyNumberDto } from './dto/buy-number.dto';
 
@@ -930,7 +932,12 @@ export class MarketplaceService {
   async buy(
     userId: string,
     dto: BuyNumberDto,
+    idempotencyKey: string,
   ) {
+    if (!/^[A-Za-z0-9._:-]{16,128}$/.test(idempotencyKey)) {
+      throw new BadRequestException('A valid Idempotency-Key header is required.');
+    }
+
     const operator = dto.operator ?? 'any';
 
     const activation = await this.validatePurchase(
@@ -941,14 +948,61 @@ export class MarketplaceService {
     );
 
     const amount = activation.priceNgn;
+    if (!Number.isFinite(amount) || amount <= 0) {
+      throw new BadRequestException('The calculated purchase price is invalid.');
+    }
 
-    await this.wallet.debitWallet(
-      userId,
-      amount,
-      `Purchase ${dto.product}`,
-    );
+    const fingerprint = createHash('sha256')
+      .update(JSON.stringify({
+        provider: dto.provider,
+        country: dto.country,
+        operator,
+        product: dto.product,
+        forwardingNumber: dto.forwardingNumber ?? null,
+      }))
+      .digest('hex');
+
+    let requestId: string;
+    try {
+      const request = await this.prisma.purchaseRequest.create({
+        data: {
+          userId,
+          idempotencyKey,
+          requestFingerprint: fingerprint,
+          status: 'PROCESSING',
+        },
+      });
+      requestId = request.id;
+    } catch (error: any) {
+      if (error?.code !== 'P2002') throw error;
+      const previous = await this.prisma.purchaseRequest.findUnique({
+        where: { userId_idempotencyKey: { userId, idempotencyKey } },
+      });
+      if (!previous) throw error;
+      if (previous.requestFingerprint !== fingerprint) {
+        throw new ConflictException('This idempotency key was already used for a different purchase.');
+      }
+      if (previous.status === 'COMPLETED' && previous.response) {
+        return previous.response as any;
+      }
+      throw new ConflictException(
+        previous.status === 'PROCESSING'
+          ? 'This purchase is already being processed. Check your orders before retrying.'
+          : 'This purchase attempt already failed. Start a new purchase after checking your wallet and orders.',
+      );
+    }
+
+    let debited = false;
 
     try {
+      await this.wallet.debitWallet(
+        userId,
+        amount,
+        `Purchase ${dto.product}`,
+        `number-purchase:${requestId}`,
+      );
+      debited = true;
+
       const purchase = await this.purchaseFromProvider(
         dto.country,
         operator,
@@ -966,19 +1020,38 @@ export class MarketplaceService {
         amount,
       );
 
-      return {
+      const result = {
         success: true,
         message: 'Number purchased successfully.',
         order,
         purchase,
       };
+      await this.prisma.purchaseRequest.update({
+        where: { id: requestId },
+        data: { status: 'COMPLETED', response: JSON.parse(JSON.stringify(result)) },
+      });
+      return result;
     } catch (error) {
-      await this.refundPurchase(
-        userId,
-        amount,
-        dto.product,
-      );
+      let refundFailed = false;
+      if (debited) {
+        try {
+          await this.refundPurchase(userId, amount, dto.product);
+        } catch (refundError) {
+          refundFailed = true;
+          this.logger.error(
+            `Purchase refund failed for request ${requestId}: ${refundError instanceof Error ? refundError.message : 'unknown error'}`,
+          );
+        }
+      }
 
+      await this.prisma.purchaseRequest.update({
+        where: { id: requestId },
+        data: { status: 'FAILED' },
+      });
+
+      if (refundFailed) {
+        throw new BadGatewayException('The purchase failed and the automatic refund could not be confirmed. Contact support with your order attempt time.');
+      }
       throw error;
     }
   }

@@ -48,6 +48,10 @@ export class WalletRepository {
     return tx ?? this.prisma;
   }
 
+  transaction<T>(callback: (tx: TxClient) => Promise<T>): Promise<T> {
+    return this.prisma.$transaction(callback);
+  }
+
   /*
   =====================================
       WALLET
@@ -72,15 +76,14 @@ export class WalletRepository {
   }
 
   async getOrCreateWallet(userId: string, tx?: TxClient) {
-    let wallet =
-      await this.findWallet(userId, tx);
-
-    if (!wallet) {
-      wallet =
-        await this.createWallet(userId, tx);
-    }
-
-    return wallet;
+    return this.client(tx).wallet.upsert({
+      where: { userId },
+      update: {},
+      create: {
+        userId,
+        balance: new Prisma.Decimal(0),
+      },
+    });
   }
 
   /*
@@ -120,10 +123,8 @@ export class WalletRepository {
     amount: number,
     tx?: TxClient,
   ) {
-    return this.client(tx).wallet.update({
-      where: {
-        userId,
-      },
+    return this.client(tx).wallet.updateMany({
+      where: { userId, balance: { gte: amount } },
       data: {
         balance: {
           decrement: amount,

@@ -1,19 +1,11 @@
-import Cookies from "js-cookie";
+import api from "@/lib/axios";
 
-const TOKEN_KEY = "token";
-
-export const saveToken = (token: string) => {
-  Cookies.set(TOKEN_KEY, token, {
-    expires: 7,
-    secure: process.env.NODE_ENV === "production",
-    sameSite: "strict",
-  });
-};
-
-export const getToken = (): string | undefined => {
-  return Cookies.get(TOKEN_KEY);
-};
-
-export const logout = () => {
-  Cookies.remove(TOKEN_KEY);
-};
+/** Clear the server-managed HttpOnly session cookie. */
+export async function logout(): Promise<void> {
+  try {
+    await api.post("/auth/logout");
+  } finally {
+    // This is profile display data only; authentication lives in the HttpOnly cookie.
+    if (typeof window !== "undefined") localStorage.removeItem("user");
+  }
+}

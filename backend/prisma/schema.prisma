@@ -22,6 +22,7 @@ model User {
   referredBy          String?
   apiKeys             ApiKey[]
   orders              Order[]
+  purchaseRequests    PurchaseRequest[]
   payments            Payment[]
   purchasedSocialLogs SocialLog[]         @relation("PurchasedSocialLogs")
   wallet              Wallet?
@@ -183,6 +184,21 @@ model SmsMessage {
   @@index([orderId])
 }
 
+model PurchaseRequest {
+  id                 String   @id @default(uuid())
+  userId             String
+  idempotencyKey     String
+  requestFingerprint String
+  status             String   @default("PROCESSING")
+  response           Json?
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+  user               User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, idempotencyKey])
+  @@index([status, createdAt])
+}
+
 model PricingRule {
   id             String   @id @default(uuid())
   country        String
@@ -219,7 +235,9 @@ model Payment {
 model ApiKey {
   id        String   @id @default(uuid())
   userId    String
-  key       String   @unique
+  key       String?  @unique
+  keyHash   String?  @unique
+  keyPrefix String
   active    Boolean  @default(true)
   createdAt DateTime @default(now())
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)

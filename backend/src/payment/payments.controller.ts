@@ -1,3 +1,4 @@
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import {
   Body,
   Controller,
@@ -8,7 +9,6 @@ import {
   Req,
   UseGuards,
 } from '@nestjs/common';
-import { AuthGuard } from '@nestjs/passport';
 import type { Request } from 'express';
 
 import { PaymentsService } from './payments.service';
@@ -60,7 +60,7 @@ export class PaymentsController {
       LIST VIRTUAL ACCOUNTS
   =====================================
   */
-  @UseGuards(AuthGuard('jwt'))
+  @UseGuards(JwtAuthGuard)
   @Get('virtual-accounts')
   async listAccounts(@Req() req: RequestWithUser) {
     return this.paymentsService.listVirtualAccounts(req.user.id);
@@ -71,7 +71,7 @@ export class PaymentsController {
       CREATE (OR FETCH EXISTING) VIRTUAL ACCOUNT
   =====================================
   */
-  @UseGuards(AuthGuard('jwt'))
+  @UseGuards(JwtAuthGuard)
   @Post('virtual-accounts')
   async createAccount(
     @Req() req: RequestWithUser,

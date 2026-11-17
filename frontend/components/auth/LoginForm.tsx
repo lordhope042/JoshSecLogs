@@ -42,11 +42,9 @@ export default function LoginForm() {
       });
 
       const {
-        accessToken,
         user,
         isFirstLogin,
       } = res as unknown as {
-        accessToken: string;
         user: {
           id?: string;
           name: string;
@@ -56,11 +54,6 @@ export default function LoginForm() {
         };
         isFirstLogin?: boolean;
       };
-
-      localStorage.setItem(
-        "access_token",
-        accessToken,
-      );
 
       localStorage.setItem(
         "user",

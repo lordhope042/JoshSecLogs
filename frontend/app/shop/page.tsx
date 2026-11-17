@@ -17,6 +17,7 @@ import SocialLogCard, {
 import SocialLogDetails from "@/components/social-logs/SocialLogDetails";
 
 import { useSocialLogs } from "@/hooks/useSocialLogs";
+import api from "@/lib/axios";
 
 import { SocialLog, SocialLogCategoryValue } from "@/types/social-log";
 
@@ -26,7 +27,7 @@ import { SocialLog, SocialLogCategoryValue } from "@/types/social-log";
    Anyone can browse the full social-log catalogue here without
    logging in. Category tabs and search work exactly like the
    dashboard version. The difference: clicking "View Details" or
-   "Purchase" on a card checks for an access_token in localStorage.
+   "Purchase" on a card verifies the HttpOnly session with the API.
    If none exists, the user is redirected to /login with a redirect
    back to /shop so they land back here after authenticating.
 =================================================================== */
@@ -42,18 +43,17 @@ export default function ShopPage() {
   const [detailsOpen, setDetailsOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
 
-  /* ---- Auth guard helper ----
-     Returns true if the user has a JWT in localStorage, otherwise
-     redirects to /login?redirect=/shop and returns false. */
-  const requireAuth = useCallback((): boolean => {
+  /* Verify auth with the server; never inspect a browser-readable JWT. */
+  const requireAuth = useCallback(async (): Promise<boolean> => {
     if (typeof window === "undefined") return false;
-    const token = localStorage.getItem("access_token");
-    if (!token) {
+    try {
+      await api.get("/auth/me");
+      return true;
+    } catch {
       toast.info("Please log in to view details and purchase.");
       router.push("/login?redirect=/shop");
       return false;
     }
-    return true;
   }, [router]);
 
   /* Every sellable listing type as one card each — same as the
@@ -113,7 +113,7 @@ export default function ShopPage() {
     if (!id) return;
 
     // Require login before fetching private details.
-    if (!requireAuth()) return;
+    if (!(await requireAuth())) return;
 
     try {
       const log = await loadDetails(id);
@@ -128,7 +128,7 @@ export default function ShopPage() {
 
   /* ---- Purchase (auth-gated) ---- */
   async function handlePurchase(id: string, quantity: number) {
-    if (!requireAuth()) return;
+    if (!(await requireAuth())) return;
 
     const group = realStockGroups.find((g) => g.logs.some((l) => l.id === id));
     const idsToBuy = group ? group.logs.slice(0, quantity).map((l) => l.id) : [id];

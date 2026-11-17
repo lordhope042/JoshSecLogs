@@ -57,6 +57,14 @@ function money(value: unknown) {
   return `₦${amount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 }
 
+function providerLabel(value: unknown) {
+  const provider = String(value || "").toUpperCase();
+  if (provider === "FIVESIM") return "Provider 1";
+  if (provider === "SMSBOWER") return "Provider 2";
+  if (provider === "GRIZZYSMS") return "Provider 3";
+  return "Provider";
+}
+
 function dateTime(value: unknown) {
   const date = new Date(String(value || ""));
   if (Number.isNaN(date.getTime())) return "—";
@@ -291,6 +299,7 @@ export default function OrderDetailPage() {
         <h2 className="text-sm font-black text-slate-950 dark:text-white">Order details</h2>
         <dl className="mt-4 grid grid-cols-2 gap-4 text-xs">
           <Detail label="Service" value={serviceLabel} />
+          <Detail label="Provider" value={providerLabel(order.provider)} />
           <Detail label="Country" value={countryLabel(order)} />
           <Detail label="Price" value={money(order.sellingPriceNgn ?? order.amount)} />
           <Detail label="Created" value={dateTime(order.createdAt)} />

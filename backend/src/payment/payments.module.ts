@@ -8,6 +8,8 @@ import { PaymentsService } from './payments.service';
 import { PocketFiService } from './pocketfi.service';
 import { VirtualAccountRepository } from './virtual-account.repository';
 
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+
 @Module({
   imports: [
     PrismaModule,
@@ -18,7 +20,7 @@ import { VirtualAccountRepository } from './virtual-account.repository';
     PaymentsController,
   ],
 
-  providers: [
+  providers: [JwtAuthGuard, 
     PaymentsService,
     PocketFiService,
     VirtualAccountRepository,

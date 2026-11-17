@@ -228,24 +228,10 @@ export class SocialLogRepository {
   ) {
     return this.prisma.$transaction(
       async (tx) => {
-        const log =
-          await tx.socialLog.findUnique({
-            where: { id },
-          });
-
-        if (!log) {
-          throw new NotFoundException(
-            "Social account not found.",
-          );
-        }
-
-        if (
-          log.status ===
-          SocialLogStatus.SOLD
-        ) {
-          throw new BadRequestException(
-            "This account has already been sold.",
-          );
+        const log = await tx.socialLog.findUnique({ where: { id } });
+        if (!log) throw new NotFoundException("Social account not found.");
+        if (log.status !== SocialLogStatus.AVAILABLE) {
+          throw new BadRequestException("This account is no longer available.");
         }
 
         const wallet =
@@ -261,29 +247,39 @@ export class SocialLogRepository {
           );
         }
 
-        const balance =
-          Number(wallet.balance);
-
         const price =
           Number(log.price);
 
-        if (balance < price) {
+        if (!Number.isFinite(price) || price <= 0) {
+          throw new BadRequestException("This account has an invalid price.");
+        }
+
+        const claimed = await tx.socialLog.updateMany({
+          where: { id, status: SocialLogStatus.AVAILABLE },
+          data: {
+            status: SocialLogStatus.SOLD,
+            purchasedAt: new Date(),
+            buyerId,
+          },
+        });
+        if (claimed.count !== 1) {
+          throw new BadRequestException("This account has already been sold.");
+        }
+
+        const debited = await tx.wallet.updateMany({
+          where: { userId: buyerId, balance: { gte: price } },
+          data: { balance: { decrement: price } },
+        });
+        if (debited.count !== 1) {
           throw new BadRequestException(
             "Insufficient wallet balance.",
           );
         }
 
-        const newBalance =
-          balance - price;
-
-        await tx.wallet.update({
-          where: {
-            userId: buyerId,
-          },
-          data: {
-            balance: newBalance,
-          },
-        });
+        const walletAfter = await tx.wallet.findUnique({ where: { userId: buyerId } });
+        if (!walletAfter) throw new NotFoundException("Wallet not found.");
+        const newBalance = Number(walletAfter.balance);
+        const balanceBefore = newBalance + price;
 
         await tx.walletTransaction.create({
           data: {
@@ -291,25 +287,10 @@ export class SocialLogRepository {
             type: TransactionType.PURCHASE,
             status: TransactionStatus.SUCCESS,
             amount: log.price,
-            balanceBefore: balance,
+            balanceBefore,
             balanceAfter: newBalance,
             description: `${log.platform} account purchase`,
             reference: randomUUID(),
-          },
-        });
-
-        await tx.socialLog.update({
-          where: {
-            id,
-          },
-          data: {
-            status: SocialLogStatus.SOLD,
-            purchasedAt: new Date(),
-            buyer: {
-              connect: {
-                id: buyerId,
-              },
-            },
           },
         });
 
@@ -333,20 +314,18 @@ export class SocialLogRepository {
     id: string,
     buyerId: string,
   ) {
-    return this.prisma.socialLog.update({
-      where: {
-        id,
-      },
+    const updated = await this.prisma.socialLog.updateMany({
+      where: { id, status: SocialLogStatus.AVAILABLE },
       data: {
         status: SocialLogStatus.SOLD,
         purchasedAt: new Date(),
-        buyer: {
-          connect: {
-            id: buyerId,
-          },
-        },
+        buyerId,
       },
     });
+    if (updated.count !== 1) {
+      throw new BadRequestException("This account is no longer available.");
+    }
+    return this.prisma.socialLog.findUnique({ where: { id } });
   }
 
   /*

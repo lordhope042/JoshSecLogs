@@ -88,11 +88,11 @@ export function useMarketplace() {
     country: string;
     operator: string;
     product: string;
-  }) => {
+  }, idempotencyKey: string) => {
     try {
       setBuying(true);
 
-      const { data } = await MarketplaceAPI.buy(payload);
+      const { data } = await MarketplaceAPI.buy(payload, idempotencyKey);
 
       return data;
     } finally {

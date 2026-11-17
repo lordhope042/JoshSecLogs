@@ -5,13 +5,11 @@ import {
   Settings,
   Save,
   Loader2,
-  DollarSign,
+  Coins,
   Percent,
   Shield,
   Mail,
   Bell,
-  Globe,
-  CreditCard,
   CheckCircle2,
   Server,
 } from "lucide-react";
@@ -26,12 +24,9 @@ interface PlatformSettings {
   defaultCurrency: string;
   /* 5sim provider */
   fivesimEnabled: boolean;
-  fivesimApiKey: string;
   fivesimDefaultCountry: string;
   /* Paystack gateway */
   paystackEnabled: boolean;
-  paystackPublicKey: string;
-  paystackSecretKey: string;
   /* Platform toggles */
   registrationOpen: boolean;
   emailVerificationRequired: boolean;
@@ -46,11 +41,8 @@ const DEFAULT_SETTINGS: PlatformSettings = {
   markupMultiplier: "1.2",
   defaultCurrency: "NGN",
   fivesimEnabled: true,
-  fivesimApiKey: "",
   fivesimDefaultCountry: "nigeria",
   paystackEnabled: true,
-  paystackPublicKey: "",
-  paystackSecretKey: "",
   registrationOpen: true,
   emailVerificationRequired: false,
   maintenanceMode: false,
@@ -64,7 +56,6 @@ export default function AdminSettingsPage() {
   const [settings, setSettings] = useState<PlatformSettings>(DEFAULT_SETTINGS);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [showSecrets, setShowSecrets] = useState(false);
   const [dirty, setDirty] = useState(false);
 
   /* Load persisted settings from localStorage (no backend settings endpoint yet) */
@@ -73,7 +64,13 @@ export default function AdminSettingsPage() {
       const raw = localStorage.getItem("admin_platform_settings");
       if (raw) {
         const parsed = JSON.parse(raw);
-        setSettings({ ...DEFAULT_SETTINGS, ...parsed });
+        const safeSettings = { ...parsed };
+        delete safeSettings.fivesimApiKey;
+        delete safeSettings.paystackPublicKey;
+        delete safeSettings.paystackSecretKey;
+        if (safeSettings.defaultCurrency !== "NGN") safeSettings.defaultCurrency = "NGN";
+        setSettings({ ...DEFAULT_SETTINGS, ...safeSettings });
+        localStorage.setItem("admin_platform_settings", JSON.stringify(safeSettings));
       }
     } catch {
       /* ignore */
@@ -159,7 +156,7 @@ export default function AdminSettingsPage() {
       <SettingsSection
         title="Currency & Pricing"
         description="Controls how provider USD costs are converted to Nigerian Naira selling prices."
-        icon={DollarSign}
+        icon={Coins}
       >
         <div className="grid gap-4 sm:grid-cols-2">
           <Field label="USD → NGN Exchange Rate" hint="Base rate before markup.">
@@ -187,84 +184,23 @@ export default function AdminSettingsPage() {
               className={inputClass}
             >
               <option value="NGN">NGN — Nigerian Naira (₦)</option>
-              <option value="USD">USD — US Dollar ($)</option>
             </select>
           </Field>
         </div>
         <PreviewCalc settings={settings} />
       </SettingsSection>
 
-      {/* 5sim Provider */}
+      {/* Provider credentials are never collected or stored in the browser. */}
       <SettingsSection
-        title="5sim Provider"
-        description="Integration settings for the 5sim virtual number API."
-        icon={Globe}
+        title="Provider configuration"
+        description="Payment and SMS provider credentials must be configured on the backend server."
+        icon={Server}
       >
-        <Toggle
-          label="Enable 5sim"
-          description="Allow purchases of virtual phone numbers through 5sim."
-          checked={settings.fivesimEnabled}
-          onChange={(v) => update("fivesimEnabled", v)}
-        />
-        <div className="grid gap-4 sm:grid-cols-2">
-          <Field label="5sim API Key">
-            <input
-              type={showSecrets ? "text" : "password"}
-              value={settings.fivesimApiKey}
-              onChange={(e) => update("fivesimApiKey", e.target.value)}
-              placeholder="Enter 5sim API key"
-              className={inputClass}
-            />
-          </Field>
-          <Field label="Default Country" hint="Used when no country is selected by the user.">
-            <input
-              type="text"
-              value={settings.fivesimDefaultCountry}
-              onChange={(e) => update("fivesimDefaultCountry", e.target.value)}
-              className={inputClass}
-            />
-          </Field>
+        <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm leading-6 text-amber-900 dark:border-amber-900/50 dark:bg-amber-950/30 dark:text-amber-200">
+          <p className="font-semibold">No API secrets are stored in this page.</p>
+          <p className="mt-1">Set 5sim, SMSBOWER, and Paystack secrets as backend environment variables or through a secured server-side secret manager. Never paste private keys into browser settings or commit them to source control.</p>
+          <p className="mt-1">Any provider key previously stored in this browser&apos;s settings has been removed. Rotate any real credential that was entered here.</p>
         </div>
-      </SettingsSection>
-
-      {/* Paystack Gateway */}
-      <SettingsSection
-        title="Paystack Gateway"
-        description="Payment gateway configuration for wallet funding."
-        icon={CreditCard}
-      >
-        <Toggle
-          label="Enable Paystack"
-          description="Allow users to fund their wallet via Paystack."
-          checked={settings.paystackEnabled}
-          onChange={(v) => update("paystackEnabled", v)}
-        />
-        <div className="grid gap-4 sm:grid-cols-2">
-          <Field label="Paystack Public Key">
-            <input
-              type={showSecrets ? "text" : "password"}
-              value={settings.paystackPublicKey}
-              onChange={(e) => update("paystackPublicKey", e.target.value)}
-              placeholder="pk_live_... or pk_test_..."
-              className={inputClass}
-            />
-          </Field>
-          <Field label="Paystack Secret Key">
-            <input
-              type={showSecrets ? "text" : "password"}
-              value={settings.paystackSecretKey}
-              onChange={(e) => update("paystackSecretKey", e.target.value)}
-              placeholder="sk_live_... or sk_test_..."
-              className={inputClass}
-            />
-          </Field>
-        </div>
-        <button
-          onClick={() => setShowSecrets((s) => !s)}
-          className="inline-flex h-8 items-center gap-2 rounded-md border border-border px-3 text-xs font-medium hover:bg-accent"
-        >
-          {showSecrets ? "Hide secrets" : "Show secrets"}
-        </button>
       </SettingsSection>
 
       {/* Platform Toggles */}
@@ -434,7 +370,7 @@ function PreviewCalc({ settings }: { settings: PlatformSettings }) {
   const exampleUsd = 1;
   const baseNgn = exampleUsd * rate;
   const finalNgn = baseNgn * markup;
-  const symbol = settings.defaultCurrency === "NGN" ? "₦" : "$";
+  const symbol = "₦";
   return (
     <div className="flex items-center gap-2 rounded-md bg-muted/50 p-3 text-xs text-muted-foreground">
       <Percent className="h-3.5 w-3.5" />

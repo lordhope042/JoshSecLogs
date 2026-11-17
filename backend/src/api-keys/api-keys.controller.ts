@@ -14,6 +14,7 @@ import {
 import { ApiKeysService } from './api-keys.service';
 import { CreateApiKeyDto } from './dto/create-api-key.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { RateLimit, RateLimitGuard } from '../common/guards/rate-limit.guard';
 
 @Controller('api-keys')
 @UseGuards(JwtAuthGuard)
@@ -26,6 +27,8 @@ export class ApiKeysController {
   }
 
   @Post()
+  @UseGuards(RateLimitGuard)
+  @RateLimit(3, 60_000)
   create(@Request() req: any, @Body() dto: CreateApiKeyDto) {
     return this.apiKeysService.create(req.user.sub, dto);
   }

@@ -6,28 +6,10 @@ import { Loader2 } from "lucide-react";
 
 import AdminSidebar from "./AdminSidebar";
 import AdminTopbar from "./AdminTopbar";
+import api from "@/lib/axios";
 
 interface Props {
   children: ReactNode;
-}
-
-interface DecodedToken {
-  sub: string;
-  email: string;
-  role: string;
-  exp: number;
-}
-
-function decodeToken(token: string): DecodedToken | null {
-  try {
-    const payload = token.split(".")[1];
-    const decoded = JSON.parse(
-      atob(payload.replace(/-/g, "+").replace(/_/g, "/")),
-    );
-    return decoded;
-  } catch {
-    return null;
-  }
 }
 
 export default function AdminShell({ children }: Props) {
@@ -38,36 +20,23 @@ export default function AdminShell({ children }: Props) {
   const [authorized, setAuthorized] = useState(false);
 
   useEffect(() => {
-    const token = localStorage.getItem("access_token");
-
-    if (!token) {
-      router.replace("/login");
-      return;
-    }
-
-    const decoded = decodeToken(token);
-
-    if (!decoded) {
-      localStorage.removeItem("access_token");
-      router.replace("/login");
-      return;
-    }
-
-    const isExpired = decoded.exp * 1000 < Date.now();
-
-    if (isExpired) {
-      localStorage.removeItem("access_token");
-      router.replace("/login");
-      return;
-    }
-
-    if (decoded.role !== "ADMIN") {
-      router.replace("/dashboard");
-      return;
-    }
-
-    setAuthorized(true);
-    setChecking(false);
+    let active = true;
+    api.get("/auth/me")
+      .then((user: any) => {
+        if (!active) return;
+        if (user?.role !== "ADMIN") {
+          router.replace("/dashboard");
+          return;
+        }
+        setAuthorized(true);
+      })
+      .catch(() => {
+        if (active) router.replace("/login");
+      })
+      .finally(() => {
+        if (active) setChecking(false);
+      });
+    return () => { active = false; };
   }, [router]);
 
   if (checking) {

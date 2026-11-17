@@ -16,6 +16,7 @@ import {
   ChevronLeft,
   ChevronRight,
 } from "lucide-react";
+import { logout } from "@/lib/auth";
 
 interface AdminSidebarProps {
   collapsed: boolean;
@@ -72,8 +73,8 @@ export default function AdminSidebar({
   const pathname = usePathname();
   const router = useRouter();
 
-  const handleLogout = () => {
-    localStorage.removeItem("access_token");
+  const handleLogout = async () => {
+    await logout();
     router.replace("/login");
   };
 

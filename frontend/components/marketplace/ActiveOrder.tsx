@@ -6,7 +6,7 @@ import {
   Globe,
   Radio,
   Package,
-  CircleDollarSign,
+  Coins,
   Calendar,
   Shield,
   CheckCircle2,
@@ -135,7 +135,7 @@ export default function ActiveOrder({
         />
 
         <InfoRow
-          icon={<CircleDollarSign size={18} />}
+          icon={<Coins size={18} />}
           label="Paid"
           value={`₦${Number(
             order.sellingPriceNgn

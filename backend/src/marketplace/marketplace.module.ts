@@ -9,6 +9,9 @@ import { GrizzySmsModule } from '../providers/grizzysms/grizzysms.module';
 import { SmsBowerModule } from '../providers/smsbower/smsbower.module';
 import { WalletModule } from '../wallet/wallet.module';
 import { PrismaModule } from '../prisma/prisma.module';
+import { RateLimitGuard } from '../common/guards/rate-limit.guard';
+
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 
 @Module({
   imports: [
@@ -22,7 +25,7 @@ import { PrismaModule } from '../prisma/prisma.module';
 
   controllers: [MarketplaceController],
 
-  providers: [MarketplaceService],
+  providers: [JwtAuthGuard, MarketplaceService, RateLimitGuard],
 
   exports: [MarketplaceService],
 })

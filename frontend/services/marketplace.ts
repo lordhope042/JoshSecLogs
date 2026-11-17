@@ -7,19 +7,6 @@ const api = axios.create({
   withCredentials: true,
 });
 
-api.interceptors.request.use((config) => {
-  const token =
-    typeof window !== "undefined"
-      ? localStorage.getItem("access_token")
-      : null;
-
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`;
-  }
-
-  return config;
-});
-
 export type Provider = "FIVESIM" | "GRIZZYSMS" | "SMSBOWER";
 
 export const MarketplaceAPI = {
@@ -54,10 +41,11 @@ export const MarketplaceAPI = {
     country: string;
     operator: string;
     product: string;
-  }) {
+  }, idempotencyKey: string) {
     return api.post(
       "/marketplace/buy",
       data,
+      { headers: { "Idempotency-Key": idempotencyKey } },
     );
   },
 

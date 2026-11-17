@@ -8,9 +8,14 @@ import { AuthService } from './auth.service';
 import { JwtStrategy } from './jwt.strategy';
 
 import { UsersModule } from '../users/users.module';
+import { RateLimitGuard } from '../common/guards/rate-limit.guard';
+
+import { JwtAuthGuard } from './guards/jwt-auth.guard';
+
+import { PrismaModule } from '../prisma/prisma.module';
 
 @Module({
-  imports: [
+  imports: [PrismaModule, 
     UsersModule,
     PassportModule,
     ConfigModule,
@@ -29,7 +34,7 @@ import { UsersModule } from '../users/users.module';
 
   controllers: [AuthController],
 
-  providers: [AuthService, JwtStrategy],
+  providers: [JwtAuthGuard, AuthService, JwtStrategy, RateLimitGuard],
 
   exports: [AuthService, JwtModule],
 })

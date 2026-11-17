@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
+import { logout } from "@/lib/auth";
 import {
   LayoutDashboard,
   Wallet,
@@ -59,8 +60,8 @@ export default function Sidebar({ collapsed = false, onToggle }: SidebarProps) {
     };
   }, [isMobileOpen]);
 
-  const handleLogout = () => {
-    localStorage.removeItem("access_token");
+  const handleLogout = async () => {
+    await logout();
     setIsMobileOpen(false);
     router.push("/login");
   };
@@ -198,8 +199,8 @@ function SidebarContent({ collapsed }: { collapsed: boolean }) {
   const pathname = usePathname();
   const router = useRouter();
 
-  const handleLogout = () => {
-    localStorage.removeItem("access_token");
+  const handleLogout = async () => {
+    await logout();
     router.push("/login");
   };
 

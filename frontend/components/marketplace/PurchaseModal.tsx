@@ -6,7 +6,7 @@ import {
   Globe,
   Package,
   Zap,
-  CircleDollarSign,
+  Coins,
   Wallet,
   CreditCard,
   AlertTriangle,
@@ -75,7 +75,7 @@ const displayValue = (value?: string) =>
  */
 const formatActivation = (value?: string) =>
   value && /^\d+(\.\d+)?$/.test(value.trim())
-    ? `Tier $${value.trim()}`
+    ? `Grade ${value.trim()}`
     : value;
 
 /* ==========================================================
@@ -217,7 +217,7 @@ export default function PurchaseModal({
                 value={money(price)}
                 color="orange"
                 icon={
-                  <CircleDollarSign
+                  <Coins
                     size={22}
                   />
                 }

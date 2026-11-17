@@ -15,7 +15,7 @@ const ENDPOINTS = [
   {
     method: "POST",
     path: "/auth/login",
-    description: "Authenticate with email and password. Returns a JWT access token.",
+    description: "Authenticate with email and password. The browser receives a secure HttpOnly session cookie.",
     auth: false,
   },
   {
@@ -235,9 +235,7 @@ export default function ApiDocsPage() {
               <h3 className="text-lg font-bold text-gray-900 dark:text-white">Authentication</h3>
             </div>
             <p className="mt-3 text-sm leading-6 text-gray-700 dark:text-zinc-300">
-              Use the JWT access token from <code className="text-orange-500">/auth/login</code> or
-              generate an API key from your dashboard. Include it as a Bearer token in the
-              Authorization header for all authenticated requests.
+              In the browser, authenticate through <code className="text-orange-500">/auth/login</code> and use the secure HttpOnly session cookie. For server-to-server requests, generate an API key from your dashboard and include it as a Bearer token in the Authorization header.
             </p>
           </div>
           <div className="rounded-2xl border border-orange-500/20 bg-white dark:bg-[#0d1525] p-6">

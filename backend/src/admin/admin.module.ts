@@ -4,10 +4,12 @@ import { AdminController } from "./admin.controller";
 import { AdminService } from "./admin.service";
 import { AdminRepository } from "./admin.repository";
 
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+
 @Module({
   imports: [PrismaModule],
   controllers: [AdminController],
-  providers: [AdminRepository, AdminService],
+  providers: [JwtAuthGuard, AdminRepository, AdminService],
   exports: [AdminService],
 })
 export class AdminModule {}

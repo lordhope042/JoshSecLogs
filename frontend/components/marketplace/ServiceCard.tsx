@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { ShoppingCart, Boxes } from "lucide-react";
 import type { Provider } from "@/services/marketplace";
 
@@ -32,11 +33,7 @@ interface ServiceCardProps {
 
   activationTypes: ActivationType[];
 
-  /**
-   * Both 5sim and GrizzySMS are billed/priced in USD (confirmed
-   * 2026-08-09), so `priceUsd` is genuinely USD for both providers —
-   * the currency symbol shown next to it is the same either way.
-   */
+  /** Provider cost is retained for API compatibility, but is not displayed to buyers. */
   provider?: Provider;
 
   onBuy: (
@@ -57,8 +54,16 @@ export default function ServiceCard({
   provider = "FIVESIM",
   onBuy,
 }: ServiceCardProps) {
-  const currencySymbol = "$";
   const displayName = name ?? service;
+  const sortedActivations = [...activationTypes].sort(
+    (a, b) => a.priceNgn - b.priceNgn,
+  );
+  const [selectedKey, setSelectedKey] = useState(
+    sortedActivations[0]?.activationType ?? "",
+  );
+  const selectedActivation =
+    sortedActivations.find((item) => item.activationType === selectedKey) ??
+    sortedActivations[0];
 
   return (
     <div className="rounded-3xl border border-gray-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-6 transition-all duration-300 hover:border-orange-500 hover:shadow-xl">
@@ -71,7 +76,7 @@ export default function ServiceCard({
           </h3>
 
           <p className="text-sm text-gray-400 dark:text-zinc-500">
-            Available Activation Types
+            Choose an option
           </p>
         </div>
 
@@ -80,75 +85,47 @@ export default function ServiceCard({
       </div>
 
       <div className="space-y-4">
+        {selectedActivation ? (
+          <div className="rounded-2xl border border-gray-200 dark:border-zinc-800 bg-white/60 dark:bg-zinc-950/60 p-4">
+            <label className="mb-2 block text-xs font-semibold text-gray-500 dark:text-zinc-400">
+              Option / grade
+            </label>
+            <select
+              value={selectedActivation.activationType}
+              onChange={(event) => setSelectedKey(event.target.value)}
+              className="h-11 w-full rounded-xl border border-gray-200 bg-white px-3 text-sm font-semibold text-gray-900 outline-none focus:border-orange-500 dark:border-zinc-700 dark:bg-zinc-900 dark:text-white"
+            >
+              {sortedActivations.map((activation, index) => (
+                <option key={activation.activationType} value={activation.activationType}>
+                  {activation.label ?? (provider === "SMSBOWER" ? `Grade ${index + 1}` : activation.activationType)}
+                </option>
+              ))}
+            </select>
 
-        {activationTypes.length > 0 ? (
-          [...activationTypes]
-            .sort((a, b) => a.priceNgn - b.priceNgn)
-            .map((activation) => (
-              <div
-                key={activation.activationType}
-                className="rounded-2xl border border-gray-200 dark:border-zinc-800 bg-white/60 dark:bg-zinc-950/60 p-4"
-              >
-                <div className="flex items-center justify-between">
-
-                  <div>
-
-                    <h4 className="font-semibold text-gray-900 dark:text-white capitalize">
-                      {activation.label ?? activation.activationType}
-                    </h4>
-
-                    <div className="mt-1 flex items-center gap-2 text-sm">
-
-                      <Boxes className="h-4 w-4 text-gray-400 dark:text-zinc-500" />
-
-                      <span
-                        className={
-                          activation.stock > 0
-                            ? "text-green-400"
-                            : "text-red-400"
-                        }
-                      >
-                        {activation.stock} Available
-                      </span>
-
-                    </div>
-
-                  </div>
-
-                  <div className="text-right">
-
-                    <p className="text-xl font-bold text-green-400">
-                      ₦{activation.priceNgn.toLocaleString()}
-                    </p>
-
-                    <p className="text-xs text-gray-400 dark:text-zinc-500">
-                      {currencySymbol}{activation.priceUsd.toFixed(2)}
-                    </p>
-
-                  </div>
-
-                </div>
-
-                <button
-                  disabled={activation.stock <= 0}
-                  onClick={() =>
-                    onBuy(
-                      service,
-                      activation.activationType,
-                      activation.priceNgn,
-                      activation.label,
-                      displayName,
-                    )
-                  }
-                  className="mt-4 w-full rounded-xl bg-orange-500 py-2.5 font-semibold text-black transition hover:bg-orange-400 disabled:cursor-not-allowed disabled:bg-zinc-700 disabled:text-zinc-400"
-                >
-                  {activation.stock > 0
-                    ? "Buy Number"
-                    : "Out of Stock"}
-                </button>
-
+            <div className="mt-4 flex items-center justify-between gap-3">
+              <div className="flex items-center gap-2 text-sm">
+                <Boxes className="h-4 w-4 text-gray-400 dark:text-zinc-500" />
+                <span className="text-green-500">{selectedActivation.stock} Available</span>
               </div>
-            ))
+              <p className="text-xl font-bold text-green-400">
+                ₦{selectedActivation.priceNgn.toLocaleString()}
+              </p>
+            </div>
+
+            <button
+              disabled={selectedActivation.stock <= 0}
+              onClick={() => onBuy(
+                service,
+                selectedActivation.activationType,
+                selectedActivation.priceNgn,
+                selectedActivation.label ?? (provider === "SMSBOWER" ? `Grade ${sortedActivations.indexOf(selectedActivation) + 1}` : undefined),
+                displayName,
+              )}
+              className="mt-4 w-full rounded-xl bg-orange-500 py-2.5 font-semibold text-black transition hover:bg-orange-400 disabled:cursor-not-allowed disabled:bg-zinc-700 disabled:text-zinc-400"
+            >
+              Buy Number
+            </button>
+          </div>
         ) : (
           <div className="rounded-2xl border border-dashed border-gray-200 dark:border-zinc-800 p-6 text-center text-gray-400 dark:text-zinc-500">
             No activation types available.

@@ -2,6 +2,7 @@ import { NestFactory } from '@nestjs/core';
 import { NestApplicationOptions, ValidationPipe } from '@nestjs/common';
 import helmet from 'helmet';
 import { AppModule } from './app.module';
+import { CsrfGuard } from './common/guards/csrf.guard';
 
 async function bootstrap() {
   // FIX: rawBody is requirbed so the Paystack webhook endpoint can compute an
@@ -15,7 +16,21 @@ async function bootstrap() {
 
   const app = await NestFactory.create(AppModule, options);
 
+  const trustProxyHops = Number.parseInt(process.env.TRUST_PROXY_HOPS ?? '0', 10);
+  if (Number.isInteger(trustProxyHops) && trustProxyHops >= 0) {
+    app.getHttpAdapter().getInstance().set('trust proxy', trustProxyHops);
+  }
+
+  const allowedOrigins = (
+    process.env.FRONTEND_ORIGINS ||
+      'https://www.joshseclogs.com,https://joshseclogs.com,https://joshseclogs-frontend-production.up.railway.app,http://localhost:3000'
+  )
+    .split(',')
+    .map((origin) => origin.trim())
+    .filter(Boolean);
+
   app.setGlobalPrefix('api/v1');
+  app.useGlobalGuards(new CsrfGuard(allowedOrigins));
 
   // FIX: adds Strict-Transport-Security, X-Frame-Options,
   // X-Content-Type-Options, and related headers — all previously absent.
@@ -51,20 +66,10 @@ async function bootstrap() {
   );
 
   app.enableCors({
-    origin: [
-      // Production
-      'https://www.joshseclogs.com',
-      'https://joshseclogs.com',
-
-      // Railway Preview
-      'https://joshseclogs-frontend-production.up.railway.app',
-
-      // Development
-      'http://localhost:3000',
-    ],
+    origin: allowedOrigins,
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
     credentials: true,
-    allowedHeaders: ['Content-Type', 'Authorization'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'Idempotency-Key'],
   });
 
   await app.listen(process.env.PORT ?? 8080);

@@ -2,17 +2,19 @@ import {
   Body,
   Controller,
   Get,
+  Headers,
   Param,
   Post,
   Query,
   Req,
   UseGuards,
 } from '@nestjs/common';
-import { AuthGuard } from '@nestjs/passport';
 import { Request } from 'express';
 
 import { MarketplaceService } from './marketplace.service';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { BuyNumberDto } from './dto/buy-number.dto';
+import { RateLimit, RateLimitGuard } from '../common/guards/rate-limit.guard';
 
 interface JwtRequest extends Request {
   user: {
@@ -33,6 +35,8 @@ export class MarketplaceController {
   ============================================================ */
 
   @Get('countries')
+  @UseGuards(RateLimitGuard)
+  @RateLimit(60, 60_000)
   countries(
     @Query('provider') provider?: 'FIVESIM' | 'GRIZZYSMS' | 'SMSBOWER',
   ) {
@@ -42,6 +46,8 @@ export class MarketplaceController {
   }
 
   @Get('products/:country')
+  @UseGuards(RateLimitGuard)
+  @RateLimit(60, 60_000)
   products(
     @Param('country') country: string,
     @Query('provider') provider?: 'FIVESIM' | 'GRIZZYSMS' | 'SMSBOWER',
@@ -53,6 +59,8 @@ export class MarketplaceController {
   }
 
   @Get('prices/:country')
+  @UseGuards(RateLimitGuard)
+  @RateLimit(30, 60_000)
   prices(
     @Param('country') country: string,
     @Query('provider') provider?: 'FIVESIM' | 'GRIZZYSMS' | 'SMSBOWER',
@@ -67,15 +75,18 @@ export class MarketplaceController {
                           BUY NUMBER
   ============================================================ */
 
-  @UseGuards(AuthGuard('jwt'))
+  @UseGuards(JwtAuthGuard, RateLimitGuard)
+  @RateLimit(8, 60_000)
   @Post('buy')
   buy(
     @Req() req: JwtRequest,
     @Body() dto: BuyNumberDto,
+    @Headers('idempotency-key') idempotencyKey: string,
   ) {
     return this.marketplaceService.buy(
       req.user.id,
       dto,
+      idempotencyKey,
     );
   }
 
@@ -83,7 +94,7 @@ export class MarketplaceController {
                           USER ORDERS
   ============================================================ */
 
-  @UseGuards(AuthGuard('jwt'))
+  @UseGuards(JwtAuthGuard)
   @Get('orders')
   getOrders(
     @Req() req: JwtRequest,
@@ -93,7 +104,7 @@ export class MarketplaceController {
     );
   }
 
-  @UseGuards(AuthGuard('jwt'))
+  @UseGuards(JwtAuthGuard)
   @Get('orders/:id')
   getOrder(
     @Req() req: JwtRequest,
@@ -109,7 +120,7 @@ export class MarketplaceController {
                           SMS
   ============================================================ */
 
-  @UseGuards(AuthGuard('jwt'))
+  @UseGuards(JwtAuthGuard)
   @Get('orders/:id/sms')
   sms(
     @Req() req: JwtRequest,
@@ -125,7 +136,7 @@ export class MarketplaceController {
                           FINISH
   ============================================================ */
 
-  @UseGuards(AuthGuard('jwt'))
+  @UseGuards(JwtAuthGuard)
   @Post('orders/:id/finish')
   finish(
     @Req() req: JwtRequest,
@@ -141,7 +152,7 @@ export class MarketplaceController {
                           CANCEL
   ============================================================ */
 
-  @UseGuards(AuthGuard('jwt'))
+  @UseGuards(JwtAuthGuard)
   @Post('orders/:id/cancel')
   cancel(
     @Req() req: JwtRequest,
@@ -157,7 +168,7 @@ export class MarketplaceController {
                           BANs
   ============================================================ */
 
-  @UseGuards(AuthGuard('jwt'))
+  @UseGuards(JwtAuthGuard)
   @Post('orders/:id/ban')
   ban(
     @Req() req: JwtRequest,
@@ -173,7 +184,7 @@ export class MarketplaceController {
                         SYNC ORDER
   ============================================================ */
 
-  @UseGuards(AuthGuard('jwt'))
+  @UseGuards(JwtAuthGuard)
   @Get('orders/:id/sync')
   sync(
     @Req() req: JwtRequest,

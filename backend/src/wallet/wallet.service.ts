@@ -50,23 +50,29 @@ export class WalletService {
     reference?: string,
     tx?: TxClient,
   ) {
-    if (amount <= 0) {
+    if (!Number.isFinite(amount) || amount <= 0) {
       throw new BadRequestException('Invalid credit amount');
+    }
+
+    if (!tx) {
+      return this.walletRepo.transaction((client) =>
+        this.creditWallet(userId, amount, description, reference, client),
+      );
     }
 
     // Read the CURRENT balance on the same client as the increment so the
     // balanceBefore / balanceAfter ledger values are consistent with what
     // actually gets committed.
-    const wallet = await this.walletRepo.getOrCreateWallet(userId, tx);
-    const before = Number(wallet.balance);
+    await this.walletRepo.getOrCreateWallet(userId, tx);
 
     // Atomic SQL increment.  When `tx` is supplied this UPDATE is part of the
     // caller's transaction and holds the row lock until commit.
     await this.walletRepo.creditWallet(userId, amount, tx);
 
-    // Re-read on the same client to capture the post-increment balance for
-    // the ledger row.
+    // Re-read on the same client to capture the post-increment balance for the
+    // ledger row. This row remains locked until the transaction commits.
     const updated = await this.walletRepo.findWallet(userId, tx);
+    const before = Number(updated!.balance) - amount;
 
     await this.walletRepo.createTransaction(
       {
@@ -114,16 +120,25 @@ export class WalletService {
     reference?: string,
     tx?: TxClient,
   ) {
-    const wallet = await this.walletRepo.getOrCreateWallet(userId, tx);
-    const balance = Number(wallet.balance);
+    if (!Number.isFinite(amount) || amount <= 0) {
+      throw new BadRequestException('Invalid debit amount');
+    }
 
-    if (balance < amount) {
+    if (!tx) {
+      return this.walletRepo.transaction((client) =>
+        this.debitWallet(userId, amount, description, reference, client),
+      );
+    }
+
+    await this.walletRepo.getOrCreateWallet(userId, tx);
+
+    const debit = await this.walletRepo.debitWallet(userId, amount, tx);
+    if (debit.count !== 1) {
       throw new BadRequestException('Insufficient wallet balance');
     }
 
-    await this.walletRepo.debitWallet(userId, amount, tx);
-
     const updated = await this.walletRepo.findWallet(userId, tx);
+    const balance = Number(updated!.balance) + amount;
 
     await this.walletRepo.createTransaction(
       {

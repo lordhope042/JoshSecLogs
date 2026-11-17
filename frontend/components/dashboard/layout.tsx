@@ -21,7 +21,7 @@ import {
   Loader2,
 } from "lucide-react";
 
-import api from "@/lib/axios";
+import { logout } from "@/lib/auth";
 
 const links = [
   {
@@ -90,11 +90,10 @@ export default function DashboardLayout({
     setLoggingOut(true);
 
     try {
-      await api.post("/auth/logout");
+      await logout();
     } catch (e) {
       console.error(e);
     } finally {
-      localStorage.removeItem("token");
       setLoggingOut(false);
       router.push("/login");
     }

@@ -105,12 +105,39 @@ export class SmsBowerService {
     private readonly httpService: HttpService,
     private readonly configService: ConfigService,
   ) {
-    this.baseUrl = (
+    const configuredBaseUrl =
       this.configService.get<string>(
         'SMSBOWER_BASE_URL',
         'https://smsbower.page/stubs/handler_api.php',
-      ) || 'https://smsbower.page/stubs/handler_api.php'
-    ).replace(/\/+$/, '');
+      ) || 'https://smsbower.page/stubs/handler_api.php';
+    const allowedHosts = (
+      this.configService.get<string>('SMSBOWER_ALLOWED_HOSTS') || 'smsbower.page'
+    )
+      .split(',')
+      .map((host) => host.trim().toLowerCase())
+      .filter(Boolean);
+
+    let parsedBaseUrl: URL;
+    try {
+      parsedBaseUrl = new URL(configuredBaseUrl);
+    } catch {
+      throw new Error('SMSBOWER_BASE_URL must be a valid absolute URL.');
+    }
+
+    if (
+      parsedBaseUrl.protocol !== 'https:' ||
+      parsedBaseUrl.username ||
+      parsedBaseUrl.password ||
+      parsedBaseUrl.search ||
+      parsedBaseUrl.hash ||
+      !allowedHosts.includes(parsedBaseUrl.hostname.toLowerCase())
+    ) {
+      throw new Error(
+        'SMSBOWER_BASE_URL must use HTTPS and a host listed in SMSBOWER_ALLOWED_HOSTS.',
+      );
+    }
+
+    this.baseUrl = `${parsedBaseUrl.origin}${parsedBaseUrl.pathname}`.replace(/\/+$/, '');
 
     this.apiKey =
       this.configService.get<string>('SMSBOWER_API_KEY') || '';
@@ -159,12 +186,7 @@ export class SmsBowerService {
 
     const url = `${this.baseUrl}?${query.toString()}`;
 
-    const safeUrl = `${this.baseUrl}?api_key=[REDACTED]&${Array.from(
-      query.entries(),
-    )
-      .filter(([key]) => key !== 'api_key')
-      .map(([key, value]) => `${key}=${value}`)
-      .join('&')}`;
+    const action = String(params.action ?? 'unknown');
 
     try {
       const response = await firstValueFrom(
@@ -180,9 +202,8 @@ export class SmsBowerService {
           ? response.data.trim()
           : JSON.stringify(response.data);
 
-      this.logger.debug(`SMSBower request: ${safeUrl}`);
       this.logger.debug(
-        `SMSBower response: ${raw.slice(0, 1000)}`,
+        `SMSBower request completed: action=${action} status=${response.status}`,
       );
 
       return raw;
@@ -190,25 +211,9 @@ export class SmsBowerService {
       const axiosError = error as AxiosError;
 
       const status = axiosError.response?.status;
-      const responseData = axiosError.response?.data;
-
-      const responseText =
-        typeof responseData === 'string'
-          ? responseData
-          : responseData
-            ? JSON.stringify(responseData)
-            : undefined;
-
       this.logger.error(
-        `SMSBower request failed. HTTP status: ${status ?? 'unknown'}. ` +
-          `Message: ${axiosError.message || 'Unknown error'}`,
+        `SMSBower request failed: action=${action} status=${status ?? 'unknown'} code=${axiosError.code ?? 'unknown'}`,
       );
-
-      if (responseText) {
-        this.logger.error(
-          `SMSBower error response: ${responseText.slice(0, 500)}`,
-        );
-      }
 
       throw new BadGatewayException(
         'Unable to communicate with SMSBower. Check the provider status and server logs.',
@@ -224,7 +229,7 @@ export class SmsBowerService {
       return JSON.parse(raw) as T;
     } catch {
       throw new BadGatewayException(
-        `SMSBower returned an unexpected response for ${action}: ${raw.slice(0, 250)}`,
+        `SMSBower returned an unexpected response for ${action}.`,
       );
     }
   }
@@ -278,7 +283,7 @@ export class SmsBowerService {
 
     if (!match) {
       throw new BadGatewayException(
-        `Could not read SMSBower balance: ${raw.slice(0, 250)}`,
+        'Could not read SMSBower balance.',
       );
     }
 
@@ -332,7 +337,7 @@ export class SmsBowerService {
 
     if (!isRecord(parsed)) {
       throw new BadGatewayException(
-        `SMSBower returned an invalid V2 price catalogue: ${raw.slice(0, 250)}`,
+        'SMSBower returned an invalid V2 price catalogue.',
       );
     }
 
@@ -445,8 +450,7 @@ export class SmsBowerService {
 
     if (countries.length < items.length) {
       this.logger.warn(
-        `SMSBower getCountries: kept ${countries.length} of ${items.length} items. ` +
-          `Sample: ${JSON.stringify(items[0]).slice(0, 300)}`,
+        `SMSBower getCountries: kept ${countries.length} of ${items.length} items.`,
       );
     }
 
@@ -519,8 +523,7 @@ export class SmsBowerService {
 
     if (services.length < items.length) {
       this.logger.warn(
-        `SMSBower getServicesList: kept ${services.length} of ${items.length} items. ` +
-          `Sample: ${JSON.stringify(items[0]).slice(0, 300)}`,
+        `SMSBower getServicesList: kept ${services.length} of ${items.length} items.`,
       );
     }
 
@@ -573,12 +576,8 @@ export class SmsBowerService {
     try {
       parsed = JSON.parse(raw);
     } catch {
-      this.logger.warn(
-        `SMSBower getNumberV2 returned a non-JSON response: ${raw.slice(0, 300)}`,
-      );
-
       throw new BadGatewayException(
-        `SMSBower getNumberV2 returned a non-JSON response: ${raw.slice(0, 250)}`,
+        'SMSBower returned an unexpected number allocation response.',
       );
     }
 
@@ -600,18 +599,10 @@ export class SmsBowerService {
       phoneNumber === null ||
       String(phoneNumber).trim() === ''
     ) {
-      const providerMessage =
-        result.message ??
-        result.error ??
-        result.status ??
-        'No number was allocated';
-
-      this.logger.warn(
-        `SMSBower number allocation unsuccessful: ${String(providerMessage).slice(0, 300)}`,
-      );
+      this.logger.warn('SMSBower number allocation returned no activation.');
 
       throw new BadGatewayException(
-        `SMSBower could not allocate a number: ${String(providerMessage).slice(0, 250)}`,
+        'SMSBower could not allocate a number.',
       );
     }
 

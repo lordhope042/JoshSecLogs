@@ -1,4 +1,4 @@
-import { randomBytes } from 'crypto';
+import { createHash, randomBytes } from 'crypto';
 
 import {
   Injectable,
@@ -34,24 +34,22 @@ export class ApiKeysService {
     return `jsk_${randomBytes(16).toString('hex')}`;
   }
 
+  private hashKey(key: string): string {
+    return `sha256:${createHash('sha256').update(key, 'utf8').digest('hex')}`;
+  }
+
   /**
-   * List all API keys belonging to the authenticated user.
-   * The raw `key` value is returned so the user can copy it
-   * from the dashboard (keys are only shown in full on creation;
-   * existing keys return a masked preview).
+   * List the authenticated user's keys using a fixed masked label.
+   * The stored value is a one-way hash and cannot be recovered.
    */
   async list(userId: string) {
     const keys = await this.prisma.apiKey.findMany({
       where: { userId },
+      select: { id: true, keyPrefix: true, active: true, createdAt: true },
       orderBy: { createdAt: 'desc' },
     });
 
-    return keys.map((k) => ({
-      ...k,
-      // Mask the key for listing — full key is only returned once
-      // at creation time.
-      key: this.maskKey(k.key),
-    }));
+    return keys.map((k) => ({ ...k, key: `${k.keyPrefix}••••••••` }));
   }
 
   /**
@@ -66,29 +64,25 @@ export class ApiKeysService {
    * because subsequent list calls only return a masked version.
    */
   async create(userId: string, dto: CreateApiKeyDto) {
-    // 1. Charge the wallet first.  debitWallet() throws
-    //    BadRequestException('Insufficient wallet balance') when
-    //    the balance is too low, which NestJS surfaces as a 400
-    //    response — no key is generated in that case.
-    await this.walletService.debitWallet(
-      userId,
-      API_KEY_PRICE,
-      'API key purchase',
-    );
-
-    // 2. Generate and persist the key.  If this fails for any
-    //    reason the debit above is NOT automatically rolled back
-    //    (the wallet ledger uses its own transaction), but key
-    //    creation is extremely unlikely to fail after the wallet
-    //    charge succeeds.
     const key = this.generateKey();
-
-    const record = await this.prisma.apiKey.create({
-      data: {
+    const record = await this.prisma.$transaction(async (tx) => {
+      await this.walletService.debitWallet(
         userId,
-        key,
-        active: dto.active ?? true,
-      },
+        API_KEY_PRICE,
+        'API key purchase',
+        undefined,
+        tx,
+      );
+
+      return tx.apiKey.create({
+        data: {
+          userId,
+          key: null,
+          keyHash: this.hashKey(key),
+          keyPrefix: key.slice(0, 12),
+          active: dto.active ?? true,
+        },
+      });
     });
 
     return {
@@ -142,12 +136,4 @@ export class ApiKeysService {
     return { message: 'API key deleted.' };
   }
 
-  /**
-   * Masks a key for safe display, e.g.
-   *   jsk_ab12cd34...5678
-   */
-  private maskKey(key: string): string {
-    if (key.length <= 12) return key;
-    return `${key.slice(0, 8)}...${key.slice(-4)}`;
-  }
 }

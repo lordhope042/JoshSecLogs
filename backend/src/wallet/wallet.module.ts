@@ -12,6 +12,8 @@ import { WalletService } from './wallet.service';
 // The real Paystack integration lives in `src/payment/paystack.service.ts`
 // and is owned by the PaymentsModule.
 
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+
 @Module({
   imports: [PrismaModule],
 
@@ -19,7 +21,7 @@ import { WalletService } from './wallet.service';
     WalletController,
   ],
 
-  providers: [
+  providers: [JwtAuthGuard, 
     WalletRepository,
     WalletService,
   ],

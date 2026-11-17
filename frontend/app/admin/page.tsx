@@ -16,6 +16,7 @@ import {
 
 import { useAdminDashboard } from "@/hooks/useAdminDashboard";
 import AdminStatCard from "@/components/admin/AdminStatCard";
+import { logout } from "@/lib/auth";
 
 function formatCurrency(value: number): string {
   if (!value || isNaN(value)) return "₦0";
@@ -26,8 +27,8 @@ export default function AdminDashboardPage() {
   const router = useRouter();
   const { stats, loading, refresh } = useAdminDashboard();
 
-  const handleLogout = () => {
-    localStorage.removeItem("access_token");
+  const handleLogout = async () => {
+    await logout();
     router.replace("/login");
   };
 
