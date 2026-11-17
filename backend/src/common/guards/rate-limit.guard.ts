@@ -1,9 +1,10 @@
 import {
   CanActivate,
   ExecutionContext,
+  HttpException,
+  HttpStatus,
   Injectable,
   SetMetadata,
-  TooManyRequestsException,
 } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { Request } from 'express';
@@ -54,14 +55,20 @@ export class RateLimitGuard implements CanActivate {
     let counter = this.counters.get(key);
     if (!counter || counter.expiresAt <= now) {
       if (this.counters.size >= RateLimitGuard.MAX_COUNTERS) {
-        throw new TooManyRequestsException('Rate-limit capacity reached. Please try again shortly.');
+        throw new HttpException(
+          'Rate-limit capacity reached. Please try again shortly.',
+          HttpStatus.TOO_MANY_REQUESTS,
+        );
       }
       counter = { count: 0, expiresAt: now + options.windowMs };
       this.counters.set(key, counter);
     }
 
     if (counter.count >= options.limit) {
-      throw new TooManyRequestsException('Too many requests. Please try again later.');
+      throw new HttpException(
+        'Too many requests. Please try again later.',
+        HttpStatus.TOO_MANY_REQUESTS,
+      );
     }
 
     counter.count += 1;
