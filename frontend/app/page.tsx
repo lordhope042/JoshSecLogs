@@ -1258,16 +1258,6 @@ export default function HomePage() {
                 dark={dark}
               />
 
-              <SocialProductCard
-                name="X / Twitter"
-                icon={
-                  <span className="text-xl font-black">
-                    X
-                  </span>
-                }
-                description="Supported services"
-                dark={dark}
-              />
             </div>
           </div>
         </div>

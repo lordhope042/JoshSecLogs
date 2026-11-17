@@ -71,7 +71,9 @@ const icons: Record<SocialLogCategoryValue, IconType> = {
  
 };
 
-export const ALL_CATEGORIES = Object.keys(labels) as SocialLogCategoryValue[];
+const MUTED_CATEGORIES = new Set<SocialLogCategoryValue>(["TWITTER_FOLLOWERS"]);
+export const ALL_CATEGORIES = (Object.keys(labels) as SocialLogCategoryValue[])
+  .filter((category) => !MUTED_CATEGORIES.has(category));
 
 export default function CategoryTabs({ categories, selected, onSelect, searchQuery, onSearchChange }: Props) {
   const [showAll, setShowAll] = useState(false);
@@ -83,7 +85,8 @@ export default function CategoryTabs({ categories, selected, onSelect, searchQue
   // Off: only categories the parent passed in (presumably ones with stock).
   // On: every category that exists at all, per the fixed enum above —
   // lets you click into a category with zero current stock.
-  const sourceCategories = showAll ? ALL_CATEGORIES : categories;
+  const sourceCategories = (showAll ? ALL_CATEGORIES : categories)
+    .filter((category) => !MUTED_CATEGORIES.has(category));
 
   // Always sorted with the selected category first, then best text-match
   // first among the rest — this applies whether or not there's a search

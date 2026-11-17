@@ -31,7 +31,7 @@ const STEPS = [
     icon: Search,
     title: "Browse the Marketplace",
     description:
-      "Explore our full catalogue of virtual phone numbers from 50+ countries and social media accounts across Facebook, Instagram, Twitter, TikTok and more. Filter by country, service, or category to find exactly what you need.",
+      "Explore our catalogue of virtual phone numbers from 50+ countries and social media accounts across Facebook, Instagram, TikTok and more. Filter by country, service, or category to find what you need.",
   },
   {
     icon: ShoppingCart,

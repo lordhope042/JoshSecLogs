@@ -15,6 +15,7 @@ import {
 } from "@/services/socialLogs";
 
 import { ALL_CATEGORIES } from "@/components/social-logs/CategoryTabs";
+import { isHiddenSocialLog } from "@/components/social-logs/SocialLogCard";
 
 import {
   PurchasedSocialLog,
@@ -99,9 +100,10 @@ export function useSocialLogs() {
         const data =
           await getSocialLogs();
 
-        setLogs(data);
+        const visible = data.filter((log) => !isHiddenSocialLog(log));
+        setLogs(visible);
 
-        return data;
+        return visible;
       } catch (error) {
         console.error(
           "Failed to load social logs:",
@@ -134,9 +136,10 @@ export function useSocialLogs() {
             category
           );
 
-        setLogs(data);
+        const visible = data.filter((log) => !isHiddenSocialLog(log));
+        setLogs(visible);
 
-        return data;
+        return visible;
       } catch (error) {
         console.error(
           "Failed to load social log category:",
@@ -162,6 +165,11 @@ export function useSocialLogs() {
       try {
         const data =
           await getSocialLog(id);
+
+        if (isHiddenSocialLog(data)) {
+          setSelected(null);
+          return null;
+        }
 
         setSelected(data);
 

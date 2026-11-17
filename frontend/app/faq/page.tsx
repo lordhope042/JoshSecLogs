@@ -66,7 +66,7 @@ const FAQ_CATEGORIES = [
     questions: [
       {
         q: "What types of social accounts are available?",
-        a: "We offer Facebook pages, Facebook country-targeted accounts, Twitter/X followers, Instagram accounts (various follower counts), TikTok accounts, Telegram accounts, VPN accounts, TextPlus/NextPlus numbers, and tutorials. Browse the Shop page to see the full catalogue.",
+        a: "We offer Facebook pages, Facebook country-targeted accounts, Instagram accounts (various follower counts), TikTok accounts, Telegram accounts, VPN accounts, TextPlus/NextPlus numbers, and tutorials. Browse the Shop page to see the available catalogue.",
       },
       {
         q: "How do I receive my purchased account credentials?",

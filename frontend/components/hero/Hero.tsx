@@ -61,7 +61,7 @@ export default function Hero() {
           <p className="mt-8 max-w-xl text-lg leading-9 text-gray-500 dark:text-zinc-400">
 
             Buy verified Virtual Numbers, Instagram, TikTok,
-            Facebook, X (Twitter) and YouTube accounts instantly.
+            Facebook and YouTube accounts instantly.
 
             Fast delivery, secure payments and trusted digital
             products for developers, marketers and businesses.

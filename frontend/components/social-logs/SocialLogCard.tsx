@@ -26,6 +26,12 @@ export interface SocialLogStockGroup {
   logs: SocialLog[];
 }
 
+/** Storefront-only mute: preserve source records and admin management. */
+export function isHiddenSocialLog(log: Pick<SocialLog, "platform" | "category" | "tutorialType">): boolean {
+  const platform = String(log.platform ?? "").trim().toUpperCase().replace(/[^A-Z0-9]/g, "");
+  return platform === "X" || platform.includes("TWITTER") || log.category === "TWITTER_FOLLOWERS" || log.tutorialType === "TWITTER_ADS";
+}
+
 export function groupLogsIntoStock(logs: SocialLog[]): SocialLogStockGroup[] {
   const groups = new Map<string, SocialLog[]>();
 
@@ -83,14 +89,7 @@ const STATIC_LISTING_TYPES: StaticListingType[] = [
   // { category: "FACEBOOK_COUNTRY", country: "NETHERLANDS" },
   // { category: "FACEBOOK_COUNTRY", country: "BELGIUM" },
 
-  // 3. TWITTER_FOLLOWERS — 4 tiers (removed 1000)
-  { category: "TWITTER_FOLLOWERS", followers: 0 },
-  { category: "TWITTER_FOLLOWERS", followers: 100 },
-  { category: "TWITTER_FOLLOWERS", followers: 200 },
-  { category: "TWITTER_FOLLOWERS", followers: 500 },
-  // { category: "TWITTER_FOLLOWERS", followers: 1000 }, // REMOVED
-
-  // 4. INSTAGRAM_FOLLOWERS — 3 sub-types (removed AGED_1K)
+  // 3. INSTAGRAM_FOLLOWERS — 3 sub-types (removed AGED_1K)
   { category: "INSTAGRAM_FOLLOWERS", instagramSubType: "MONTHS_OLD" },
   { category: "INSTAGRAM_FOLLOWERS", instagramSubType: "EMPTY_AGED" },
   { category: "INSTAGRAM_FOLLOWERS", instagramSubType: "AGED_500" },
@@ -123,7 +122,6 @@ const STATIC_LISTING_TYPES: StaticListingType[] = [
   { category: "TUTORIAL", tutorialType: "FACEBOOK_ADS" },
   { category: "TUTORIAL", tutorialType: "INSTAGRAM_ADS" },
   { category: "TUTORIAL", tutorialType: "TIKTOK_ADS" },
-  { category: "TUTORIAL", tutorialType: "TWITTER_ADS" },
 
   // 10. WEBSITE_CREATION — 4 website services
   { category: "WEBSITE_CREATION", websiteType: "LOGS_WEBSITE" },
@@ -156,8 +154,10 @@ const FOLLOWER_TIER_FLOORS_ARRAY: Partial<Record<SocialLogCategoryValue, number[
 };
 
 export function buildStaticStockGroups(logs: SocialLog[]): SocialLogStockGroup[] {
+  const storefrontLogs = logs.filter((log) => !isHiddenSocialLog(log));
+
   return STATIC_LISTING_TYPES.map((type) => {
-    const matching = logs.filter((l) => {
+    const matching = storefrontLogs.filter((l) => {
       if (l.category !== type.category) return false;
       if (type.pageType && l.pageType !== type.pageType) return false;
       if (type.country && l.country !== type.country) return false;
